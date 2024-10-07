@@ -2075,7 +2075,22 @@ static int wm_search_menu_invoke(bContext *C, wmOperator *op, const wmEvent *eve
     }
     {
       char *buffer = RNA_string_get_alloc(op->ptr, "initial_query", nullptr, 0, nullptr);
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+      /**
+       * Send the alphabetic key to start the IME composition.
+       *
+       * According to #ui_handle_menu_event, `buffer` just the UTF-8 encoding
+       * corresponding to the A-Z, so `buffer[0]` is the ASCII encoding
+       * corresponding to the A-Z.
+       */
+      if (buffer[0] != '\0') {
+        wmWindow *win = CTX_wm_window(C);
+        wm_window_IME_start_composition_by_char(win, buffer[0]);
+      }
+      g_search_text[0] = '\0';
+#else
       STRNCPY(g_search_text, buffer);
+#endif
       MEM_SAFE_FREE(buffer);
     }
   }

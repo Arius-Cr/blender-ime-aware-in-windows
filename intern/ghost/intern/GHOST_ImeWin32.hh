@@ -126,230 +126,158 @@ class GHOST_ImeWin32 {
   GHOST_ImeWin32();
   ~GHOST_ImeWin32();
 
-  /* Retrieves whether or not there is an ongoing composition. */
-  bool is_composing() const
-  {
-    return is_composing_;
-  }
+  HWND GetHwnd();
+  /** GHOST_WindowWin32 call this function to bind the window handle to GHOST_ImeWin32. */
+  void SetHwnd(HWND window_handle);
+
+  void CheckFirst();
 
   /* Retrieve the input language from Windows and store it. */
   void UpdateInputLanguage();
 
   BOOL IsLanguage(const char name[W32_ISO639_LEN]);
 
-  /* Saves the current conversion status. */
-  void UpdateConversionStatus(HWND window_handle);
+  /**
+   * \return Wheater message is handled (DefWindowProcW is called).
+   */
+  bool SetImeWindowStyle(UINT message, WPARAM wparam, LPARAM lparam);
 
-  /* Is the IME currently in conversion mode? */
-  bool IsEnglishMode();
+  bool IsIgnoreKey(USHORT key);
 
-  /* Checks a key whether IME has to do handling. */
-  bool IsImeKeyEvent(char ascii, GHOST_TKey key);
+  void OnWindowActivated();
+
+  void OnWindowDeactivated();
+
+  void BeginIME(GHOST_IMEInvoker invoker);
+
+  void EndIME();
+
+  bool IsEnabled();
+
+  GHOST_IMEInvoker GetIMEInvoker();
+
+  void PauseIME();
+
+  void ResumeIME();
+
+  bool IsPaused();
+
+  void MoveIME();
+
+  void MoveIME(const GHOST_Rect &caret_rect, const GHOST_Rect &exclude_rect);
 
   /**
-   * Create the IME windows, and allocate required resources for them.
-   * Parameters
-   *   * window_handle [in] (HWND)
-   *     Represents the window handle of the caller.
+   * Call this function on WM_IME_STARTCOMPOSITION message.
    */
-  void CreateImeWindow(HWND window_handle);
+  void OnCompositionStart();
 
   /**
-   * Update the style of the IME windows.
-   * Parameters
-   *   * window_handle [in] (HWND)
-   *     Represents the window handle of the caller.
-   *   * message [in] (UINT)
-   *   * wparam [in] (WPARAM)
-   *   * lparam [in] (LPARAM)
-   *     Represent the windows message of the caller.
-   *     These parameters are used for verifying if this function is called
-   *     in a handler function for WM_IME_SETCONTEXT messages because this
-   *     function uses ::DefWindowProc() to update the style.
-   *     A caller just has to pass the input parameters for the handler
-   *     function without modifications.
-   *   * handled [out] (BOOL*)
-   *     Returns ::DefWindowProc() is really called in this function.
-   *     PLEASE DO NOT CALL ::DefWindowProc() IF THIS VALUE IS TRUE!
-   *     All the window styles set in this function are over-written when
-   *     calling ::DefWindowProc() after returning this function.
+   * Call this function on WM_IME_COMPOSITION message.
+   * Update the composite info (include result string, composite string,
+   * cursor positon ...).
    */
-  void SetImeWindowStyle(
-      HWND window_handle, UINT message, WPARAM wparam, LPARAM lparam, BOOL *handled);
+  void OnCompositionUpdate(LPARAM lParam);
 
   /**
-   * Destroy the IME windows and all the resources attached to them.
-   * Parameters
-   *   * window_handle [in] (HWND)
-   *     Represents the window handle of the caller.
+   * Call this function on WM_IME_ENDCOMPOSITION message.
    */
-  void DestroyImeWindow(HWND window_handle);
+  void OnCompositionEnd();
+
+  /* Retrieves whether or not there is an ongoing composition. */
+  bool IsComposing();
 
   /**
-   * Update the position of the IME windows.
-   * Parameters
-   *   * window_handle [in] (HWND)
-   *     Represents the window handle of the caller.
+   * Force complete the ongoing composition.
    */
-  void UpdateImeWindow(HWND window_handle);
+  void CompleteComposition();
 
   /**
-   * Clean up the all resources attached to the given GHOST_ImeWin32 object, and
-   * reset its composition status.
-   * Parameters
-   *   * window_handle [in] (HWND)
-   *     Represents the window handle of the caller.
+   * Force cancel the ongoing composition.
    */
-  void CleanupComposition(HWND window_handle);
+  void CancelComposition();
 
   /**
-   * Reset the composition status.
-   * Cancel the ongoing composition if it exists.
-   * NOTE(hbono): This method does not release the allocated resources.
-   * Parameters
-   *   * window_handle [in] (HWND)
-   *     Represents the window handle of the caller.
+   * Manually start the IME composition.
+   * \param c: character of a-Z to start the composition.
    */
-  void ResetComposition(HWND window_handle);
-
-  /**
-   * Retrieve a composition result of the ongoing composition if it exists.
-   * Parameters
-   *   * window_handle [in] (HWND)
-   *     Represents the window handle of the caller.
-   *   * lparam [in] (LPARAM)
-   *     Specifies the updated members of the ongoing composition, and must be
-   *     the same parameter of a WM_IME_COMPOSITION message handler.
-   *     This parameter is used for checking if the ongoing composition has
-   *     its result string,
-   *   * composition [out] (ImeComposition)
-   *     Represents the struct contains the composition result.
-   * Return values
-   *   * true
-   *     The ongoing composition has a composition result.
-   *   * false
-   *     The ongoing composition does not have composition results.
-   * Remarks
-   *   This function is designed for being called from WM_IME_COMPOSITION
-   *   message handlers.
-   */
-  bool GetResult(HWND window_handle, LPARAM lparam, ImeComposition *composition);
-
-  /**
-   * Retrieve the current composition status of the ongoing composition.
-   * Parameters
-   *   * window_handle [in] (HWND)
-   *     Represents the window handle of the caller.
-   *   * lparam [in] (LPARAM)
-   *     Specifies the updated members of the ongoing composition, and must be
-   *     the same parameter of a WM_IME_COMPOSITION message handler.
-   *     This parameter is used for checking if the ongoing composition has
-   *     its result string,
-   *   * composition [out] (ImeComposition)
-   *     Represents the struct contains the composition status.
-   * Return values
-   *   * true
-   *     The status of the ongoing composition is updated.
-   *   * false
-   *     The status of the ongoing composition is not updated.
-   * Remarks
-   *   This function is designed for being called from WM_IME_COMPOSITION
-   *   message handlers.
-   */
-  bool GetComposition(HWND window_handle, LPARAM lparam, ImeComposition *composition);
-
-  /**
-   * Enable the IME attached to the given window, i.e. allows user-input
-   * events to be dispatched to the IME.
-   * In Chrome, this function is used when:
-   *   * a renderer process moves its input focus to another edit control, or;
-   *   * a renderer process moves the position of the focused edit control.
-   * Parameters
-   *   * window_handle [in] (HWND)
-   *     Represents the window handle of the caller.
-   *   * caret_rect [in] (`const gfx::Rect&`)
-   *     Represent the rectangle of the input caret.
-   *     This rectangle is used for controlling the positions of IME windows.
-   *   * complete [in] (bool)
-   *     Represents whether or not to complete the ongoing composition.
-   *     + true
-   *       After finishing the ongoing composition and close its IME windows,
-   *       start another composition and display its IME windows to the given
-   *       position.
-   *     + false
-   *       Just move the IME windows of the ongoing composition to the given
-   *       position without finishing it.
-   */
-  void BeginIME(HWND window_handle, const GHOST_Rect &caret_rect, bool complete);
-
-  /**
-   * Disable the IME attached to the given window, i.e. prohibits any user-input
-   * events from being dispatched to the IME.
-   * In Chrome, this function is used when:
-   *   * a renderer process sets its input focus to a password input.
-   * Parameters
-   *   * window_handle [in] (HWND)
-   *     Represents the window handle of the caller.
-   */
-  void EndIME(HWND window_handle);
-
-  /** Update #resultInfo and #compInfo */
-  void UpdateInfo(HWND window_handle);
-
-  /** Disable IME when start up. */
-  void CheckFirst(HWND window_handle);
+  void StartIMEComplsitionByChar(char c);
 
   ImeComposition resultInfo, compInfo;
+
   GHOST_TEventImeData eventImeData;
 
+  /* The rectangle of the input caret retrieved from a renderer process. */
+  GHOST_Rect m_caret_rect;
+
+  /**
+   * The exclude rectangle of the IME Window.
+   */
+  GHOST_Rect m_exclude_rect;
+
  protected:
+  /**
+   * Update the composite info according the lParam (e.g. GCS_RESULTSTR,
+   * GCS_COMPSTR).
+   * \param lParam: lParam of WM_IME_COMPOSITION.
+   */
+  void UpdateInfo(LPARAM lParam);
+  /**
+   * Get the result string from IME if exits.
+   * \param lParam: lParam of WM_IME_COMPOSITION.
+   */
+  bool GetResult(LPARAM lparam, ImeComposition *composition);
+  /**
+   * Get the composition string from IME if exits.
+   * \param lParam: lParam of WM_IME_COMPOSITION.
+   */
+  bool GetComposition(LPARAM lparam, ImeComposition *composition);
+  /**
+   * Get the result/composition string from IME.
+   */
+  bool GetString(HIMC imm_context, WPARAM lparam, int type, ImeComposition *composition);
+  /**
+   * Get the target range (selection range) of the composition string from IME.
+   */
+  void GetCaret(HIMC imm_context, LPARAM lparam, ImeComposition *composition);
+
   /* Determines whether or not the given attribute represents a target (a.k.a. a selection). */
   bool IsTargetAttribute(char attribute) const
   {
     return (attribute == ATTR_TARGET_CONVERTED || attribute == ATTR_TARGET_NOTCONVERTED);
   }
 
-  /* Retrieve the target area. */
-  void GetCaret(HIMC imm_context, LPARAM lparam, ImeComposition *composition);
+  /* Owner window. */
+  HWND m_hwnd;
 
-  /* Update the position of the IME windows. */
-  void MoveImeWindow(HWND window_handle, HIMC imm_context);
+  /* Indicate whether the data has been initialized. */
+  bool m_is_first;
 
-  /* Complete the ongoing composition if it exists. */
-  void CompleteComposition(HWND window_handle, HIMC imm_context);
+  /* Abbreviated ISO 639-1 name of the input language, such as "en" for English. */
+  char m_language[W32_ISO639_LEN];
 
-  /* Retrieve a string from the IMM. */
-  bool GetString(HIMC imm_context, WPARAM lparam, int type, ImeComposition *composition);
+  GHOST_IMEInvoker m_invoker;
 
- private:
+  /**
+   * The IME is enable but temporary disable.
+   *
+   * Most Chinese IMEs use the Shift key to switch the conversion mode.
+   * So in 3DView with IME on, the view navigation shortcuts like Shift + MMB
+   * will cause IME switch conversion mode.
+   *
+   * It is a know issue in many word processor (like notepad, Microsoft Office Word)
+   * with Chinese IMEs. When use the Shift + LMB to selection text, the conversion
+   * mode will change. They usual ignore this issue, but here try to fix it.
+   *
+   * The main logic is, if Shift + Mouse Button down, "pause" IME,
+   * if Shift key up, and IME was paused, "resume" IME.
+   */
+  bool m_is_paused;
+
   /**
    * Represents whether or not there is an ongoing composition in a browser
    * process, i.e. whether or not a browser process is composing a text.
    */
-  bool is_composing_;
-
-  /* Abbreviated ISO 639-1 name of the input language, such as "en" for English. */
-  char language_[W32_ISO639_LEN];
-
-  /* Current Conversion Mode Values. Retrieved with ImmGetConversionStatus. */
-  DWORD conversion_modes_;
-
-  /* Current Sentence Mode. Retrieved with ImmGetConversionStatus. */
-  DWORD sentence_mode_;
-
-  /**
-   * Represents whether or not the current input context has created a system
-   * caret to set the position of its IME candidate window.
-   *   * true: it creates a system caret.
-   *   * false: it does not create a system caret.
-   */
-  bool system_caret_;
-
-  /* The rectangle of the input caret retrieved from a renderer process. */
-  GHOST_Rect caret_rect_;
-
-  /* used for disable ime when start up */
-  bool is_first, is_enable;
+  bool m_is_composing;
 };
 
 #endif /* WITH_INPUT_IME */

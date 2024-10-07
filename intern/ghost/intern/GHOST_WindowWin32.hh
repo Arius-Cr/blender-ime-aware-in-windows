@@ -313,9 +313,32 @@ class GHOST_WindowWin32 : public GHOST_Window {
     return &m_imeInput;
   }
 
-  void beginIME(int32_t x, int32_t y, int32_t w, int32_t h, bool completed);
+  void beginIME(GHOST_IMEInvoker invoker);
 
   void endIME();
+
+  bool isIMEEnabled();
+
+  GHOST_IMEInvoker getIMEInvoker();
+
+  bool isIMEComposing();
+
+  void completeIME();
+
+  void cancelIME();
+
+  void moveIME(int32_t c_l, int32_t c_t, int32_t c_w, int32_t c_h);
+
+  void moveIMEWithExclude(int32_t c_l,
+                          int32_t c_t,
+                          int32_t c_w,
+                          int32_t c_h,
+                          int32_t e_l,
+                          int32_t e_t,
+                          int32_t e_w,
+                          int32_t e_h);
+
+  void startIMEComplsitionByChar(char c);
 #endif /* WITH_INPUT_IME */
 
   /*

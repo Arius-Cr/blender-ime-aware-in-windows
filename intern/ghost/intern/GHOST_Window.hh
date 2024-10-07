@@ -315,7 +315,7 @@ class GHOST_Window : public GHOST_IWindow {
     return 96;
   }
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
   virtual void beginIME(
       int32_t /*x*/, int32_t /*y*/, int32_t /*w*/, int32_t /*h*/, bool /*completed*/) override
   {
@@ -327,6 +327,70 @@ class GHOST_Window : public GHOST_IWindow {
     /* do nothing temporarily if not in windows */
   }
 #endif /* WITH_INPUT_IME */
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+
+  virtual void beginIME(GHOST_IMEInvoker /*invoker*/) override
+  {
+    /* do nothing temporarily if not in windows */
+  }
+
+  virtual void endIME() override
+  {
+    /* do nothing temporarily if not in windows */
+  }
+
+  virtual bool isIMEEnabled() override
+  {
+    /* do nothing temporarily if not in windows */
+    return false;
+  }
+
+  virtual GHOST_IMEInvoker getIMEInvoker() override
+  {
+    /* do nothing temporarily if not in windows */
+    return GHOST_IMEInvokerNone;
+  }
+
+  virtual void completeIME() override
+  {
+    /* do nothing temporarily if not in windows */
+  }
+
+  virtual void cancelIME() override
+  {
+    /* do nothing temporarily if not in windows */
+  }
+
+  virtual void moveIME(int32_t /*c_l*/, int32_t /*c_t*/, int32_t /*c_w*/, int32_t /*c_h*/) override
+  {
+    /* do nothing temporarily if not in windows */
+  }
+
+  virtual void moveIMEWithExclude(int32_t /*c_l*/,
+                                  int32_t /*c_t*/,
+                                  int32_t /*c_w*/,
+                                  int32_t /*c_h*/,
+                                  int32_t /*e_l*/,
+                                  int32_t /*e_t*/,
+                                  int32_t /*e_w*/,
+                                  int32_t /*e_h*/) override
+  {
+    /* do nothing temporarily if not in windows */
+  }
+
+  virtual bool isIMEComposing() override
+  {
+    /* do nothing temporarily if not in windows */
+    return false;
+  }
+
+  virtual void startIMEComplsitionByChar(char /*c*/) override
+  {
+    /* do nothing temporarily if not in windows */
+    return;
+  }
+#endif /* WITH_INPUT_IME && WIN32 */
 
  protected:
   /**

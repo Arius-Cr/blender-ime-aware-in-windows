@@ -322,6 +322,7 @@ blender_default = bpy.utils.execfile(os.path.join(DIRNAME, "keymap_data", "blend
 
 def load():
     from sys import platform
+    import bpy
     from bpy import context
     from bl_keymap_utils.io import keyconfig_init_from_data
 
@@ -366,6 +367,7 @@ def load():
             use_pie_click_drag=kc_prefs.use_pie_click_drag,
             use_file_single_click=kc_prefs.use_file_single_click,
             use_alt_navigation=kc_prefs.use_alt_navigation,
+            use_ime_input_win32 = (platform == 'win32' and bpy.app.build_options.input_ime),
             # Experimental features.
             use_experimental_grease_pencil_version3=prefs.experimental.use_grease_pencil_version3,
         ),

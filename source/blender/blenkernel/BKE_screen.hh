@@ -251,6 +251,13 @@ struct ARegionType {
    * when the `v2d->tot is changed and `cur` is adopted accordingly). */
   void (*on_view2d_changed)(const bContext *C, ARegion *region);
 
+  /**
+   * Called when the region is activated or deactivated.
+   * Params `C` may be nullptr.
+   * Params `win`, `area` relate to the active region, not the deactive region.
+   */
+  void (*on_activation_changed)(const bContext *C, wmWindow *win, ScrArea *area, ARegion *region, bool active);
+
   /* custom drawing callbacks */
   ListBase drawcalls;
 

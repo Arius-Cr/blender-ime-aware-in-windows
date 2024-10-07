@@ -50,6 +50,16 @@
 #include "text_format.hh"
 #include "text_intern.hh"
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+#  include "BKE_screen.hh"
+#  include "ED_space_api.hh"
+#  include "GPU_immediate.hh"
+#  include "GPU_state.hh"
+#  include "UI_view2d.hh"
+#  include "printx.h"
+#  include "wm_window.hh"
+#endif
+
 static void space_text_screen_clamp(SpaceText *st, const ARegion *region);
 
 /* -------------------------------------------------------------------- */
@@ -3577,21 +3587,11 @@ void TEXT_OT_line_number(wmOperatorType *ot)
 /** \name Insert Operator
  * \{ */
 
-static int text_insert_exec(bContext *C, wmOperator *op)
+static bool insert_str_into_text(SpaceText *st, Text *text, char *str, size_t str_len)
 {
-  SpaceText *st = CTX_wm_space_text(C);
-  Text *text = CTX_data_edit_text(C);
-  char *str;
-  int str_len;
   bool done = false;
   size_t i = 0;
   uint code;
-
-  space_text_drawcache_tag_update(st, false);
-
-  str = RNA_string_get_alloc(op->ptr, "text", nullptr, 0, &str_len);
-
-  ED_text_undo_push_init(C);
 
   if (st && st->overwrite) {
     while (str[i]) {
@@ -3605,6 +3605,27 @@ static int text_insert_exec(bContext *C, wmOperator *op)
       done |= txt_add_char(text, code);
     }
   }
+
+  return done;
+}
+
+static int text_insert_exec(bContext *C, wmOperator *op)
+{
+  SpaceText *st = CTX_wm_space_text(C);
+  Text *text = CTX_data_edit_text(C);
+  char *str;
+  int str_len;
+  bool done = false;
+  // size_t i = 0;
+  // uint code;
+
+  space_text_drawcache_tag_update(st, false);
+
+  str = RNA_string_get_alloc(op->ptr, "text", nullptr, 0, &str_len);
+
+  ED_text_undo_push_init(C);
+
+  done = insert_str_into_text(st, text, str, str_len);
 
   MEM_freeN(str);
 
@@ -4338,3 +4359,519 @@ void TEXT_OT_to_3d_object(wmOperatorType *ot)
 }
 
 /** \} */
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+
+struct ImeInputData {
+  // /* cursor charcter index (suffix 'u' mean unicode) */
+  // int start_i;
+  // /* The charcter index of composite string's last chacter (include last chacter) */
+  // int end_i;
+  // /* The cursor byte index for composite string, it relate to wmIMEData.cursor_pos. */
+  // int cursor_i;
+  int line_index;
+  int startc_o;
+  int endc_o;
+  int clause_startc_o;
+  int clause_endc_o;
+  Text *text;
+  ARegion *region;
+  void *draw_handle;
+};
+
+void text_reposition_ime_window(wmWindow *win,
+                                ScrArea *area,
+                                ARegion *region,
+                                void *ime_input_data)
+{
+  SpaceText *st = static_cast<SpaceText *>(area->spacedata.first);
+  Text *text = st->text;
+  if (!text)
+    return;
+
+  int line_height = TXT_LINE_HEIGHT(st);
+  int margin = 2 * UI_SCALE_FAC;
+
+  int creat_l;
+  int creat_b;
+  int creat_h = line_height;
+  int exclude_t;
+  int exclude_b;
+
+  if (ime_input_data == nullptr) {
+    int curl = BLI_findindex(&text->lines, text->curl);
+    int curc = text->curc;
+
+    const int cursor_co[2] = {curl, curc};
+    int creat_pos[2];
+
+    ED_space_text_region_location_from_cursor(st, region, cursor_co, creat_pos, true);
+    creat_pos[0] += region->winrct.xmin;
+    creat_pos[1] += region->winrct.ymin;
+
+    creat_l = creat_pos[0];
+    creat_b = creat_pos[1];
+
+    exclude_t = creat_pos[1] + line_height;
+    exclude_b = creat_pos[1];
+
+    creat_b -= margin;
+    creat_h += 2 * margin;
+    exclude_t += margin;
+    exclude_b -= margin;
+
+    wm_window_IME_move_with_exclude(win,
+                                    creat_l,
+                                    creat_b,
+                                    0,
+                                    creat_h,
+                                    region->winrct.xmin,
+                                    exclude_b,
+                                    region->winrct.xmax - region->winrct.xmin,
+                                    exclude_t - exclude_b);
+  }
+  else {
+    ImeInputData *data = static_cast<ImeInputData *>(ime_input_data);
+
+    int start_pixel_pos[2];
+    int end_pixel_pos[2];
+    const int start_co[2] = {data->line_index, data->startc_o};
+    const int end_co[2] = {data->line_index, data->endc_o};
+    ED_space_text_region_location_from_cursor(st, region, start_co, start_pixel_pos, true);
+    ED_space_text_region_location_from_cursor(st, region, end_co, end_pixel_pos, true);
+    start_pixel_pos[0] += region->winrct.xmin;
+    start_pixel_pos[1] += region->winrct.ymin;
+    end_pixel_pos[0] += region->winrct.xmin;
+    end_pixel_pos[1] += region->winrct.ymin;
+
+    if ((data->clause_startc_o != -1 && data->clause_startc_o != data->startc_o) ||
+        (data->clause_endc_o != -1 && data->clause_endc_o != data->endc_o))
+    {
+      int clause_pixel_pos[2];
+      const int clause_co[2] = {data->line_index, data->clause_startc_o};
+      ED_space_text_region_location_from_cursor(st, region, clause_co, clause_pixel_pos, true);
+      clause_pixel_pos[0] += region->winrct.xmin;
+      clause_pixel_pos[1] += region->winrct.ymin;
+
+      creat_l = clause_pixel_pos[0];
+      creat_b = clause_pixel_pos[1];
+    }
+    else {
+      if (end_pixel_pos[1] == start_pixel_pos[1]) {
+        /* in the same line, location to the start. */
+        creat_l = start_pixel_pos[0];
+        creat_b = start_pixel_pos[1];
+      }
+      else {
+        /* in the different line, location to the end. */
+        creat_l = end_pixel_pos[0];
+        creat_b = end_pixel_pos[1];
+      }
+    }
+
+    exclude_t = start_pixel_pos[1] + line_height;
+    exclude_b = end_pixel_pos[1];
+
+    creat_b -= margin;
+    creat_h += 2 * margin;
+    exclude_t += margin;
+    exclude_b -= margin;
+
+    wm_window_IME_move_with_exclude(win,
+                                    creat_l,
+                                    creat_b,
+                                    0,
+                                    creat_h,
+                                    region->winrct.xmin,
+                                    exclude_b,
+                                    region->winrct.xmax - region->winrct.xmin,
+                                    exclude_t - exclude_b);
+  }
+}
+
+/* -------------------------------------------------------------------- */
+/** \name Handle IME Composition Events Operator
+ * \{ */
+
+/**
+ * Note: TEXT_OT_ime_input is not a `OPTYPE_UNDO` operator,
+ * see TEXT_OT_ime_insert.
+ */
+
+static void ime_input_draw_underline(SpaceText *st,
+                                     ARegion *region,
+                                     int line_index,
+                                     int startc_o,
+                                     int endc_o,
+                                     int draw_rect_xmin,
+                                     int draw_rect_xmax,
+                                     int lheight,
+                                     int uheight,
+                                     uint pos)
+{
+  if (startc_o != -1 && startc_o != endc_o) {
+    int start_pos[2];
+    int end_pos[2];
+    int start_co[2] = {line_index, startc_o};
+    int end_co[2] = {line_index, endc_o};
+    ED_space_text_region_location_from_cursor(st, region, start_co, start_pos, true);
+    ED_space_text_region_location_from_cursor(st, region, end_co, end_pos, true);
+
+    if (end_pos[1] == start_pos[1]) {
+      immRecti(pos, start_pos[0], start_pos[1], end_pos[0], end_pos[1] + uheight);
+    }
+    else {
+      immRecti(pos, start_pos[0], start_pos[1], draw_rect_xmax, start_pos[1] + uheight);
+      immRecti(pos, draw_rect_xmin, end_pos[1], end_pos[0], end_pos[1] + uheight);
+      int y = end_pos[1] + lheight;
+      while (y < start_pos[1]) {
+        immRecti(pos, draw_rect_xmin, y, draw_rect_xmax, y + uheight);
+        y += lheight;
+      }
+    }
+  }
+}
+
+static void ime_input_draw(const bContext *C, ARegion *region, void *customdata)
+{
+  SpaceText *st = CTX_wm_space_text(C);
+  ImeInputData *data = static_cast<ImeInputData *>(customdata);
+
+  if (data->text != st->text) {
+    return;
+  }
+
+  /** Reposition the ime window to the caluse header */
+  if (region == data->region) {
+    printx(CCBP "SpaceText Redraw [comp]: Enable & Reposition IME");
+    text_reposition_ime_window(CTX_wm_window(C), CTX_wm_area(C), region, data);
+  }
+
+  int draw_rect_xmin = TXT_BODY_LEFT(st);
+  int draw_rect_xmax = region->winx - TXT_SCROLL_WIDTH;
+  int lheight = TXT_LINE_HEIGHT(st);
+
+  uchar color[4] = {255, 255, 255, 255};
+  UI_GetThemeColor4ubv(TH_TEXT, color);
+
+  GPU_blend(GPU_BLEND_ALPHA);
+
+  GPUVertFormat *format = immVertexFormat();
+  uint pos = GPU_vertformat_attr_add(format, "pos", GPU_COMP_I32, 2, GPU_FETCH_INT_TO_FLOAT);
+  immBindBuiltinProgram(GPU_SHADER_3D_UNIFORM_COLOR);
+
+  immUniformColor4ubv(color);
+
+  printx(CCFR "startc_o: %d, %d", data->startc_o, data->endc_o);
+  printx(CCFR "clause_startc_o: %d, %d", data->clause_startc_o, data->clause_endc_o);
+
+  ime_input_draw_underline(st,
+                            region,
+                            data->line_index,
+                            data->startc_o,
+                            data->endc_o,
+                            draw_rect_xmin,
+                            draw_rect_xmax,
+                            lheight,
+                            min_ii(2, (int)(lheight * 0.1)),
+                            pos);
+
+  ime_input_draw_underline(st,
+                           region,
+                           data->line_index,
+                           data->clause_startc_o,
+                           data->clause_endc_o,
+                           draw_rect_xmin,
+                           draw_rect_xmax,
+                           lheight,
+                           min_ii(4, (int)(lheight * 0.2)),
+                           pos);
+
+  immUnbindProgram();
+
+  GPU_blend(GPU_BLEND_NONE);
+}
+
+static void ime_input_clean(bContext * /*C*/, wmOperator *op)
+{
+  ImeInputData *data = static_cast<ImeInputData *>(op->customdata);
+  if (data->draw_handle) {
+    ED_region_draw_cb_exit(data->region->type, data->draw_handle);
+  }
+
+  MEM_freeN(data);
+
+  op->customdata = data = nullptr;
+}
+
+static int ime_input_invoke(bContext *C, wmOperator *op, const wmEvent *event)
+{
+  wmWindow *win;
+
+  ARegion *region;
+  SpaceText *st;
+  Text *text;
+
+  if (event->type == WM_IME_COMPOSITE_START) {
+    printx(CCFG "TEXT_OT_ime_input: start");
+
+    win = CTX_wm_window(C);
+    region = BKE_area_find_region_type(CTX_wm_area(C), RGN_TYPE_WINDOW);
+    st = CTX_wm_space_text(C);
+    text = CTX_data_edit_text(C);
+
+    /* Delete selection. */
+
+    if (text->sell && text->curl && text->selc != text->curc) {
+      txt_delete_selected(text);
+    }
+
+    /* Initialize IME input data. */
+
+    ImeInputData *data = static_cast<ImeInputData *>(MEM_callocN(sizeof(ImeInputData), __func__));
+    op->customdata = data;
+
+    data->line_index = BLI_findindex(&text->lines, text->curl);
+    data->startc_o = text->curc;
+    data->endc_o = data->startc_o;
+    data->clause_startc_o = -1;
+    data->clause_endc_o = -1;
+
+    data->text = text;
+    data->region = region;
+    data->draw_handle = ED_region_draw_cb_activate(
+        region->type, ime_input_draw, data, REGION_DRAW_POST_PIXEL);
+
+    text_update_line_edited(text->curl);
+    space_text_update_cursor_moved(C);
+    WM_event_add_notifier(C, NC_TEXT | NA_EDITED, text);
+
+    WM_event_add_modal_handler(C, op);
+    return OPERATOR_RUNNING_MODAL;
+  }
+  else if (event->type == WM_IME_COMPOSITE_EVENT) {
+    /* Capture the WM_IME_COMPOSITE_EVENT event that not between START and END,
+     * and then insert the result string carried by the event.
+     * This isolated event can occur when using the old (ie. compatibility mode)
+     * Microsoft Korean IME.
+     */
+
+    WM_operator_name_call(C, "TEXT_OT_ime_insert", WM_OP_INVOKE_REGION_WIN, nullptr, event);
+  }
+
+  return OPERATOR_CANCELLED;
+}
+
+static int ime_input_modal(bContext *C, wmOperator *op, const wmEvent *event)
+{
+  wmWindow *win;
+  const wmIMEData *ime_data;
+  ImeInputData *data;
+
+  SpaceText *st;
+  Text *text;
+  TextLine *ti;
+
+  bool changed = false;
+
+  if (ELEM(event->type, WM_IME_COMPOSITE_EVENT, WM_IME_COMPOSITE_END)) {
+
+    win = CTX_wm_window(C);
+    if (event->type == WM_IME_COMPOSITE_EVENT) {
+      ime_data = static_cast<const wmIMEData *>(event->customdata);
+    }
+    data = static_cast<ImeInputData *>(op->customdata);
+
+    st = CTX_wm_space_text(C);
+    text = CTX_data_edit_text(C);
+    ti = text->curl;
+
+    space_text_drawcache_tag_update(st, false);
+
+    /* Delete previous composite string. */
+
+    if (data->endc_o != data->startc_o) {
+      printx(CCFG "TEXT_OT_ime_input: delete previous composite string");
+      int startc_i = BLI_str_utf8_offset_to_index(ti->line, ti->len, data->startc_o);
+      int endc_i = BLI_str_utf8_offset_to_index(ti->line, ti->len, data->endc_o);
+      txt_sel_set(text, data->line_index, startc_i, data->line_index, endc_i);
+      txt_delete_selected(text);
+
+      data->endc_o = data->startc_o;
+      data->clause_startc_o = -1;
+      data->clause_endc_o = -1;
+
+      changed = true;
+    }
+  }
+
+  if (event->type == WM_IME_COMPOSITE_EVENT) {
+    size_t i = 0;
+    uint code;
+
+    /* Insert result string. */
+
+    if (ime_data->result_len != 0) {
+      printx(CCFG "TEXT_OT_ime_input: insert result string");
+      printx(CCFG "  result_len: %zu", ime_data->result_len);
+
+      WM_operator_name_call(C, "TEXT_OT_ime_insert", WM_OP_INVOKE_REGION_WIN, nullptr, event);
+
+      /* Reinitialize IME input data. */
+
+      data->line_index = BLI_findindex(&text->lines, ti);
+      data->startc_o = text->curc;
+      data->endc_o = data->startc_o;
+      data->clause_startc_o = -1;
+      data->clause_endc_o = -1;
+    }
+
+    /* Insert composite string. */
+
+    if (ime_data->composite_len != 0) {
+      printx(CCFG "TEXT_OT_ime_input: insert composite string");
+      printx(CCFG "  composite_len: %zu", ime_data->composite_len);
+
+      i = 0;
+      while (i < ime_data->composite_len) {
+        code = BLI_str_utf8_as_unicode_step_safe(
+            ime_data->str_composite, ime_data->composite_len, &i);
+        txt_add_char(text, code);
+      }
+
+      data->endc_o = data->startc_o + ime_data->composite_len;
+      if (ime_data->sel_start != -1 && ime_data->sel_end != -1) {
+        data->clause_startc_o = data->startc_o + ime_data->sel_start;
+        data->clause_endc_o = data->startc_o + ime_data->sel_end;
+      }
+      else {
+        data->clause_startc_o = -1;
+        data->clause_endc_o = -1;
+      }
+
+      text->curc = data->startc_o + ime_data->cursor_pos;
+
+      changed = true;
+    }
+
+    if (changed) {
+      text_update_line_edited(ti);
+      space_text_update_cursor_moved(C);
+      WM_event_add_notifier(C, NC_TEXT | NA_EDITED, text);
+    }
+  }
+
+  else if (event->type == WM_IME_COMPOSITE_END) {
+    printx(CCFG "TEXT_OT_ime_input: end");
+
+    ime_input_clean(C, op);
+
+    return OPERATOR_FINISHED;
+  }
+
+  else if (ISMOUSE_BUTTON(event->type)) {
+    printx(CCFG "TEXT_OT_ime_input: MOUSE COMPLETE COMPOSITE");
+
+    /* Force complete composite string.
+     * IMM will trigger some IME Composition Event, and we finish the operator
+     * on the IME Composition Event, not here.
+     */
+    wm_window_IME_complete(CTX_wm_window(C));
+  }
+
+  return OPERATOR_RUNNING_MODAL;
+}
+
+void TEXT_OT_ime_input(wmOperatorType *ot)
+{
+  /* identifiers */
+  ot->name = "Input (IME)";
+  ot->idname = "TEXT_OT_ime_input";
+  ot->description = "Handle IME composition events. (Windows only)";
+
+  /* api callbacks */
+  ot->invoke = ime_input_invoke;
+  ot->modal = ime_input_modal;
+  ot->cancel = ime_input_clean;
+  ot->poll = text_data_poll;
+
+  /* flags */
+  ot->flag = OPTYPE_INTERNAL;
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Insert IME Result String Operator
+ * \{ */
+
+/**
+ * Note: TEXT_OT_ime_input will call this operator to insert the IME result string,
+ * so the inserted string can be Undo/Redo by User.
+ */
+
+static int ime_insert_invoke(bContext *C, wmOperator * /*op*/, const wmEvent *event)
+{
+  wmWindow *win;
+  const wmIMEData *ime_data;
+
+  SpaceText *st;
+  Text *text;
+
+  bool done = false;
+
+  if (event->type == WM_IME_COMPOSITE_EVENT) {
+    printx(CCFG "ime_text_insert_invoke");
+
+    win = CTX_wm_window(C);
+    ime_data = static_cast<const wmIMEData *>(event->customdata);
+
+    if (ime_data->result_len) {
+
+      st = CTX_wm_space_text(C);
+      text = CTX_data_edit_text(C);
+
+      space_text_drawcache_tag_update(st, false);
+
+      ED_text_undo_push_init(C);
+
+      if (text->sell && text->curl && text->selc != text->curc) {
+        txt_delete_selected(text);
+      }
+
+      done = insert_str_into_text(st, text, ime_data->str_result, ime_data->result_len);
+
+      if (!done) {
+        return OPERATOR_CANCELLED;
+      }
+
+      text_update_line_edited(text->curl);
+
+      space_text_update_cursor_moved(C);
+      WM_event_add_notifier(C, NC_TEXT | NA_EDITED, text);
+
+      return OPERATOR_FINISHED;
+    }
+  }
+
+  return OPERATOR_CANCELLED;
+}
+
+void TEXT_OT_ime_insert(wmOperatorType *ot)
+{
+  /* identifiers */
+  ot->name = "Insert (IME)";
+  ot->idname = "TEXT_OT_ime_insert";
+  ot->description = "Insert IME result string. (Windows only)";
+
+  /* api callbacks */
+  ot->invoke = ime_insert_invoke;
+  ot->poll = text_data_poll;
+
+  /* flags */
+  ot->flag = OPTYPE_INTERNAL | OPTYPE_UNDO;
+}
+
+/** \} */
+
+#endif /* WITH_INPUT_IME */

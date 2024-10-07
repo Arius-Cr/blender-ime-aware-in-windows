@@ -282,6 +282,20 @@ int main(int argc,
 #endif
 )
 {
+
+  // BEGIN [用于测试，不推送]
+  // 禁止直接启动，必须在环境变量中设置 IME_AWARE_IN_WINDOWS 才可启动。
+  // 主要防止小白不看说明就直接运行程序。
+  {
+    size_t requiredSize = 0;
+    getenv_s(&requiredSize, NULL, 0, "IME_AWARE_IN_WINDOWS");
+    if (requiredSize == 0) {
+      printf("Error: Environment variable \"IME_AWARE_IN_WINDOWS\" not exists.\n");
+      exit(1);
+    }
+  }
+  // END
+
   bContext *C;
 #ifndef WITH_PYTHON_MODULE
   bArgs *ba;
@@ -449,7 +463,18 @@ int main(int argc,
 
   BKE_callback_global_init();
 
-/* First test for background-mode (#Global.background). */
+  // BEGIN [用于测试，不推送]
+  // 通过 DEBUG_IME 环境变量开关 IME 相关调试信息的输出
+  {
+    size_t requiredSize = 0;
+    getenv_s(&requiredSize, NULL, 0, "DEBUG_IME");
+    if (requiredSize != 0) {
+      G.debug |= G_DEBUG_IME;
+    }
+  }
+  // END
+
+/* First test for background-mode (#Global.background) */
 #ifndef WITH_PYTHON_MODULE
   ba = BLI_args_create(argc, (const char **)argv); /* Skip binary path. */
 

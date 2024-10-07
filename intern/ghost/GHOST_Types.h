@@ -932,4 +932,16 @@ typedef struct GHOST_XrControllerModelData {
 
 #endif /* WITH_XR_OPENXR */
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+
+typedef enum GHOST_IMEInvoker {
+  GHOST_IMEInvokerNone = 0,
+  GHOST_IMEInvokerTextField,
+  GHOST_IMEInvokerTextEditMode,
+  GHOST_IMEInvokerSpaceText,
+  GHOST_IMEInvokerSpaceConsole,
+} GHOST_IMEInvoker;
+
+#endif
+
 // NOLINTEND: modernize-use-using

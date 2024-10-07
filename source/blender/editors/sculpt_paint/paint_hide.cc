@@ -689,6 +689,7 @@ void PAINT_OT_hide_show_all(wmOperatorType *ot)
 
 static void invert_visibility_mesh(Object &object, const Span<PBVHNode *> nodes)
 {
+  PBVH &pbvh = *object.sculpt->pbvh;
   Mesh &mesh = *static_cast<Mesh *>(object.data);
   const Span<int> tri_faces = mesh.corner_tri_faces();
   bke::MutableAttributeAccessor attributes = mesh.attributes_for_write();

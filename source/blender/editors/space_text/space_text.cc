@@ -37,6 +37,12 @@
 #include "text_format.hh"
 #include "text_intern.hh" /* own include */
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+#  include "ED_text.hh"
+#  include "printx.h"
+#  include "wm_window.hh"
+#endif
+
 /* ******************** default callbacks for text space ***************** */
 
 static SpaceLink *text_create(const ScrArea * /*area*/, const Scene * /*scene*/)
@@ -212,6 +218,11 @@ static void text_operatortypes()
   WM_operatortype_append(TEXT_OT_resolve_conflict);
 
   WM_operatortype_append(TEXT_OT_autocomplete);
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  WM_operatortype_append(TEXT_OT_ime_input);
+  WM_operatortype_append(TEXT_OT_ime_insert);
+#endif
 }
 
 static void text_keymap(wmKeyConfig *keyconf)
@@ -278,6 +289,28 @@ static void text_main_region_draw(const bContext *C, ARegion *region)
   /* data... */
   draw_text_main(st, region);
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  /**
+   * After the cursor moved (current is not composing),
+   * we needs to update the ime window position.
+   * Some IMEs just use the position before composite start,
+   * and ingore all reposition utill composite end.
+   * So we need to update the ime window immedately.
+   */
+  wmWindow *win = CTX_wm_window(C);
+  if (wm_window_IME_get_invoker(win) == wmIMEInvokerSpaceText) {
+    if (!wm_window_IME_is_composing(win)) {
+      bScreen *screen = CTX_wm_screen(C);
+      ARegion *region = CTX_wm_region(C);
+      if (region != nullptr && screen->active_region == region) {
+        printx(CCBP "SpaceText Redraw [no comp]: Reposition IME");
+        ScrArea *area = CTX_wm_area(C);
+        text_reposition_ime_window(win, area, region, nullptr);
+      }
+    }
+  }
+#endif
+
   /* reset view matrix */
   // UI_view2d_view_restore(C);
 
@@ -298,6 +331,93 @@ static void text_cursor(wmWindow *win, ScrArea *area, ARegion *region)
 
   WM_cursor_set(win, wmcursor);
 }
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+
+static void text_enable_ime(wmWindow *win, ScrArea *area, ARegion *region)
+{
+  /**
+   * Note: check `st->text != nullptr` before call this function.
+   *
+   */
+  bScreen *screen = WM_window_get_active_screen(win);
+  if (screen->active_region == region) {
+    /* If IME disable or enable by others, enable it. */
+    if (wm_window_IME_get_invoker(win) != wmIMEInvokerSpaceText) {
+      printx(CCBP "SpaceText " CCBG "meeting the conditions" CCBP ": Enable & Repositon IME");
+      wm_window_IME_begin(win, wmIMEInvokerSpaceText);
+      text_reposition_ime_window(win, area, region, nullptr);
+    }
+  }
+}
+
+static void text_disable_ime(wmWindow *win)
+{
+  /** 不需要检查条件，调用该函数时就表示符合关闭的条件 */
+  /* If IME enable by SpaceText, disable it. */
+  if (wm_window_IME_get_invoker(win) == wmIMEInvokerSpaceText) {
+    printx(CCBP "SpaceText " CCBR "NOT meeting the conditions" CCBP ": Disable IME");
+    wm_window_IME_end(win);
+  }
+}
+
+static void text_main_region_listener(const wmRegionListenerParams *params)
+{
+  const wmNotifier *wmn = params->notifier;
+
+  wmWindow *win = params->window;
+  ScrArea *area = params->area;
+  ARegion *region = params->region;
+  SpaceText *st;
+
+  /** space->text changed */
+  if (wmn->category == NC_TEXT) {
+    st = static_cast<SpaceText *>(area->spacedata.first);
+
+    if (wmn->action == NA_ADDED) {
+      printx(CCBP "SpaceText NA_ADDED: %s",
+             wm_window_IME_is_enable(params->window) ? "True" : "False");
+      text_enable_ime(win, area, region);
+    }
+    else if (wmn->action == NA_REMOVED) {
+      printx(CCBP "SpaceText NA_REMOVED: %s",
+             wm_window_IME_is_enable(params->window) ? "True" : "False");
+      text_disable_ime(params->window);
+    }
+  }
+  else if (wmn->category == NC_WM) {
+    if (wmn->data == ND_UNDO) {
+      st = static_cast<SpaceText *>(area->spacedata.first);
+
+      if (st->text) {
+        printx(CCBP "SpaceText ND_UNDO/REDO, st->text");
+        text_enable_ime(win, area, region);
+      }
+      else {
+        printx(CCBP "SpaceText ND_UNDO/REDO, !st->text");
+        text_disable_ime(win);
+      }
+    }
+  }
+}
+
+static void text_main_region_on_activation_changed(
+    const bContext * /*C*/, wmWindow *win, ScrArea *area, ARegion *region, bool activated)
+{
+  if (activated) {
+    printx(CCBP "SpaceText Region Active");
+    SpaceText *st = static_cast<SpaceText *>(area->spacedata.first);
+    if (st->text) {
+      text_enable_ime(win, area, region);
+    }
+  }
+  else {
+    printx(CCBP "SpaceText Region Deactive");
+    text_disable_ime(win);
+  }
+}
+
+#endif
 
 /* ************* dropboxes ************* */
 
@@ -447,6 +567,10 @@ void ED_spacetype_text()
   art->draw = text_main_region_draw;
   art->cursor = text_cursor;
   art->event_cursor = true;
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  art->listener = text_main_region_listener;
+  art->on_activation_changed = text_main_region_on_activation_changed;
+#endif
 
   BLI_addhead(&st->regiontypes, art);
 

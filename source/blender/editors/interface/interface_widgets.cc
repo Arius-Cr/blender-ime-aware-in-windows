@@ -46,6 +46,7 @@
 
 #ifdef WITH_INPUT_IME
 #  include "WM_types.hh"
+#  include "printx.h"
 #endif
 
 /* -------------------------------------------------------------------- */
@@ -1931,9 +1932,14 @@ static void widget_draw_text(const uiFontStyle *fstyle,
   if (but->editstr && but->pos != -1) {
     int but_pos_ofs;
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
     bool ime_reposition_window = false;
     int ime_win_x, ime_win_y;
+#endif
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+    const bool is_num_but = ELEM(but->type, UI_BTYPE_NUM, UI_BTYPE_NUM_SLIDER);
+    rcti selection_shape = {0};
+    rcti cursor_shape = {0};
 #endif
 
     /* text button selection */
@@ -1961,12 +1967,20 @@ static void widget_draw_text(const uiFontStyle *fstyle,
       immUnbindProgram();
       GPU_blend(GPU_BLEND_NONE);
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
       /* IME candidate window uses selection position. */
       if (!ime_reposition_window && boxes.size() > 0) {
         ime_reposition_window = true;
         ime_win_x = rect->xmin + boxes[0].min;
         ime_win_y = rect->ymin + U.pixelsize;
+      }
+#endif
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+      if (!is_num_but) {
+        selection_shape.xmin = rect->xmin + boxes[0].min;
+        selection_shape.ymin = rect->ymin + U.pixelsize;
+        selection_shape.xmax = std::min(rect->xmin + boxes[0].max, rect->xmax - 2);
+        selection_shape.ymax = rect->ymax - U.pixelsize;
       }
 #endif
     }
@@ -2010,7 +2024,7 @@ static void widget_draw_text(const uiFontStyle *fstyle,
 
       immUnbindProgram();
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
       /* IME candidate window uses cursor position. */
       if (!ime_reposition_window) {
         ime_reposition_window = true;
@@ -2018,16 +2032,93 @@ static void widget_draw_text(const uiFontStyle *fstyle,
         ime_win_y = rect->ymin + 3;
       }
 #endif
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+      if (!is_num_but) {
+        cursor_shape.xmin = rect->xmin + t;
+        cursor_shape.ymin = rect->ymin + U.pixelsize;
+        cursor_shape.xmax = rect->xmin + t + int(2.0f * U.pixelsize);
+        cursor_shape.ymax = rect->ymax - U.pixelsize;
+      }
+#endif
     }
 
-#ifdef WITH_INPUT_IME
-    /* IME cursor following. */
-    if (ime_reposition_window) {
-      ui_but_ime_reposition(but, ime_win_x, ime_win_y, false);
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
+    if (!ELEM(but->type, UI_BTYPE_NUM, UI_BTYPE_NUM_SLIDER)) {
+      /* IME cursor following. */
+      if (ime_reposition_window) {
+        ui_but_ime_reposition(but, ime_win_x, ime_win_y, false);
+      }
+      if (ime_data && ime_data->composite_len) {
+        /* Composite underline. */
+        widget_draw_text_ime_underline(fstyle, wcol, but, rect, ime_data, drawstr);
+      }
     }
-    if (ime_data && ime_data->composite_len) {
-      /* Composite underline. */
-      widget_draw_text_ime_underline(fstyle, wcol, but, rect, ime_data, drawstr);
+#endif
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+    if (!is_num_but) {
+
+      /* if not `ime_data`, align candiate window according selection or cursor.
+       * otherwise (is compositing), algin it according ime selction start.
+       */
+
+      bool ime_reposition_window = false;
+      int ime_creat_l, ime_creat_b, ime_creat_w, ime_creat_h;
+
+      if (!ime_data) {
+        if (selection_shape.xmax - selection_shape.xmin != 0) {
+          /* IME candidate window uses selection position. */
+          ime_reposition_window = true;
+          ime_creat_l = selection_shape.xmin;
+          ime_creat_b = selection_shape.ymin;
+          ime_creat_w = int(2.0f * U.pixelsize);  // use the width of cursor
+          ime_creat_h = selection_shape.ymax - selection_shape.ymin;
+        }
+        else if (cursor_shape.xmax - cursor_shape.xmin != 0) {
+          /* IME candidate window uses cursor position. */
+          ime_reposition_window = true;
+          ime_creat_l = cursor_shape.xmin;
+          ime_creat_b = cursor_shape.ymin;
+          ime_creat_w = cursor_shape.xmax - cursor_shape.xmin;
+          ime_creat_h = cursor_shape.ymax - cursor_shape.ymin;
+        }
+      }
+      else {
+        /* IME candidate window uses the position of target start. */
+
+        if (drawstr[0] != 0) {
+          /* Caculate the pos of the ime target start.
+           * The logical is same as cursor above, except the `str_offset` param. */
+          int t = BLF_str_offset_to_cursor(fstyle->uifont_id,
+                                           drawstr + but->ofs,
+                                           UI_MAX_DRAW_STR,
+                                           (but->pos + ime_data->sel_start) - but->ofs,
+                                           U.pixelsize + U.pixelsize);
+
+          ime_reposition_window = true;
+          ime_creat_l = (rect->xmin + t) - U.pixelsize;
+          ime_creat_b = rect->ymin + U.pixelsize;
+          ime_creat_w = ((rect->xmin + t) + U.pixelsize) - ime_creat_l;
+          ime_creat_h = (rect->ymax - U.pixelsize) - ime_creat_b;
+        }
+      }
+
+      if (ime_reposition_window) {
+        ui_but_ime_reposition(but,
+                              ime_creat_l,
+                              ime_creat_b,
+                              ime_creat_w,
+                              ime_creat_h,
+                              rect->xmin,
+                              rect->ymin,
+                              rect->xmax - rect->xmin,
+                              rect->ymax - rect->ymin);
+      }
+
+      if (ime_data && ime_data->composite_len) {
+        /* Composite underline. */
+        widget_draw_text_ime_underline(fstyle, wcol, but, rect, ime_data, drawstr);
+      }
     }
 #endif
   }
