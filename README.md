@@ -7,7 +7,7 @@ Blender 输入法增强版
 
 相关链接：
 
-- [项目说明文档](待补充)
+- [项目说明文档](./docs_ime_aware/项目说明文档/Index.md)
 
 - [技术说明文档](./docs_ime_aware/技术说明文档/Index.md)
 
