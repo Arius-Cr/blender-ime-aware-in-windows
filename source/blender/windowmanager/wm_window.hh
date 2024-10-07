@@ -111,9 +111,43 @@ void wm_cursor_position_to_ghost_screen_coords(wmWindow *win, int *x, int *y);
 void wm_cursor_position_from_ghost_client_coords(wmWindow *win, int *x, int *y);
 void wm_cursor_position_to_ghost_client_coords(wmWindow *win, int *x, int *y);
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
 void wm_window_IME_begin(wmWindow *win, int x, int y, int w, int h, bool complete);
 void wm_window_IME_end(wmWindow *win);
+#endif
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+void wm_window_IME_begin(wmWindow *win, wmIMEInvoker invoker);
+void wm_window_IME_end(wmWindow *win);
+bool wm_window_IME_is_enable(wmWindow *win);
+wmIMEInvoker wm_window_IME_get_invoker(wmWindow *win);
+bool wm_window_IME_is_composing(wmWindow *win);
+void wm_window_IME_complete(wmWindow *win);
+void wm_window_IME_cancel(wmWindow *win);
+/**
+ * Move the IME (Conversion) Candidate Window.
+ * \param windowhandle: The wmWindow of the caller.
+ * \param c_l: The left of the caret in wmWindow coordinates.
+ * \param c_b: The bottom of the caret in wmWindow coordinates.
+ * \param c_w: The width of the caret.
+ * \param c_h: The height of the caret.
+ */
+void wm_window_IME_move(wmWindow *win, int c_l, int c_b, int c_w, int c_h);
+/**
+ * Move the IME (Conversion) Candidate Window.
+ * \param windowhandle: The wmWindow of the caller.
+ * \param c_l: The left of the caret in wmWindow coordinates.
+ * \param c_b: The top of the caret in wmWindow coordinates.
+ * \param c_w: The width of the caret.
+ * \param c_h: The height of the caret.
+ * \param e_l: The left of the exclude rectangle in wmWindow coordinates.
+ * \param e_t: The top of the exclude rectangle in wmWindow coordinates.
+ * \param e_w: The width of the exclude rectangle.
+ * \param e_h: The height of the exclude rectangle.
+ */
+void wm_window_IME_move_with_exclude(
+    wmWindow *win, int c_l, int c_b, int c_w, int c_h, int e_l, int e_b, int e_w, int e_h);
+void wm_window_IME_start_composition_by_char(wmWindow *win, char c);
 #endif
 
 /**

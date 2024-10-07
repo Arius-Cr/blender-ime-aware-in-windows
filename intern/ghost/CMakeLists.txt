@@ -5,6 +5,10 @@
 set(INC
   PUBLIC .
   ../../source/blender/imbuf
+
+  # BEGIN [用于测试，不推送]
+  ../../source/blender/blenkernel
+  # END
 )
 
 set(INC_SYS

@@ -329,6 +329,10 @@ struct uiBut {
   /* pointer back */
   uiBlock *block = nullptr;
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  wmIMEData *ime_data = nullptr;
+#endif
+
   uiBut() = default;
   /** Performs a mostly shallow copy for now. Only contained C++ types are deep copied. */
   uiBut(const uiBut &other) = default;
@@ -1220,8 +1224,16 @@ bool ui_but_rna_equals_ex(const uiBut *but,
 uiBut *ui_but_find_old(uiBlock *block_old, const uiBut *but_new);
 uiBut *ui_but_find_new(uiBlock *block_new, const uiBut *but_old);
 
-#ifdef WITH_INPUT_IME
-void ui_but_ime_reposition(uiBut *but, int x, int y, bool complete);
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+void ui_but_ime_reposition(uiBut *but,
+                           int creat_l,
+                           int creat_b,
+                           int creat_w,
+                           int creat_h,
+                           int exclude_l,
+                           int exclude_b,
+                           int exclude_w,
+                           int exclude_h);
 const wmIMEData *ui_but_ime_data_get(uiBut *but);
 #endif
 

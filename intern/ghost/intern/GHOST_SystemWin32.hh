@@ -330,7 +330,11 @@ class GHOST_SystemWin32 : public GHOST_System {
    * \param r_key_down: Set true when the key is pressed, otherwise false.
    * \return The GHOST key (GHOST_kKeyUnknown if no match).
    */
-  GHOST_TKey hardKey(RAWINPUT const &raw, bool *r_key_down);
+  GHOST_TKey hardKey(const USHORT msg_,
+                      const USHORT vk_,
+                      const USHORT make_code_,
+                      const USHORT flags_,
+                      bool *r_key_down);
 
   /**
    * Creates mouse button event.
@@ -376,6 +380,12 @@ class GHOST_SystemWin32 : public GHOST_System {
    */
   static void processWheelEvent(GHOST_WindowWin32 *window, WPARAM wParam, LPARAM lParam);
 
+  static GHOST_EventKey *processKeyEvent(GHOST_WindowWin32 *window,
+                                          const USHORT msg_,
+                                          const USHORT vk_,
+                                          const USHORT make_code_,
+                                          const USHORT flags_,
+                                          bool *is_key_down_repeat);
   /**
    * Creates a key event and updates the key data stored locally (m_modifierKeys).
    * In most cases this is a straightforward conversion of key codes.
@@ -383,7 +393,9 @@ class GHOST_SystemWin32 : public GHOST_System {
    * \param window: The window receiving the event (the active window).
    * \param raw: RawInput structure with detailed info about the key event.
    */
-  static GHOST_EventKey *processKeyEvent(GHOST_WindowWin32 *window, RAWINPUT const &raw);
+  static GHOST_EventKey *processKeyEvent_raw(GHOST_WindowWin32 *window, RAWINPUT const &raw);
+
+  static GHOST_EventKey *processKeyEvent_key(GHOST_WindowWin32 *window, USHORT msg, WPARAM wparam, LPARAM lparam);
 
   /**
    * Process special keys `VK_OEM_*`, to see if current key layout

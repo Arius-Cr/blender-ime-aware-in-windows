@@ -12,19 +12,23 @@ class Params:
         "action_mouse",
         "tool_mouse",
         "use_mouse_emulate_3_button",
-
+        
+        # Add keymap items for IME text input event on Windows.
+        "use_ime_input_win32",
     )
 
     def __init__(
             self,
             *,
             use_mouse_emulate_3_button=False,
+            use_ime_input_win32=False
     ):
         self.tool_mouse = 'LEFTMOUSE'
         self.select_mouse = 'LEFTMOUSE'
         self.select_mouse_value = 'CLICK'
         self.action_mouse = 'RIGHTMOUSE'
         self.use_mouse_emulate_3_button = use_mouse_emulate_3_button
+        self.use_ime_input_win32 = use_ime_input_win32
 
 
 # ------------------------------------------------------------------------------
@@ -1746,6 +1750,12 @@ def km_text(params):
         ("text.insert", {"type": 'TEXTINPUT', "value": 'ANY', "any": True, "repeat": True}, None),
     ])
 
+    if params.use_ime_input_win32:
+        items.extend([
+            ("text.ime_input", {"type": 'IME_COMPOSITE_START', "value": 'ANY', "any": True, "repeat": True}, None),
+            ("text.ime_insert", {"type": 'IME_COMPOSITE_EVENT', "value": 'ANY', "any": True, "repeat": True}, None),
+        ])
+
     return keymap
 
 
@@ -1997,6 +2007,12 @@ def km_console(params):
         *_template_items_context_menu("CONSOLE_MT_context_menu", {"type": 'RIGHTMOUSE', "value": 'PRESS'}),
         ("console.insert", {"type": 'TEXTINPUT', "value": 'ANY', "any": True, "repeat": True}, None),
     ])
+
+    if params.use_ime_input_win32:
+        items.extend([
+            ("console.ime_input", {"type": 'IME_COMPOSITE_START', "value": 'ANY', "any": True, "repeat": True}, None),
+            ("console.ime_insert", {"type": 'IME_COMPOSITE_EVENT', "value": 'ANY', "any": True, "repeat": True}, None),
+        ])
 
     return keymap
 
@@ -3335,6 +3351,12 @@ def km_font(params):
          {"properties": [("accent", True)]}),
         *_template_items_context_menu("VIEW3D_MT_edit_font_context_menu", {"type": 'RIGHTMOUSE', "value": 'PRESS'}),
     ])
+
+    if params.use_ime_input_win32:
+        items.extend([
+            ("font.ime_input", {"type": 'IME_COMPOSITE_START', "value": 'ANY', "any": True, "repeat": True}, None),
+            ("font.ime_insert", {"type": 'IME_COMPOSITE_EVENT', "value": 'ANY', "any": True, "repeat": True}, None),
+        ])
 
     return keymap
 

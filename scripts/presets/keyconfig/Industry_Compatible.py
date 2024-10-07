@@ -22,12 +22,16 @@ industry_compatible = bpy.utils.execfile(os.path.join(DIRNAME, "keymap_data", "i
 
 def load():
     from sys import platform
+    import bpy
     from bl_keymap_utils.io import keyconfig_init_from_data
 
     prefs = bpy.context.preferences
 
     kc = bpy.context.window_manager.keyconfigs.new(IDNAME)
-    params = industry_compatible.Params(use_mouse_emulate_3_button=prefs.inputs.use_mouse_emulate_3_button)
+    params = industry_compatible.Params(
+        use_mouse_emulate_3_button=prefs.inputs.use_mouse_emulate_3_button,
+        use_ime_input_win32=(platform == 'win32' and bpy.app.build_options.input_ime),
+    )
     keyconfig_data = industry_compatible.generate_keymaps(params)
 
     if platform == "darwin":

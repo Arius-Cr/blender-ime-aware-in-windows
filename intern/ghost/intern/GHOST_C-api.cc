@@ -971,7 +971,7 @@ uint16_t GHOST_GetDPIHint(GHOST_WindowHandle windowhandle)
   return window->getDPIHint();
 }
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
 
 void GHOST_BeginIME(
     GHOST_WindowHandle windowhandle, int32_t x, int32_t y, int32_t w, int32_t h, bool complete)
@@ -987,6 +987,78 @@ void GHOST_EndIME(GHOST_WindowHandle windowhandle)
 }
 
 #endif /* WITH_INPUT_IME */
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+
+void GHOST_BeginIME(GHOST_WindowHandle windowhandle, GHOST_IMEInvoker invoker)
+{
+  GHOST_IWindow *window = (GHOST_IWindow *)windowhandle;
+  window->beginIME(invoker);
+}
+
+void GHOST_EndIME(GHOST_WindowHandle windowhandle)
+{
+  GHOST_IWindow *window = (GHOST_IWindow *)windowhandle;
+  window->endIME();
+}
+
+bool GHOST_IsIMEEnabled(GHOST_WindowHandle windowhandle)
+{
+  GHOST_IWindow *window = (GHOST_IWindow *)windowhandle;
+  return window->isIMEEnabled();
+}
+
+GHOST_IMEInvoker GHOST_GetIMEInvoker(GHOST_WindowHandle windowhandle)
+{
+  GHOST_IWindow *window = (GHOST_IWindow *)windowhandle;
+  return window->getIMEInvoker();
+}
+
+bool GHOST_IsIMEComposing(GHOST_WindowHandle windowhandle)
+{
+  GHOST_IWindow *window = (GHOST_IWindow *)windowhandle;
+  return window->isIMEComposing();
+}
+
+void GHOST_CompleteIME(GHOST_WindowHandle windowhandle)
+{
+  GHOST_IWindow *window = (GHOST_IWindow *)windowhandle;
+  window->completeIME();
+}
+
+void GHOST_CancelIME(GHOST_WindowHandle windowhandle)
+{
+  GHOST_IWindow *window = (GHOST_IWindow *)windowhandle;
+  window->cancelIME();
+}
+
+void GHOST_MoveIME(
+    GHOST_WindowHandle windowhandle, int32_t c_l, int32_t c_t, int32_t c_w, int32_t c_h)
+{
+  GHOST_IWindow *window = (GHOST_IWindow *)windowhandle;
+  window->moveIME(c_l, c_t, c_w, c_h);
+}
+
+extern void GHOST_MoveIMEWithExclude(GHOST_WindowHandle windowhandle,
+                                     int32_t c_l,
+                                     int32_t c_t,
+                                     int32_t c_w,
+                                     int32_t c_h,
+                                     int32_t e_l,
+                                     int32_t e_t,
+                                     int32_t e_w,
+                                     int32_t e_h)
+{
+  GHOST_IWindow *window = (GHOST_IWindow *)windowhandle;
+  window->moveIMEWithExclude(c_l, c_t, c_w, c_h, e_l, e_t, e_w, e_h);
+}
+
+extern void GHOST_StartIMECompositionByChar(GHOST_WindowHandle windowhandle, char c) {
+  GHOST_IWindow *window = (GHOST_IWindow *)windowhandle;
+  window->startIMEComplsitionByChar(c);
+}
+
+#endif /* WITH_INPUT_IME && WIN32 */
 
 #ifdef WITH_XR_OPENXR
 

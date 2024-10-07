@@ -82,6 +82,9 @@ static const EnumPropertyItem event_timer_type_items[] = {
 
 static const EnumPropertyItem event_textinput_type_items[] = {
     {KM_TEXTINPUT, "TEXTINPUT", 0, "Text Input", ""},
+    {WM_IME_COMPOSITE_START, "IME_COMPOSITE_START", 0, "IME Composite Start", "(Windows only)"},
+    {WM_IME_COMPOSITE_EVENT, "IME_COMPOSITE_EVENT", 0, "IME Composite Update", "(Windows only)"},
+    {WM_IME_COMPOSITE_END, "IME_COMPOSITE_END", 0, "IME Composite End", "(Windows only)"},
     {0, nullptr, 0, nullptr, nullptr},
 };
 
@@ -367,6 +370,9 @@ const EnumPropertyItem rna_enum_event_type_items[] = {
      BLI_STR_UTF8_BLACK_RIGHT_POINTING_DOUBLE_TRIANGLE_WITH_VERTICAL_BAR},
     RNA_ENUM_ITEM_SEPR,
     {KM_TEXTINPUT, "TEXTINPUT", 0, "Text Input", "TxtIn"},
+    {WM_IME_COMPOSITE_START, "IME_COMPOSITE_START", 0, "IME composite start", "(Windows only)"},
+    {WM_IME_COMPOSITE_END, "IME_COMPOSITE_END", 0, "IME composite end", "(Windows only)"},
+    {WM_IME_COMPOSITE_EVENT, "IME_COMPOSITE_EVENT", 0, "IME composite event", "(Windows only)"},
     RNA_ENUM_ITEM_SEPR,
     {WINDEACTIVATE, "WINDOW_DEACTIVATE", 0, "Window Deactivate", ""},
     {TIMER, "TIMER", 0, "Timer", "Tmr"},

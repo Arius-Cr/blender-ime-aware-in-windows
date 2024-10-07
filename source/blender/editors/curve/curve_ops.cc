@@ -120,6 +120,11 @@ void ED_operatortypes_curve()
   WM_operatortype_append(CURVE_OT_cyclic_toggle);
 
   WM_operatortype_append(CURVE_OT_match_texture_space);
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  WM_operatortype_append(FONT_OT_ime_input);
+  WM_operatortype_append(FONT_OT_ime_insert);
+#endif
 }
 
 void ED_operatormacros_curve()
