@@ -1,38 +1,24 @@
-<!--
-Keep this document short & concise,
-linking to external resources instead of including content in-line.
-See 'release/text/readme.html' for the end user read-me.
--->
-
-Blender
+Blender 输入法增强版
 =======
 
-Blender is the free and open source 3D creation suite.
-It supports the entirety of the 3D pipeline-modeling, rigging, animation, simulation, rendering, compositing,
-motion tracking and video editing.
+本仓库仅用于展示 Blender 输入法增强版的源码和收集相关问题反馈。当 “输入法增强版” 项目结束后，本仓库将被删除。
 
-![Blender screenshot](https://code.blender.org/wp-content/uploads/2018/12/springrg.jpg "Blender screenshot")
+详细请参考项目说明文档。
 
-Project Pages
--------------
+相关链接：
 
-- [Main Website](http://www.blender.org)
-- [Reference Manual](https://docs.blender.org/manual/en/latest/index.html)
-- [User Community](https://www.blender.org/community/)
+- [项目说明文档](待补充)
 
-Development
------------
+- [技术说明文档](./docs_ime_aware/技术说明文档/Index.md)
 
-- [Build Instructions](https://developer.blender.org/docs/handbook/building_blender/)
-- [Code Review & Bug Tracker](https://projects.blender.org)
-- [Developer Forum](https://devtalk.blender.org)
-- [Developer Documentation](https://developer.blender.org/docs/)
+---
 
+ime-aware-in-windows
 
-License
--------
+    输入法增强版分支。
 
-Blender as a whole is licensed under the GNU General Public License, Version 3.
-Individual files may have a different, but compatible license.
+    名称类似的分支，如“ime-aware-in-windows-4.2”，则为基于 4.2.X 的输入法增强版。
 
-See [blender.org/about/license](https://www.blender.org/about/license) for details.
+ime-aware-in-windows-docs
+
+    技术说明文档等。阅读源码前最好看一下该文档，能够帮助你快速了解源码之间的关系。
