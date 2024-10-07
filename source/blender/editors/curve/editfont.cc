@@ -59,6 +59,11 @@
 
 #include "curve_intern.h"
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+#  include "printx.h"
+#  include "wm_window.hh"
+#endif
+
 #define MAXTEXT 32766
 
 static int kill_selection(Object *obedit, int ins);
@@ -394,6 +399,26 @@ static int insert_into_textbuf(Object *obedit, uintptr_t c)
     return 1;
   }
   return 0;
+}
+
+static int insert_text_into_textbuf(Object *obedit, char *inserted_utf8)
+{
+  char32_t *inserted_text;
+  int a, len;
+
+  len = BLI_strlen_utf8(inserted_utf8);
+
+  inserted_text = static_cast<char32_t *>(
+      MEM_callocN(sizeof(char32_t) * (len + 1), "insert_text_into_textbuf"));
+  len = BLI_str_utf8_as_utf32(inserted_text, inserted_utf8, MAXTEXT);
+
+  for (a = 0; a < len; a++) {
+    insert_into_textbuf(obedit, inserted_text[a]);
+  }
+
+  MEM_freeN(inserted_text);
+
+  return len;
 }
 
 static void text_update_edited(bContext *C, Object *obedit, const eEditFontMode mode)
@@ -1811,28 +1836,19 @@ static int insert_text_exec(bContext *C, wmOperator *op)
 {
   Object *obedit = CTX_data_edit_object(C);
   char *inserted_utf8;
-  char32_t *inserted_text;
-  int a, len;
 
   if (!RNA_struct_property_is_set(op->ptr, "text")) {
     return OPERATOR_CANCELLED;
   }
 
   inserted_utf8 = RNA_string_get_alloc(op->ptr, "text", nullptr, 0, nullptr);
-  len = BLI_strlen_utf8(inserted_utf8);
 
-  inserted_text = static_cast<char32_t *>(
-      MEM_callocN(sizeof(char32_t) * (len + 1), "FONT_insert_text"));
-  len = BLI_str_utf8_as_utf32(inserted_text, inserted_utf8, MAXTEXT);
+  kill_selection(obedit, 0);
 
-  for (a = 0; a < len; a++) {
-    insert_into_textbuf(obedit, inserted_text[a]);
-  }
+  insert_text_into_textbuf(obedit, inserted_utf8);
 
-  MEM_freeN(inserted_text);
   MEM_freeN(inserted_utf8);
 
-  kill_selection(obedit, len);
   text_update_edited(C, obedit, FO_EDIT);
 
   return OPERATOR_FINISHED;
@@ -2600,3 +2616,286 @@ bool ED_curve_editfont_select_pick(
 }
 
 /** \} */
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+
+struct ImeInputData {
+  /* The charcter index of the composite string in EditFont. */
+  int startc_i;
+  int endc_i;
+  int clause_startc_i;
+  int clause_endc_i;
+};
+
+void ED_curve_editfont_reposition_ime_window(wmWindow *win, ScrArea * /*area*/, ARegion *region)
+{
+  int ime_window_pos[2];
+
+  ime_window_pos[0] = region->winrct.xmin + (int)(region->winx * 0.4);
+  ime_window_pos[1] = region->winrct.ymin;
+
+  wm_window_IME_move(win, ime_window_pos[0], ime_window_pos[1], 0, 0);
+}
+
+/* -------------------------------------------------------------------- */
+/** \name Handle IME Composition Events Operator
+ * \{ */
+
+/**
+ * Note: FONT_OT_ime_input is not a `OPTYPE_UNDO` operator,
+ * see FONT_OT_ime_insert.
+ */
+
+static void ime_input_clean(bContext * /*C*/, wmOperator *op)
+{
+  ImeInputData *data = static_cast<ImeInputData *>(op->customdata);
+
+  MEM_freeN(data);
+
+  op->customdata = nullptr;
+}
+
+static int ime_input_invoke(bContext *C, wmOperator *op, const wmEvent *event)
+{
+  if (event->type == WM_IME_COMPOSITE_START) {
+    printx("FONT_OT_ime_input: start\n");
+
+    Object *obedit = CTX_data_edit_object(C);
+    Curve *cu = static_cast<Curve *>(obedit->data);
+    EditFont *ef = cu->editfont;
+
+    /* Delete selection. */
+
+    kill_selection(obedit, 0);
+
+    /* Initialize IME input data. */
+
+    ImeInputData *data = static_cast<ImeInputData *>(MEM_callocN(sizeof(ImeInputData), __func__));
+    op->customdata = data;
+    data->startc_i = ef->pos;
+    data->endc_i = data->startc_i;
+    data->clause_startc_i = -1;
+    data->clause_endc_i = -1;
+
+    text_update_edited(C, obedit, FO_EDIT);
+
+    WM_event_add_modal_handler(C, op);
+    return OPERATOR_RUNNING_MODAL;
+  }
+  else if (event->type == WM_IME_COMPOSITE_EVENT) {
+    /* Capture the WM_IME_COMPOSITE_EVENT event that not between START and END,
+     * and then insert the result string carried by the event.
+     * This isolated event can occur when using the old (ie. compatibility mode)
+     * Microsoft Korean IME.
+     */
+
+    /* Call operator to enable Undo/Redo */
+    WM_operator_name_call(C, "FONT_OT_ime_insert", WM_OP_INVOKE_REGION_WIN, nullptr, event);
+  }
+
+  return OPERATOR_CANCELLED;
+}
+
+static int ime_input_modal(bContext *C, wmOperator *op, const wmEvent *event)
+{
+  wmWindow *win;
+  const wmIMEData *ime_data;
+  ImeInputData *data;
+
+  Object *obedit;
+  Curve *cu;
+  EditFont *ef;
+
+  bool changed = false;
+
+  if (ELEM(event->type, WM_IME_COMPOSITE_EVENT, WM_IME_COMPOSITE_END)) {
+    win = CTX_wm_window(C);
+    if (event->type == WM_IME_COMPOSITE_EVENT) {
+      ime_data = static_cast<const wmIMEData *>(event->customdata);
+    }
+    data = static_cast<ImeInputData *>(op->customdata);
+
+    obedit = CTX_data_edit_object(C);
+    cu = static_cast<Curve *>(obedit->data);
+    ef = cu->editfont;
+
+    /* Delete previous composite string. */
+    if (data->endc_i != data->startc_i) {
+      printx(CCFG "FONT_OT_ime_input: delete previous composite string");
+
+      ef->selstart = data->startc_i + 1;
+      ef->selend = data->endc_i;
+      ef->pos = data->endc_i;
+      kill_selection(obedit, 0);
+
+      data->endc_i = data->startc_i;
+      data->clause_startc_i = -1;
+      data->clause_endc_i = -1;
+
+      changed = true;
+    }
+  }
+
+  if (event->type == WM_IME_COMPOSITE_EVENT) {
+
+    /* Insert result string. */
+    if (ime_data->result_len != 0) {
+      printx(CCFG "FONT_OT_ime_input: insert result string");
+      printx(CCFG "  result_len: %zu", ime_data->result_len);
+
+      /* Call operator to enable Undo/Redo */
+      WM_operator_name_call(C, "FONT_OT_ime_insert", WM_OP_INVOKE_REGION_WIN, nullptr, event);
+
+      /* Reinitialize IME input data. */
+      data->startc_i = ef->pos;
+      data->endc_i = data->startc_i;
+      data->clause_startc_i = -1;
+      data->clause_endc_i = -1;
+    }
+
+    /**
+     * Insert composite string.
+     * - Souround the composite string with "[]" (ie. ABC -> [ABC]) to make it more recognizable.
+     * - Use selection to hightlight the clause string.
+     * The best practice is to underline the composite string, but it is not easily to do that.
+     */
+    if (ime_data->composite_len != 0) {
+      printx(CCFG "FONT_OT_ime_input: insert composite string");
+      printx(CCFG "  composite_len: %zu", ime_data->composite_len);
+
+      char *inserted_utf8;
+      int inserted_utf8_lenb;
+      int inserted_text_lenu;
+
+      inserted_utf8_lenb = ime_data->composite_len + 2 + 1;
+      inserted_utf8 = (char *)MEM_mallocN(inserted_utf8_lenb,
+                                          "FONT_OT_ime_input composite string");
+      inserted_utf8[0] = '[';
+      memcpy(&inserted_utf8[1], ime_data->str_composite, ime_data->composite_len);
+      inserted_utf8[inserted_utf8_lenb - 2] = ']';
+      inserted_utf8[inserted_utf8_lenb - 1] = '\0';
+
+      inserted_text_lenu = insert_text_into_textbuf(obedit, inserted_utf8);
+
+      MEM_freeN(inserted_utf8);
+
+      data->endc_i = data->startc_i + inserted_text_lenu;
+
+      if (ime_data->sel_start != -1 && ime_data->sel_end != -1) {
+        data->clause_startc_i = data->startc_i + 1 +
+                                BLI_str_utf8_offset_to_index(ime_data->str_composite,
+                                                             ime_data->composite_len,
+                                                             ime_data->sel_start);
+        data->clause_endc_i = data->startc_i + 1 +
+                              BLI_str_utf8_offset_to_index(ime_data->str_composite,
+                                                           ime_data->composite_len,
+                                                           ime_data->sel_end);
+      }
+      else {
+        data->clause_startc_i = -1;
+        data->clause_endc_i = -1;
+      }
+
+      ef->pos = data->startc_i + 1 +
+                BLI_str_utf8_offset_to_index(
+                    ime_data->str_composite, ime_data->composite_len, ime_data->cursor_pos);
+
+      changed = true;
+    }
+
+    if (changed) {
+      text_update_edited(C, obedit, FO_EDIT);
+    }
+  }
+
+  else if (event->type == WM_IME_COMPOSITE_END) {
+    printx(CCFG "FONT_OT_ime_input: end");
+
+    ime_input_clean(C, op);
+
+    return OPERATOR_FINISHED;
+  }
+
+  else if (ISMOUSE_BUTTON(event->type)) {
+    printx(CCFG "FONT_OT_ime_input: MOUSE COMPLETE COMPOSITE");
+
+    wm_window_IME_complete(CTX_wm_window(C));
+  }
+
+  return OPERATOR_RUNNING_MODAL;
+}
+
+void FONT_OT_ime_input(wmOperatorType *ot)
+{
+  /* identifiers */
+  ot->name = "IME Input";
+  ot->idname = "FONT_OT_ime_input";
+  ot->description = "Handle IME composition events (Windows only)";
+
+  /* api callbacks */
+  ot->invoke = ime_input_invoke;
+  ot->modal = ime_input_modal;
+  ot->cancel = ime_input_clean;
+  ot->poll = ED_operator_editfont;
+
+  /* flags */
+  ot->flag = OPTYPE_INTERNAL;
+}
+
+/* -------------------------------------------------------------------- */
+/** \name Insert IME Result String Operator
+ * \{ */
+
+/**
+ * Note: FONT_OT_ime_input will call this operator to insert the IME result string,
+ * so the inserted string can be Undo/Redo by User.
+ */
+
+static int ime_insert_invoke(bContext *C, wmOperator * /*op*/, const wmEvent *event)
+{
+  wmWindow *win;
+  const wmIMEData *ime_data;
+
+  Object *obedit;
+
+  if (event->type == WM_IME_COMPOSITE_EVENT) {
+    printx(CCFG "ime_text_insert_invoke");
+
+    win = CTX_wm_window(C);
+    ime_data = static_cast<const wmIMEData *>(event->customdata);
+
+    obedit = CTX_data_edit_object(C);
+
+    if (ime_data->result_len) {
+
+      kill_selection(obedit, 0);
+
+      insert_text_into_textbuf(obedit, ime_data->str_result);
+
+      text_update_edited(C, obedit, FO_EDIT);
+
+      return OPERATOR_FINISHED;
+    }
+  }
+
+  return OPERATOR_CANCELLED;
+}
+
+void FONT_OT_ime_insert(wmOperatorType *ot)
+{
+  /* identifiers */
+  ot->name = "Insert (IME)";
+  ot->idname = "FONT_OT_ime_insert";
+  ot->description = "Insert IME result string. (Windows only)";
+
+  /* api callbacks */
+  ot->invoke = ime_insert_invoke;
+  ot->poll = ED_operator_editfont;
+
+  /* flags */
+  ot->flag = OPTYPE_INTERNAL | OPTYPE_UNDO;
+}
+
+/** \} */
+
+#endif /* WITH_INPUT_IME && WIN32 */

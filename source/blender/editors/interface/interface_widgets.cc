@@ -46,6 +46,7 @@
 
 #ifdef WITH_INPUT_IME
 #  include "WM_types.hh"
+#  include "printx.h"
 #endif
 
 /* -------------------------------------------------------------------- */
@@ -1938,7 +1939,15 @@ static void widget_draw_text(const uiFontStyle *fstyle,
   if (but->editstr && but->pos != -1) {
     int but_pos_ofs;
 
-#ifdef WITH_INPUT_IME
+    rcti selection_shape;
+    rcti but_cursor_shape;
+
+    selection_shape.xmin = -1;
+    but_cursor_shape.xmin = -1;
+
+    const bool is_mun_but = ELEM(but->type, UI_BTYPE_NUM, UI_BTYPE_NUM_SLIDER);
+
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
     bool ime_reposition_window = false;
     int ime_win_x, ime_win_y;
 #endif
@@ -1965,7 +1974,6 @@ static void widget_draw_text(const uiFontStyle *fstyle,
             immVertexFormat(), "pos", GPU_COMP_I32, 2, GPU_FETCH_INT_TO_FLOAT);
         immBindBuiltinProgram(GPU_SHADER_3D_UNIFORM_COLOR);
 
-        rcti selection_shape;
         selection_shape.xmin = rect->xmin + selsta_draw;
         selection_shape.xmax = min_ii(rect->xmin + selwidth_draw, rect->xmax - 2);
         selection_shape.ymin = rect->ymin + U.pixelsize;
@@ -1980,7 +1988,7 @@ static void widget_draw_text(const uiFontStyle *fstyle,
         immUnbindProgram();
         GPU_blend(GPU_BLEND_NONE);
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
         /* IME candidate window uses selection position. */
         if (!ime_reposition_window) {
           ime_reposition_window = true;
@@ -2064,7 +2072,6 @@ static void widget_draw_text(const uiFontStyle *fstyle,
       immUniformThemeColor(TH_WIDGET_TEXT_CURSOR);
 
       /* Shape of the cursor for drawing. */
-      rcti but_cursor_shape;
       but_cursor_shape.xmin = (rect->xmin + t) - U.pixelsize;
       but_cursor_shape.ymin = rect->ymin + U.pixelsize;
       but_cursor_shape.xmax = (rect->xmin + t) + U.pixelsize;
@@ -2079,7 +2086,7 @@ static void widget_draw_text(const uiFontStyle *fstyle,
 
       immUnbindProgram();
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
       /* IME candidate window uses cursor position. */
       if (!ime_reposition_window) {
         ime_reposition_window = true;
@@ -2089,14 +2096,130 @@ static void widget_draw_text(const uiFontStyle *fstyle,
 #endif
     }
 
-#ifdef WITH_INPUT_IME
-    /* IME cursor following. */
-    if (ime_reposition_window) {
-      ui_but_ime_reposition(but, ime_win_x, ime_win_y, false);
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
+    if (!is_mun_but) {
+      /* IME cursor following. */
+      if (ime_reposition_window) {
+        ui_but_ime_reposition(but, ime_win_x, ime_win_y, false);
+      }
+      if (ime_data && ime_data->composite_len) {
+        /* Composite underline. */
+        widget_draw_text_ime_underline(fstyle, wcol, but, rect, ime_data, drawstr);
+      }
     }
-    if (ime_data && ime_data->composite_len) {
-      /* Composite underline. */
-      widget_draw_text_ime_underline(fstyle, wcol, but, rect, ime_data, drawstr);
+#endif
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+    if (!is_mun_but) {
+
+      bool ime_reposition_window = false;
+      int ime_creat_l, ime_creat_b, ime_creat_w, ime_creat_h;
+
+      /* if not `ime_data`, align candiate window according selection or cursor.
+       * otherwise (is compositing), algin it according ime selction start.
+       */
+
+      if (!ime_data) {
+        if (selection_shape.xmin != -1) {
+          /* IME candidate window uses selection position. */
+          ime_reposition_window = true;
+          ime_creat_l = selection_shape.xmin;
+          ime_creat_b = selection_shape.ymin;
+          ime_creat_w = 2 * U.pixelsize;  // use the width of cursor
+          ime_creat_h = selection_shape.ymax - selection_shape.ymin;
+        }
+        else if (but_cursor_shape.xmin != -1) {
+          /* IME candidate window uses cursor position. */
+          ime_reposition_window = true;
+          ime_creat_l = but_cursor_shape.xmin;
+          ime_creat_b = but_cursor_shape.ymin;
+          ime_creat_w = but_cursor_shape.xmax - but_cursor_shape.xmin;
+          ime_creat_h = but_cursor_shape.ymax - but_cursor_shape.ymin;
+        }
+      }
+      else {
+        /* IME candidate window uses the position of target start. */
+
+        /* Caculate the pos of the ime target start.
+         * The logical is same as cursor above, except the `pos` var. */
+        int t = 0;
+
+        if (drawstr[0] != 0) {
+          const int pos = (but->pos + ime_data->sel_start) - but->ofs;
+          rcti bounds;
+
+          /* Find right edge of previous character if available. */
+          int prev_right_edge = 0;
+          bool has_prev = false;
+          if (pos > 0) {
+            if (BLF_str_offset_to_glyph_bounds(
+                    fstyle->uifont_id, drawstr + but->ofs, pos - 1, &bounds))
+            {
+              if (bounds.xmax > bounds.xmin) {
+                prev_right_edge = bounds.xmax;
+              }
+              else {
+                /* Some characters, like space, have empty bounds. */
+                prev_right_edge = BLF_width(fstyle->uifont_id, drawstr + but->ofs, pos);
+              }
+              has_prev = true;
+            }
+          }
+
+          /* Find left edge of next character if available. */
+          int next_left_edge = 0;
+          bool has_next = false;
+          if (pos < strlen(drawstr + but->ofs)) {
+            if (BLF_str_offset_to_glyph_bounds(
+                    fstyle->uifont_id, drawstr + but->ofs, pos, &bounds))
+            {
+              next_left_edge = bounds.xmin;
+              has_next = true;
+            }
+          }
+
+          if (has_next && !has_prev) {
+            /* Left of the first character. */
+            t = next_left_edge - U.pixelsize;
+          }
+          else if (has_prev && !has_next) {
+            /* Right of the last character. */
+            t = prev_right_edge + U.pixelsize;
+          }
+          else if (has_prev && has_next) {
+            /* Middle of the string, so in between. */
+            t = (prev_right_edge + next_left_edge) / 2;
+          }
+        }
+
+        rcti but_target_start_shape;
+        but_target_start_shape.xmin = (rect->xmin + t) - U.pixelsize;
+        but_target_start_shape.ymin = rect->ymin + U.pixelsize;
+        but_target_start_shape.xmax = (rect->xmin + t) + U.pixelsize;
+        but_target_start_shape.ymax = rect->ymax - U.pixelsize;
+
+        ime_reposition_window = true;
+        ime_creat_l = but_target_start_shape.xmin;
+        ime_creat_b = but_target_start_shape.ymin;
+        ime_creat_w = but_target_start_shape.xmax - but_target_start_shape.xmin;
+        ime_creat_h = but_target_start_shape.ymax - but_target_start_shape.ymin;
+      }
+
+      if (ime_reposition_window) {
+        ui_but_ime_reposition(but,
+                              ime_creat_l,
+                              ime_creat_b,
+                              ime_creat_w,
+                              ime_creat_h,
+                              rect->xmin,
+                              rect->ymin,
+                              rect->xmax - rect->xmin,
+                              rect->ymax - rect->ymin);
+      }
+
+      if (ime_data && ime_data->composite_len) {
+        /* Composite underline. */
+        widget_draw_text_ime_underline(fstyle, wcol, but, rect, ime_data, drawstr);
+      }
     }
 #endif
   }

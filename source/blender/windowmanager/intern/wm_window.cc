@@ -85,6 +85,8 @@
 
 #include "UI_resources.hh"
 
+#include "printx.h"
+
 /* for assert */
 #ifndef NDEBUG
 #  include "BLI_threads.h"
@@ -516,6 +518,10 @@ void wm_window_title(wmWindowManager *wm, wmWindow *win)
   if (G_MAIN->recovered) {
     str += IFACE_(" (Recovered)");
   }
+
+  // START [用于测试，不推送]
+  str += " (输入法增强版，仅用于测试，请勿用于生产环境，否则后果自负)";
+  // END
 
   if (include_filepath) {
     str += " [";
@@ -2892,7 +2898,7 @@ bool WM_window_is_temp_screen(const wmWindow *win)
 /** \name Window IME API
  * \{ */
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
 /**
  * \note Keep in mind #wm_window_IME_begin is also used to reposition the IME window.
  */
@@ -2928,7 +2934,108 @@ void wm_window_IME_end(wmWindow *win)
   win->ime_data = nullptr;
   win->ime_data_is_composing = false;
 }
-#endif /* WITH_INPUT_IME */
+#endif /* WITH_INPUT_IME && !WIN32 */
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+void wm_window_IME_begin(wmWindow *win, wmIMEInvoker invoker)
+{
+  BLI_assert(win);
+
+  GHOST_BeginIME(static_cast<GHOST_WindowHandle>(win->ghostwin),
+                 static_cast<GHOST_IMEInvoker>(invoker));
+}
+
+void wm_window_IME_end(wmWindow *win)
+{
+  BLI_assert(win);
+
+  GHOST_EndIME(static_cast<GHOST_WindowHandle>(win->ghostwin));
+}
+
+wmIMEInvoker wm_window_IME_get_invoker(wmWindow *win)
+{
+  BLI_assert(win);
+
+  return static_cast<wmIMEInvoker>(
+      GHOST_GetIMEInvoker(static_cast<GHOST_WindowHandle>(win->ghostwin)));
+}
+
+bool wm_window_IME_is_enable(wmWindow *win)
+{
+  BLI_assert(win);
+
+  return GHOST_IsIMEEnabled(static_cast<GHOST_WindowHandle>(win->ghostwin));
+}
+
+bool wm_window_IME_is_composing(wmWindow *win)
+{
+  BLI_assert(win);
+
+  return GHOST_IsIMEComposing(static_cast<GHOST_WindowHandle>(win->ghostwin));
+}
+
+void wm_window_IME_complete(wmWindow *win)
+{
+  BLI_assert(win);
+
+  GHOST_CompleteIME(static_cast<GHOST_WindowHandle>(win->ghostwin));
+}
+
+void wm_window_IME_cancel(wmWindow *win)
+{
+  BLI_assert(win);
+
+  GHOST_CancelIME(static_cast<GHOST_WindowHandle>(win->ghostwin));
+}
+
+void wm_window_IME_move(wmWindow *win, int c_l, int c_b, int c_w, int c_h)
+{
+  BLI_assert(win);
+
+  /* Convert to native OS window coordinates. */
+  float fac = GHOST_GetNativePixelSize(static_cast<GHOST_WindowHandle>(win->ghostwin));
+
+  c_l /= fac;
+  c_b /= fac;
+  c_w /= fac;
+  c_h /= fac;
+  /* convert to top */
+  c_b = win->sizey - (c_b + c_h);
+
+  GHOST_MoveIME(static_cast<GHOST_WindowHandle>(win->ghostwin), c_l, c_b, c_w, c_h);
+}
+
+void wm_window_IME_move_with_exclude(
+    wmWindow *win, int c_l, int c_b, int c_w, int c_h, int e_l, int e_b, int e_w, int e_h)
+{
+  BLI_assert(win);
+
+  /* Convert to native OS window coordinates. */
+  float fac = GHOST_GetNativePixelSize(static_cast<GHOST_WindowHandle>(win->ghostwin));
+
+  c_l /= fac;
+  c_b /= fac;
+  c_w /= fac;
+  c_h /= fac;
+  /* convert to top */
+  c_b = win->sizey - (c_b + c_h);
+
+  e_l /= fac;
+  e_b /= fac;
+  e_w /= fac;
+  e_h /= fac;
+  /* convert to top */
+  e_b = win->sizey - (e_b + e_h);
+
+  GHOST_MoveIMEWithExclude(
+      static_cast<GHOST_WindowHandle>(win->ghostwin), c_l, c_b, c_w, c_h, e_l, e_b, e_w, e_h);
+}
+
+void wm_window_IME_start_composition_by_char(wmWindow *win, char c)
+{
+  GHOST_StartIMECompositionByChar(static_cast<GHOST_WindowHandle>(win->ghostwin), c);
+}
+#endif /* WITH_INPUT_IME && WIN32 */
 
 /** \} */
 

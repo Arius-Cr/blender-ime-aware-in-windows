@@ -26,6 +26,12 @@
 
 #include "../space_info/textview.hh"
 
+#include "BLF_api.hh"
+#include "Windows.h"
+
+
+#include "printx.h"
+
 static enum eTextViewContext_LineFlag console_line_data(TextViewContext *tvc,
                                                         uchar fg[4],
                                                         uchar /*bg*/[4],
@@ -252,4 +258,86 @@ int console_char_pick(SpaceConsole *sc, const ARegion *region, const int mval[2]
 
   console_textview_main__internal(sc, region, false, mval, &mval_pick_item, &r_mval_pick_offset);
   return r_mval_pick_offset;
+}
+
+static bool console_region_location_from_cursor(
+    const SpaceConsole *sc, const ARegion *region, const ConsoleLine *line, int curc, int r_pixel_co[2])
+{
+  int offl = 0, offc = 0;
+
+  /* copy from console_textview_main__internal() */
+
+  rcti draw_rect = {0};
+  rcti draw_rect_outer = {0};
+  console_textview_draw_rect_calc(region, &draw_rect, &draw_rect_outer);
+  int lheight = sc->lheight * UI_SCALE_FAC;
+
+  /* copy from textview_draw() */
+
+  const int font_id = blf_mono_font;
+  int cwidth = int(BLF_fixed_width(font_id));
+  HMODULE a = NULL;
+  GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCSTR)(void *)BLF_fixed_width, &a);
+
+  int columns = (draw_rect.xmax - draw_rect.xmin) / cwidth;
+  /* Avoid divide by zero on small windows. */
+  if (columns < 1) {
+    columns = 1;
+  }
+
+  /* copy from console_textview_draw_cursor() */
+
+  console_cursor_wrap_offset(sc->prompt, columns, &offl, &offc, nullptr);
+  console_cursor_wrap_offset(line->line, columns, &offl, &offc, line->line + curc);
+  r_pixel_co[0] = cwidth * offc;
+  r_pixel_co[1] = -lheight * offl;
+
+  console_cursor_wrap_offset(line->line + curc, columns, &offl, &offc, nullptr);
+  r_pixel_co[1] += lheight * offl;
+
+  r_pixel_co[0] += draw_rect.xmin;
+  r_pixel_co[1] += draw_rect.ymin;
+
+  return true;
+}
+
+bool ED_console_region_location_from_cursor_offset(const SpaceConsole *sc,
+                                                   const ARegion *region,
+                                                   const int cursor,
+                                                   int r_pixel_co[2])
+{
+  const ConsoleLine *line = nullptr;
+
+  line = (ConsoleLine *)sc->history.last;
+  if (!line || (cursor < 0) || (cursor > line->len)) {
+    goto error;
+  }
+
+  return console_region_location_from_cursor(sc, region, line, cursor, r_pixel_co);
+
+error:
+  r_pixel_co[0] = r_pixel_co[1] = -1;
+  return false;
+}
+
+bool ED_console_region_location_from_cursor_index(const SpaceConsole *sc,
+                                                  const ARegion *region,
+                                                  const int cursor,
+                                                  int r_pixel_co[2])
+{
+  const ConsoleLine *line = nullptr;
+  int curc = 0;
+
+  line = (ConsoleLine *)sc->history.last;
+  if (!line || (cursor < 0) || (cursor > BLI_strlen_utf8(line->line))) {
+    goto error;
+  }
+
+  curc = BLI_str_utf8_offset_from_index(line->line, line->len, cursor);
+
+  return console_region_location_from_cursor(sc, region, line, curc, r_pixel_co);
+
+error:
+  r_pixel_co[0] = r_pixel_co[1] = -1;
+  return false;
 }

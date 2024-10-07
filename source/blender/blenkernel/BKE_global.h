@@ -223,6 +223,10 @@ enum {
 
   G_DEBUG_GHOST = (1 << 23),  /* Debug GHOST module. */
   G_DEBUG_WINTAB = (1 << 24), /* Debug Wintab. */
+
+  // BEGIN [用于测试，不推送]
+  G_DEBUG_IME = (1 << 25), /* 临时添加的标记，提交时删除 */
+  // END
 };
 
 #define G_DEBUG_ALL \

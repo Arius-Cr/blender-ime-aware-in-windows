@@ -107,6 +107,9 @@ class Params:
         # Since this means with RMB select enabled in edit-mode for e.g.
         # `Ctrl-LMB` would be caught by box-select instead of add/extrude.
         "tool_maybe_tweak_event",
+
+        # Add keymap items for IME text input event on Windows.
+        "use_ime_input_win32",
     )
 
     def __init__(
@@ -134,6 +137,7 @@ class Params:
             use_file_single_click=False,
             v3d_tilde_action='VIEW',
             v3d_alt_mmb_drag_action='RELATIVE',
+            use_ime_input_win32=False,
             use_experimental_grease_pencil_version3=False,
     ):
         self.legacy = legacy
@@ -234,6 +238,8 @@ class Params:
         self.pie_value = 'CLICK_DRAG' if use_pie_click_drag else 'PRESS'
         self.tool_tweak_event = {"type": self.tool_mouse, "value": 'CLICK_DRAG'}
         self.tool_maybe_tweak_event = {"type": self.tool_mouse, "value": self.tool_maybe_tweak_value}
+
+        self.use_ime_input_win32 = use_ime_input_win32
 
 
 # ------------------------------------------------------------------------------
@@ -2891,6 +2897,13 @@ def km_text(params):
         ("text.insert", {"type": 'TEXTINPUT', "value": 'ANY', "any": True, "repeat": True}, None),
     ])
 
+    if params.use_ime_input_win32:
+        items.extend([
+            ("text.ime_input", {"type": 'IME_COMPOSITE_START', "value": 'ANY', "any": True, "repeat": True}, None),
+            # for Microsoft Korean IME (compatibility mode)
+            ("text.ime_input", {"type": 'IME_COMPOSITE_EVENT', "value": 'ANY', "any": True, "repeat": True}, None),
+        ])
+
     return keymap
 
 
@@ -3224,6 +3237,13 @@ def km_console(_params):
         *_template_items_context_menu("CONSOLE_MT_context_menu", {"type": 'RIGHTMOUSE', "value": 'PRESS'}),
         ("console.insert", {"type": 'TEXTINPUT', "value": 'ANY', "any": True, "repeat": True}, None),
     ])
+
+    if _params.use_ime_input_win32:
+        items.extend([
+            ("console.ime_input", {"type": 'IME_COMPOSITE_START', "value": 'ANY', "any": True, "repeat": True}, None),
+            # for Microsoft Korean IME (compatibility mode)
+            ("console.ime_input", {"type": 'IME_COMPOSITE_EVENT', "value": 'ANY', "any": True, "repeat": True}, None),
+        ])
 
     return keymap
 
@@ -6034,6 +6054,13 @@ def km_edit_font(params):
          {"properties": [("accent", True)]}),
         *_template_items_context_menu("VIEW3D_MT_edit_font_context_menu", params.context_menu_event),
     ])
+
+    if params.use_ime_input_win32:
+        items.extend([
+            ("font.ime_input", {"type": 'IME_COMPOSITE_START', "value": 'ANY', "any": True, "repeat": True}, None),
+            # for Microsoft Korean IME (compatibility mode)
+            ("font.ime_input", {"type": 'IME_COMPOSITE_EVENT', "value": 'ANY', "any": True, "repeat": True}, None),
+        ])
 
     return keymap
 

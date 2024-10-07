@@ -81,6 +81,8 @@
 
 #include "RE_pipeline.h"
 
+#include "printx.h"
+
 /**
  * When a gizmo is highlighted and uses click/drag events,
  * this prevents mouse button press events from being passed through to other key-maps
@@ -204,6 +206,18 @@ static void wm_event_custom_free(wmEvent *event)
     ListBase *lb = static_cast<ListBase *>(event->customdata);
     WM_drag_free_list(lb);
   }
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  if (event->custom == EVT_DATA_IME) {
+    printx(CCFR "wm_event_custom_free");
+    wmIMEData *ime_data = static_cast<wmIMEData *>(event->customdata);
+    if (ime_data->str_result != nullptr) {
+      free(ime_data->str_result);
+    }
+    if (ime_data->str_composite != nullptr) {
+      free(ime_data->str_composite);
+    }
+  }
+#endif
   else {
     MEM_freeN(event->customdata);
   }
@@ -5954,23 +5968,35 @@ void wm_event_add_ghostevent(wmWindowManager *wm,
 
 #ifdef WITH_INPUT_IME
     case GHOST_kEventImeCompositionStart: {
+      printx(CCFA "wmEvent: WM_IME_COMPOSITE_START");
       event.val = KM_PRESS;
+#  if !defined(WIN32)
       win->ime_data = static_cast<const wmIMEData *>(customdata);
       BLI_assert(win->ime_data != nullptr);
       win->ime_data_is_composing = true;
+#  endif
       event.type = WM_IME_COMPOSITE_START;
       wm_event_add(win, &event);
       break;
     }
     case GHOST_kEventImeComposition: {
+      printx(CCFA "wmEvent: WM_IME_COMPOSITE_EVENT");
       event.val = KM_PRESS;
+#  if defined(WIN32)
+      event.custom = EVT_DATA_IME;
+      event.customdata = (void *)(customdata);
+      event.customdata_free = true;
+#  endif
       event.type = WM_IME_COMPOSITE_EVENT;
       wm_event_add(win, &event);
       break;
     }
     case GHOST_kEventImeCompositionEnd: {
+      printx(CCFA "wmEvent: WM_IME_COMPOSITE_END");
       event.val = KM_PRESS;
+#  if !defined(WIN32)
       win->ime_data_is_composing = false;
+#  endif
       event.type = WM_IME_COMPOSITE_END;
       wm_event_add(win, &event);
       break;

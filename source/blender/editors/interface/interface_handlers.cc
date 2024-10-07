@@ -72,6 +72,7 @@
 #ifdef WITH_INPUT_IME
 #  include "BLT_lang.h"
 #  include "BLT_translation.h"
+#  include "printx.h"
 #  include "wm_window.hh"
 #endif
 
@@ -3387,7 +3388,7 @@ static bool ui_textedit_copypaste(uiBut *but, uiHandleButtonData *data, const in
   return changed;
 }
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
 /* Enable IME, and setup #uiBut IME data. */
 static void ui_textedit_ime_begin(wmWindow *win, uiBut * /*but*/)
 {
@@ -3428,6 +3429,57 @@ const wmIMEData *ui_but_ime_data_get(uiBut *but)
   }
 }
 #endif /* WITH_INPUT_IME */
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+/* Enable IME, and setup #uiBut IME data. */
+static void ui_textedit_ime_begin(wmWindow *win, uiBut * /*but*/)
+{
+  printx(CCBP "TextButton " CCBG "meeting the conditions" CCBP ": Enable & Repositon IME");
+  wm_window_IME_begin(win, wmIMEInvokerTextField);
+}
+
+/* Disable IME, and clear #uiBut IME data. */
+static void ui_textedit_ime_end(wmWindow *win, uiBut * /*but*/)
+{
+  if (wm_window_IME_get_invoker(win) == wmIMEInvokerTextField) {
+    printx(CCBP "TextButton " CCBR "NOT meeting the conditions" CCBP ": Disable IME");
+    wm_window_IME_end(win);
+  }
+}
+
+void ui_but_ime_reposition(uiBut *but,
+                           int creat_l,
+                           int creat_b,
+                           int creat_w,
+                           int creat_h,
+                           int exclude_l,
+                           int exclude_b,
+                           int exclude_w,
+                           int exclude_h)
+{
+  BLI_assert(but->active);
+
+  if (wm_window_IME_get_invoker(but->active->window) == wmIMEInvokerTextField) {
+    printx(CCBP "TextButton Redraw: Reposition IME");
+    int region_win_x = but->active->region->winrct.xmin;
+    int region_win_y = but->active->region->winrct.ymin;
+    wm_window_IME_move_with_exclude(but->active->window,
+                                    creat_l + region_win_x,
+                                    creat_b + region_win_y,
+                                    creat_w,
+                                    creat_h,
+                                    exclude_l + region_win_x,
+                                    exclude_b + region_win_y,
+                                    exclude_w,
+                                    exclude_h);
+  }
+}
+
+const wmIMEData *ui_but_ime_data_get(uiBut *but)
+{
+  return but->ime_data;
+}
+#endif /* WITH_INPUT_IME && WIN32 */
 
 static void ui_textedit_begin(bContext *C, uiBut *but, uiHandleButtonData *data)
 {
@@ -3595,6 +3647,17 @@ static void ui_textedit_end(bContext *C, uiBut *but, uiHandleButtonData *data)
 
     but->editstr = nullptr;
     but->pos = -1;
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+    if (but->ime_data) {
+      free(but->ime_data->str_composite);
+      but->ime_data = nullptr;
+    }
+
+    if (!ELEM(but->type, UI_BTYPE_NUM, UI_BTYPE_NUM_SLIDER)) {
+      ui_textedit_ime_end(win, but);
+    }
+#endif
   }
 
   WM_cursor_modal_restore(win);
@@ -3606,7 +3669,7 @@ static void ui_textedit_end(bContext *C, uiBut *but, uiHandleButtonData *data)
   ui_textedit_undo_stack_destroy(data->undo_stack_text);
   data->undo_stack_text = nullptr;
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
   /* See #wm_window_IME_end code-comments for details. */
 #  if defined(WIN32) || defined(__APPLE__)
   if (win->ime_data)
@@ -3711,11 +3774,12 @@ static void ui_do_but_textedit(
   int retval = WM_UI_HANDLER_CONTINUE;
   bool changed = false, inbox = false, update = false, skip_undo_push = false;
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
   wmWindow *win = CTX_wm_window(C);
   const wmIMEData *ime_data = win->ime_data;
   const bool is_ime_composing = ime_data && win->ime_data_is_composing;
 #else
+  /* `is_ime_composing` is not use for WIN32 here. */
   const bool is_ime_composing = false;
 #endif
 
@@ -3752,7 +3816,7 @@ static void ui_do_but_textedit(
           }
         }
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
         /* skips button handling since it is not wanted */
         if (is_ime_composing) {
           break;
@@ -3992,7 +4056,7 @@ static void ui_do_but_textedit(
     }
 
     if ((event->utf8_buf[0]) && (retval == WM_UI_HANDLER_CONTINUE)
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
         && !is_ime_composing && !WM_event_is_ime_switch(event)
 #endif
     )
@@ -4026,26 +4090,85 @@ static void ui_do_but_textedit(
 #ifdef WITH_INPUT_IME
   if (event->type == WM_IME_COMPOSITE_START) {
     changed = true;
+
+#  if defined(WIN32)
+    if (but->ime_data) {
+      if (but->ime_data->str_composite) {
+        free(but->ime_data->str_composite);
+      }
+      free(but->ime_data);
+      but->ime_data = nullptr;
+    }
+#  endif
+
     if (but->selend > but->selsta) {
       ui_textedit_delete_selection(but, data);
     }
   }
   else if (event->type == WM_IME_COMPOSITE_EVENT) {
     changed = true;
+
+#  if !defined(WIN32)
     if (ime_data->result_len) {
-      if (ELEM(but->type, UI_BTYPE_NUM, UI_BTYPE_NUM_SLIDER) &&
-          STREQ(ime_data->str_result, "\xE3\x80\x82"))
-      {
-        /* Convert Ideographic Full Stop (U+3002) to decimal point when entering numbers. */
-        ui_textedit_insert_ascii(but, data, '.');
+      ui_textedit_insert_buf(but, data, ime_data->str_result, ime_data->result_len);
+    }
+#  endif
+
+#  if defined(WIN32)
+    if (but->ime_data) {
+      if (but->ime_data->str_composite) {
+        free(but->ime_data->str_composite);
+      }
+      free(but->ime_data);
+      but->ime_data = nullptr;
+    }
+
+    const wmIMEData *ime_data = (wmIMEData *)event->customdata;
+
+    if (ime_data->result_len) {
+      ui_textedit_insert_buf(but, data, ime_data->str_result, ime_data->result_len);
+    }
+
+    if (ime_data->composite_len) {
+      /* Copy the ime data, otherwise it will lost after #wm_event_free. */
+
+      wmIMEData *data = (wmIMEData *)event->customdata;
+      wmIMEData *data_copy = (wmIMEData *)malloc(sizeof(wmIMEData));
+      memcpy(data_copy, data, sizeof(wmIMEData));
+
+      if (data->result_len != 0) {
+        data_copy->str_result = (char *)malloc((size_t)data->result_len + 1);
+        memcpy(data_copy->str_result, data->str_result, (size_t)data->result_len);
+        ((char *)data_copy->str_result)[(size_t)data->result_len] = '\0';
       }
       else {
-        ui_textedit_insert_buf(but, data, ime_data->str_result, ime_data->result_len);
+        data_copy->str_result = nullptr;
       }
+      if (data->composite_len != 0) {
+        data_copy->str_composite = (char *)malloc((size_t)data->composite_len + 1);
+        memcpy(data_copy->str_composite, data->str_composite, (size_t)data->composite_len);
+        ((char *)data_copy->str_composite)[(size_t)data->composite_len] = '\0';
+      }
+      else {
+        data_copy->str_composite = nullptr;
+      }
+
+      but->ime_data = data_copy;
     }
+#  endif
   }
   else if (event->type == WM_IME_COMPOSITE_END) {
     changed = true;
+
+#  if defined(WIN32)
+    if (but->ime_data) {
+      if (but->ime_data->str_composite) {
+        free(but->ime_data->str_composite);
+      }
+      free(but->ime_data);
+      but->ime_data = nullptr;
+    }
+#  endif
   }
 #endif
 

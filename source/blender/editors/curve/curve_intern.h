@@ -104,6 +104,11 @@ void FONT_OT_unlink(struct wmOperatorType *ot);
 void FONT_OT_textbox_add(struct wmOperatorType *ot);
 void FONT_OT_textbox_remove(struct wmOperatorType *ot);
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+void FONT_OT_ime_input(wmOperatorType *ot);
+void FONT_OT_ime_insert(wmOperatorType *ot);
+#endif
+
 /* `editcurve.cc` */
 
 void CURVE_OT_hide(struct wmOperatorType *ot);

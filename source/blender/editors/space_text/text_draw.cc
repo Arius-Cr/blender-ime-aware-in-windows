@@ -1786,10 +1786,31 @@ void space_text_update_cursor_moved(bContext *C)
   space_text_scroll_to_cursor_with_area(st, area, true);
 }
 
-bool ED_space_text_region_location_from_cursor(const SpaceText *st,
-                                               const ARegion *region,
-                                               const int cursor_co[2],
-                                               int r_pixel_co[2])
+static bool space_text_region_location_from_cursor(const SpaceText *st,
+                                                   const ARegion *region,
+                                                   TextLine *line,
+                                                   int curl,
+                                                   int curc,
+                                                   int r_pixel_co[2])
+{
+  int offl, offc;
+  int linenr_offset = TXT_BODY_LEFT(st);
+  /* handle tabs as well! */
+  int char_pos = space_text_get_char_pos(st, line->line, curc);
+  int line_height = TXT_LINE_HEIGHT(st);
+
+  space_text_wrap_offset(st, region, line, curc, &offl, &offc);
+  r_pixel_co[0] = (char_pos + offc - st->left) * st->runtime->cwidth_px + linenr_offset;
+  r_pixel_co[1] = (curl + offl - st->top) * line_height;
+  r_pixel_co[1] = (region->winy - r_pixel_co[1]) - line_height;
+
+  return true;
+}
+
+bool ED_space_text_region_location_from_cursor_offset(const SpaceText *st,
+                                                      const ARegion *region,
+                                                      const int cursor_co[2],
+                                                      int r_pixel_co[2])
 {
   TextLine *line = nullptr;
 
@@ -1801,19 +1822,35 @@ bool ED_space_text_region_location_from_cursor(const SpaceText *st,
   if (!line || (cursor_co[1] < 0) || (cursor_co[1] > line->len)) {
     goto error;
   }
-  else {
-    int offl, offc;
-    int linenr_offset = TXT_BODY_LEFT(st);
-    /* handle tabs as well! */
-    int char_pos = space_text_get_char_pos(st, line->line, cursor_co[1]);
 
-    space_text_wrap_offset(st, region, line, cursor_co[1], &offl, &offc);
-    r_pixel_co[0] = (char_pos + offc - st->left) * st->runtime->cwidth_px + linenr_offset;
-    r_pixel_co[1] = (cursor_co[0] + offl - st->top) * TXT_LINE_HEIGHT(st);
-    r_pixel_co[1] = (region->winy - (r_pixel_co[1] + (TXT_BODY_LPAD * st->runtime->cwidth_px))) -
-                    st->runtime->lheight_px;
+  return space_text_region_location_from_cursor(
+      st, region, line, cursor_co[0], cursor_co[1], r_pixel_co);
+
+error:
+  r_pixel_co[0] = r_pixel_co[1] = -1;
+  return false;
+}
+
+bool ED_space_text_region_location_from_cursor_index(const SpaceText *st,
+                                                     const ARegion *region,
+                                                     const int cursor_co[2],
+                                                     int r_pixel_co[2])
+{
+  TextLine *line = nullptr;
+  int curc = 0;
+
+  if (!st->text) {
+    goto error;
   }
-  return true;
+
+  line = static_cast<TextLine *>(BLI_findlink(&st->text->lines, cursor_co[0]));
+  if (!line || (cursor_co[1] < 0) || (cursor_co[1] > BLI_strlen_utf8(line->line))) {
+    goto error;
+  }
+
+  curc = BLI_str_utf8_offset_from_index(line->line, line->len, cursor_co[1]);
+
+  return space_text_region_location_from_cursor(st, region, line, cursor_co[0], curc, r_pixel_co);
 
 error:
   r_pixel_co[0] = r_pixel_co[1] = -1;

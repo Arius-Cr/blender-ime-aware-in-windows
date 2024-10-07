@@ -343,7 +343,7 @@ class GHOST_IWindow {
    */
   virtual uint16_t getDPIHint() = 0;
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
   /**
    * Enable IME attached to the given window, i.e. allows user-input
    * events to be dispatched to the IME.
@@ -362,6 +362,67 @@ class GHOST_IWindow {
    * events from being dispatched to the IME.
    */
   virtual void endIME() = 0;
+#endif
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  /**
+   * Enable IME attached to the given window, i.e. allows user-input
+   * events to be dispatched to the IME.
+   */
+  virtual void beginIME(GHOST_IMEInvoker invoker) = 0;
+
+  /**
+   * Disable the IME attached to the given window, i.e. prohibits any user-input
+   * events from being dispatched to the IME.
+   */
+  virtual void endIME() = 0;
+
+  virtual bool isIMEEnabled() = 0;
+
+  virtual GHOST_IMEInvoker getIMEInvoker() = 0;
+
+  /**
+   * Force complete the ongoing composition.
+   */
+  virtual void completeIME() = 0;
+
+  /**
+   * Force cancel the ongoing composition.
+   */
+  virtual void cancelIME() = 0;
+
+  /**
+   * Move the IME windows to the given position.
+   * \param c_l: Requested x-coordinate of the rectangle.
+   * \param c_t: Requested y-coordinate of the rectangle.
+   * \param c_w: Width of exclude area.
+   * \param c_h: Height of exclude area.
+   */
+  virtual void moveIME(int32_t c_l, int32_t c_t, int32_t c_w, int32_t c_h) = 0;
+
+  /**
+   * Move the IME windows to the given position.
+   * \param c_l: Requested x-coordinate of the rectangle.
+   * \param c_t: Requested y-coordinate of the rectangle.
+   * \param c_w: Width of exclude area.
+   * \param c_h: Height of exclude area.
+   * \param e_l: X-coordinate of exclude area. -1 prepresent there are no exclude area here.
+   * \param e_t: Y-coordinate of exclude area.
+   * \param e_w: Width of exclude area.
+   * \param e_h: Height of exclude area.
+   */
+  virtual void moveIMEWithExclude(int32_t c_l,
+                                  int32_t c_t,
+                                  int32_t c_w,
+                                  int32_t c_h,
+                                  int32_t e_l,
+                                  int32_t e_t,
+                                  int32_t e_w,
+                                  int32_t e_h) = 0;
+
+  virtual bool isIMEComposing() = 0;
+
+  virtual void startIMEComplsitionByChar(char key) = 0;
 #endif /* WITH_INPUT_IME */
 
 #ifdef WITH_CXX_GUARDEDALLOC

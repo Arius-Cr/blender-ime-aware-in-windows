@@ -52,6 +52,10 @@ set(LIB
   PRIVATE bf::intern::guardedalloc
 )
 
+if(WITH_INPUT_IME)
+  add_definitions(-DWITH_INPUT_IME)
+endif()
+
 
 blender_add_lib(bf_editor_screen "${SRC}" "${INC}" "${INC_SYS}" "${LIB}")
 

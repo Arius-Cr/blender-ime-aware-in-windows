@@ -34,6 +34,11 @@
 
 #include "console_intern.hh" /* own include */
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+#  include "printx.h"
+#  include "wm_window.hh"
+#endif
+
 /* ******************** default callbacks for console space ***************** */
 
 static SpaceLink *console_create(const ScrArea * /*area*/, const Scene * /*scene*/)
@@ -149,6 +154,46 @@ static void console_cursor(wmWindow *win, ScrArea * /*area*/, ARegion *region)
   WM_cursor_set(win, wmcursor);
 }
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+
+static void console_enable_ime(wmWindow *win, ScrArea *area, ARegion *region)
+{
+  bScreen *screen = WM_window_get_active_screen(win);
+  if (screen->active_region == region) {
+    /* If IME disable or enable by others, enable it. */
+    if (wm_window_IME_get_invoker(win) != wmIMEInvokerSpaceConsole) {
+      printx(CCBP "SpaceConsole " CCBG "meeting the conditions" CCBP ": Enable & Repositon IME");
+      wm_window_IME_begin(win, wmIMEInvokerSpaceConsole);
+      console_reposition_ime_window(win, area, region, nullptr);
+    }
+  }
+}
+
+static void console_disable_ime(wmWindow *win)
+{
+  /** 不需要检查条件，调用该函数时就表示符合关闭的条件 */
+  /* If IME enable by SpaceText, disable it. */
+  if (wm_window_IME_get_invoker(win) == wmIMEInvokerSpaceConsole) {
+    printx(CCBP "SpaceConsole " CCBR "NOT meeting the conditions" CCBP ": Disable IME");
+    wm_window_IME_end(win);
+  }
+}
+
+static void console_main_region_on_activation_changed(
+    const bContext * /*C*/, wmWindow *win, ScrArea *area, ARegion *region, bool activated)
+{
+  if (activated) {
+    printx(CCBP "SpaceConsole Region Active");
+    console_enable_ime(win, area, region);
+  }
+  else {
+    printx(CCBP "SpaceConsole Region Deactive");
+    console_disable_ime(win);
+  }
+}
+
+#endif
+
 /* ************* dropboxes ************* */
 
 static bool id_drop_poll(bContext * /*C*/, wmDrag *drag, const wmEvent * /*event*/)
@@ -210,6 +255,28 @@ static void console_main_region_draw(const bContext *C, ARegion *region)
   console_history_verify(C); /* make sure we have some command line */
   console_textview_main(sc, region);
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  /**
+   * After the cursor moved (current is not composing),
+   * we needs to update the ime window position.
+   * Some IMEs just use the position before composite start,
+   * and ingore all reposition utill composite end.
+   * So we need to update the ime window immedately.
+   */
+  wmWindow *win = CTX_wm_window(C);
+  if (wm_window_IME_get_invoker(win) == wmIMEInvokerSpaceConsole) {
+    if (!wm_window_IME_is_composing(win)) {
+      bScreen *screen = CTX_wm_screen(C);
+      ARegion *region = CTX_wm_region(C);
+      if (region != nullptr && screen->active_region == region) {
+        printx(CCBP "SpaceConsole Redraw [no comp]: Repositon IME");
+        ScrArea *area = CTX_wm_area(C);
+        console_reposition_ime_window(win, area, region, nullptr);
+      }
+    }
+  }
+#endif
+
   /* reset view matrix */
   UI_view2d_view_restore(C);
 
@@ -240,6 +307,11 @@ static void console_operatortypes()
   WM_operatortype_append(CONSOLE_OT_select_set);
   WM_operatortype_append(CONSOLE_OT_select_all);
   WM_operatortype_append(CONSOLE_OT_select_word);
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  WM_operatortype_append(CONSOLE_OT_ime_input);
+  WM_operatortype_append(CONSOLE_OT_ime_insert);
+#endif
 }
 
 static void console_keymap(wmKeyConfig *keyconf)
@@ -350,6 +422,9 @@ void ED_spacetype_console()
   art->cursor = console_cursor;
   art->event_cursor = true;
   art->listener = console_main_region_listener;
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  art->on_activation_changed = console_main_region_on_activation_changed;
+#endif
 
   BLI_addhead(&st->regiontypes, art);
 

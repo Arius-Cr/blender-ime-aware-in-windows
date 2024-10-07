@@ -751,6 +751,8 @@ struct wmEvent {
    * - #EVT_XR_ACTION: uses #wmXrActionData (also #wmEvent::custom == #EVT_DATA_XR).
    * - #NDOF_MOTION: uses #wmNDOFMotionData (also #wmEvent::custom == #EVT_DATA_NDOF_MOTION).
    * - #TIMER: uses #wmTimer (also #wmEvent::custom == #EVT_DATA_TIMER).
+   * - #WM_IME_COMPOSITE_EVENT: uses #wmIMEData (also #wmEvent::custom == #EVT_DATA_IME).
+   *   Just use for WIN32.
    */
   void *customdata;
 
@@ -1121,6 +1123,19 @@ struct wmIMEData {
   /** End of the selection. */
   int sel_end;
 };
+
+#  if defined(WIN32)
+/**
+ * \note this is a duplicate of #GHOST_IMEInvoker.
+ */
+typedef enum {
+  wmIMEInvokerNone = 0,
+  wmIMEInvokerTextField,
+  wmIMEInvokerTextEditMode,
+  wmIMEInvokerSpaceText,
+  wmIMEInvokerSpaceConsole,
+} wmIMEInvoker;
+#  endif
 #endif
 
 /* **************** Paint Cursor ******************* */

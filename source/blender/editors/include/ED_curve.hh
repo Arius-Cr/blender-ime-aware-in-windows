@@ -26,6 +26,12 @@ struct bContext;
 struct wmKeyConfig;
 struct wmOperator;
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+struct wmWindow;
+struct ScrArea;
+struct ARegion;
+#endif
+
 /* `curve_ops.cc` */
 
 void ED_operatortypes_curve();
@@ -90,6 +96,10 @@ void ED_curve_undosys_type(UndoType *ut);
 void ED_curve_editfont_load(Object *obedit);
 void ED_curve_editfont_make(Object *obedit);
 void ED_curve_editfont_free(Object *obedit);
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+void ED_curve_editfont_reposition_ime_window(wmWindow *win, ScrArea *area, ARegion *region);
+#endif
 
 void ED_text_to_object(bContext *C, const Text *text, bool split_lines);
 

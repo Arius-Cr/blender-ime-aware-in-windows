@@ -277,6 +277,19 @@ int main(int argc,
 #endif
 )
 {
+
+  // BEGIN [用于测试，不推送]
+  // 禁止直接启动。必须通过附带的.bat启动，使用.bat中指定的数据目录，避免污染默认数据目录。
+  {
+    size_t requiredSize = 0;
+    getenv_s(&requiredSize, NULL, 0, "IME_AWARE_IN_WINDOWS");
+    if (requiredSize == 0) {
+      printf("Error: Environment variable \"IME_AWARE_IN_WINDOWS\" not exists.\n");
+      exit(1);
+    }
+  }
+  // END
+
   bContext *C;
 
 #ifndef WITH_PYTHON_MODULE
@@ -438,6 +451,17 @@ int main(int argc,
   RE_texture_rng_init();
 
   BKE_callback_global_init();
+
+  // BEGIN [用于测试，不推送]
+  // 禁止直接启动。必须通过附带的.bat启动，使用.bat中指定的数据目录，避免污染默认数据目录。
+  {
+    size_t requiredSize = 0;
+    getenv_s(&requiredSize, NULL, 0, "DEBUG_IME");
+    if (requiredSize != 0) {
+      G.debug |= G_DEBUG_IME;
+    }
+  }
+  // END
 
 /* First test for background-mode (#Global.background) */
 #ifndef WITH_PYTHON_MODULE

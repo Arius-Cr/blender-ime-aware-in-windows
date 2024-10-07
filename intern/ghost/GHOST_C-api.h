@@ -993,6 +993,7 @@ extern float GHOST_GetNativePixelSize(GHOST_WindowHandle windowhandle);
  */
 extern uint16_t GHOST_GetDPIHint(GHOST_WindowHandle windowhandle);
 
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
 /**
  * Enable IME attached to the given window, i.e. allows user-input
  * events to be dispatched to the IME.
@@ -1013,6 +1014,96 @@ extern void GHOST_BeginIME(
  * \param windowhandle: The window handle of the caller.
  */
 extern void GHOST_EndIME(GHOST_WindowHandle windowhandle);
+#endif /* WITH_INPUT_IME */
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+/**
+ * Enable IME attached to the given window, i.e. allows user-input
+ * events to be dispatched to the IME.
+ * \param windowhandle: Window handle of the caller.
+ * \param invoker: The component which enable the IME.
+ * This must not be `GHOST_IMEInvokerNone`.
+ */
+extern void GHOST_BeginIME(GHOST_WindowHandle windowhandle, GHOST_IMEInvoker invoker);
+
+/**
+ * Disable the IME attached to the given window, i.e. prohibits any user-input
+ * events from being dispatched to the IME.
+ * \param windowhandle: The window handle of the caller.
+ */
+extern void GHOST_EndIME(GHOST_WindowHandle windowhandle);
+
+/**
+ * Check if IME is enabled.
+ * \param windowhandle: The window handle of the caller.
+ */
+extern bool GHOST_IsIMEEnabled(GHOST_WindowHandle windowhandle);
+
+/**
+ * Retrieve which component has enabled IME.
+ * Note: `GHOST_IMEInvokerNone` also mean IME is disabled, else also mean IME is enabled.
+ * \param windowhandle: The window handle of the caller.
+ */
+extern GHOST_IMEInvoker GHOST_GetIMEInvoker(GHOST_WindowHandle windowhandle);
+
+/**
+ * Is there an ongoing composition.
+ * \param windowhandle: The window handle of the caller.
+ */
+extern bool GHOST_IsIMEComposing(GHOST_WindowHandle windowhandle);
+
+/**
+ * Force complete the ongoing composition.
+ * \param windowhandle: The window handle of the caller.
+ */
+extern void GHOST_CompleteIME(GHOST_WindowHandle windowhandle);
+
+/**
+ * Force cancel the ongoing composition.
+ * \param windowhandle: The window handle of the caller.
+ */
+extern void GHOST_CancelIME(GHOST_WindowHandle windowhandle);
+
+/**
+ * Move the IME (Conversion) Candidate Window.
+ * \param windowhandle: The window handle of the caller.
+ * \param c_l: The left of the caret in native OS window coordinates.
+ * \param c_l: The top of the caret in native OS window coordinates.
+ * \param c_w: The width of the caret.
+ * \param c_h: The height of the caret.
+ */
+extern void GHOST_MoveIME(
+    GHOST_WindowHandle windowhandle, int32_t c_l, int32_t c_t, int32_t c_w, int32_t c_h);
+
+/**
+ * Move the IME (Conversion) Candidate Window.
+ * \param windowhandle: The window handle of the caller.
+ * \param c_l: The left of the caret in native OS window coordinates.
+ * \param c_t: The top of the caret in native OS window coordinates.
+ * \param c_w: The width of the caret.
+ * \param c_h: The height of the caret.
+ * \param e_l: The left of the exclude rectangle in native OS window coordinates.
+ * \param e_t: The top of the exclude rectangle in native OS window coordinates.
+ * \param e_w: The width of the exclude rectangle.
+ * \param e_h: The height of the exclude rectangle.
+ */
+extern void GHOST_MoveIMEWithExclude(GHOST_WindowHandle windowhandle,
+                                     int32_t c_l,
+                                     int32_t c_t,
+                                     int32_t c_w,
+                                     int32_t c_h,
+                                     int32_t e_l,
+                                     int32_t e_t,
+                                     int32_t e_w,
+                                     int32_t e_h);
+
+/**
+ * Send a alphabetic key to start a IME composition.
+ * \param windowhandle: The window handle of the caller.
+ * \param c: The alphabetic character (a-Z).
+ */
+extern void GHOST_StartIMECompositionByChar(GHOST_WindowHandle windowhandle, char c);
+#endif /* WITH_INPUT_IME && WIN32 */
 
 #ifdef WITH_XR_OPENXR
 

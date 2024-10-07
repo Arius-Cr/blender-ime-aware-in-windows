@@ -44,6 +44,10 @@
 #include "WM_message.hh"
 #include "WM_toolsystem.hh"
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+#  include "wm_window.hh"
+#endif
+
 #include "DEG_depsgraph_query.hh"
 
 #include "screen_intern.h" /* own module include */
@@ -1033,6 +1037,21 @@ void ED_screen_set_active_region(bContext *C, wmWindow *win, const int xy[2])
       }
     }
   }
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  if (region_prev != screen->active_region) {
+    if (region_prev) {
+      if (region_prev->type->on_activation_changed) {
+        region_prev->type->on_activation_changed(C, win, area, region_prev, false);
+      }
+    }
+    if (screen->active_region != nullptr) {
+      if (screen->active_region->type->on_activation_changed != nullptr) {
+        screen->active_region->type->on_activation_changed(C, win, area, screen->active_region, true);
+      }
+    }
+  }
+#endif
 }
 
 int ED_screen_area_active(const bContext *C)

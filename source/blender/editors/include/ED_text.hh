@@ -25,9 +25,18 @@ int ED_space_text_visible_lines_get(const SpaceText *st);
  */
 void ED_space_text_scroll_to_cursor(SpaceText *st, ARegion *region, bool center);
 /**
- * Takes a cursor (row, character) and returns x,y pixel coords.
+ * Takes a cursor (row, character) and returns x,y pixel coords (lower-left corner).
+ * cursor_co[1] - character byte offset.
  */
-bool ED_space_text_region_location_from_cursor(const SpaceText *st,
+bool ED_space_text_region_location_from_cursor_offset(const SpaceText *st,
+                                         const ARegion *region,
+                                         const int cursor_co[2],
+                                         int r_pixel_co[2]);
+/**
+ * Takes a cursor (row, character) and returns x,y pixel coords (lower-left corner).
+ * cursor_co[1] - character index.
+ */
+bool ED_space_text_region_location_from_cursor_index(const SpaceText *st,
                                                const ARegion *region,
                                                const int cursor_co[2],
                                                int r_pixel_co[2]);

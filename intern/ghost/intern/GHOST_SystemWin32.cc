@@ -12,6 +12,8 @@
 #include "GHOST_EventTrackpad.hh"
 #include "GHOST_SystemWin32.hh"
 
+#include "printx.h"
+
 #ifndef _WIN32_IE
 #  define _WIN32_IE 0x0501 /* shipped before XP, so doesn't impose additional requirements */
 #endif
@@ -51,6 +53,10 @@
 
 #ifdef WITH_INPUT_NDOF
 #  include "GHOST_NDOFManagerWin32.hh"
+#endif
+
+#ifdef WITH_INPUT_IME
+#  include "GHOST_ImeWin32.hh"
 #endif
 
 /* Key code values not found in `winuser.h`. */
@@ -621,15 +627,17 @@ GHOST_TSuccess GHOST_SystemWin32::exit()
   return GHOST_System::exit();
 }
 
-GHOST_TKey GHOST_SystemWin32::hardKey(RAWINPUT const &raw, bool *r_key_down)
+GHOST_TKey GHOST_SystemWin32::hardKey(const USHORT msg_,
+                                      const USHORT vk_,
+                                      const USHORT make_code_,
+                                      const USHORT flags_,
+                                      bool *r_key_down)
 {
   /* #RI_KEY_BREAK doesn't work for sticky keys release, so we also check for the up message. */
-  uint msg = raw.data.keyboard.Message;
-  *r_key_down = !(raw.data.keyboard.Flags & RI_KEY_BREAK) && msg != WM_KEYUP && msg != WM_SYSKEYUP;
+  uint msg = msg_;
+  *r_key_down = !(flags_ & RI_KEY_BREAK) && msg != WM_KEYUP && msg != WM_SYSKEYUP;
 
-  return this->convertKey(raw.data.keyboard.VKey,
-                          raw.data.keyboard.MakeCode,
-                          (raw.data.keyboard.Flags & (RI_KEY_E1 | RI_KEY_E0)));
+  return this->convertKey(vk_, make_code_, (flags_ & (RI_KEY_E1 | RI_KEY_E0)));
 }
 
 /**
@@ -944,6 +952,18 @@ void GHOST_SystemWin32::processWintabEvent(GHOST_WindowWin32 *window)
       case GHOST_kEventButtonDown: {
         WINTAB_PRINTF("HWND %p Wintab button down", window->getHWND());
 
+#ifdef WITH_INPUT_IME
+        GHOST_ImeWin32 *ime = window->getImeInput();
+        if (ime->IsEnabled() && !ime->IsComposing()) {
+          if (HIBYTE(GetKeyState(VK_SHIFT)) && !HIBYTE(GetKeyState(VK_CONTROL)) &&
+              !HIBYTE(GetKeyState(VK_MENU)))
+          {
+            printx(CCFA "Wintab button down");
+            ime->PauseIME();
+          }
+        }
+#endif
+
         uint message;
         switch (info.button) {
           case GHOST_kButtonMaskLeft:
@@ -1235,13 +1255,24 @@ void GHOST_SystemWin32::processWheelEvent(GHOST_WindowWin32 *window,
   system->m_wheelDeltaAccum = acc * direction;
 }
 
-GHOST_EventKey *GHOST_SystemWin32::processKeyEvent(GHOST_WindowWin32 *window, RAWINPUT const &raw)
+GHOST_EventKey *GHOST_SystemWin32::processKeyEvent(GHOST_WindowWin32 *window,
+                                                   const USHORT msg_,
+                                                   const USHORT vk_,
+                                                   const USHORT make_code_,
+                                                   const USHORT flags_,
+                                                   bool *is_key_down_repeat)
 {
-  const char vk = raw.data.keyboard.VKey;
+  const char vk = vk_;
+  printx(CCFA "  processKeyEvent vkey: %x, %s",
+         vk,
+         (flags_ & (RI_KEY_E1 | RI_KEY_E0)) ? "Ex" : "not Ex");
   bool key_down = false;
   GHOST_SystemWin32 *system = (GHOST_SystemWin32 *)getSystem();
-  GHOST_TKey key = system->hardKey(raw, &key_down);
+  GHOST_TKey key = system->hardKey(msg_, vk_, make_code_, flags_, &key_down);
   GHOST_EventKey *event;
+  printx(CCFA "  processKeyEvent gkey: %x, %s",
+         key,
+         (flags_ & (RI_KEY_E1 | RI_KEY_E0)) ? "Ex" : "not Ex");
 
   /* NOTE(@ideasman42): key repeat in WIN32 also applies to modifier-keys.
    * Check for this case and filter out modifier-repeat.
@@ -1252,12 +1283,23 @@ GHOST_EventKey *GHOST_SystemWin32::processKeyEvent(GHOST_WindowWin32 *window, RA
   bool is_repeat = false;
   bool is_repeated_modifier = false;
   if (key_down) {
-    if (HIBYTE(::GetKeyState(vk)) != 0) {
-      /* This thread's message queue shows this key as already down. */
-      is_repeat = true;
-      is_repeated_modifier = GHOST_KEY_MODIFIER_CHECK(key);
+    if (is_key_down_repeat == nullptr) {
+      if (HIBYTE(::GetKeyState(vk)) != 0) {
+        /* This thread's message queue shows this key as already down. */
+        is_repeat = true;
+        is_repeated_modifier = GHOST_KEY_MODIFIER_CHECK(key);
+      }
+    }
+    else {
+      if (*is_key_down_repeat) {
+        is_repeat = true;
+        is_repeated_modifier = GHOST_KEY_MODIFIER_CHECK(key);
+      }
     }
   }
+
+  // printx("is_repeat: %s\n", is_repeat ? "True" : "False");
+  // printx("is_repeated_modifier: %s\n", is_repeated_modifier ? "True" : "False");
 
   /* We used to check `if (key != GHOST_kKeyUnknown)`, but since the message
    * values `WM_SYSKEYUP`, `WM_KEYUP` and `WM_CHAR` are ignored, we capture
@@ -1283,9 +1325,7 @@ GHOST_EventKey *GHOST_SystemWin32::processKeyEvent(GHOST_WindowWin32 *window, RA
       int r;
       /* TODO: #ToUnicodeEx can respond with up to 4 utf16 chars (only 2 here).
        * Could be up to 24 utf8 bytes. */
-      if ((r = ToUnicodeEx(
-               vk, raw.data.keyboard.MakeCode, state, utf16, 2, 0, system->m_keylayout)))
-      {
+      if ((r = ToUnicodeEx(vk, make_code_, state, utf16, 2, 0, system->m_keylayout))) {
         if ((r > 0 && r < 3)) {
           utf16[r] = 0;
           conv_utf_16_to_8(utf16, utf8_char, 6);
@@ -1299,15 +1339,6 @@ GHOST_EventKey *GHOST_SystemWin32::processKeyEvent(GHOST_WindowWin32 *window, RA
         utf8_char[0] = '\0';
       }
     }
-
-#ifdef WITH_INPUT_IME
-    if (key_down && ((utf8_char[0] & 0x80) == 0)) {
-      const char ascii = utf8_char[0];
-      if (window->getImeInput()->IsImeKeyEvent(ascii, key)) {
-        return nullptr;
-      }
-    }
-#endif /* WITH_INPUT_IME */
 
     event = new GHOST_EventKey(getMessageTime(system),
                                key_down ? GHOST_kEventKeyDown : GHOST_kEventKeyUp,
@@ -1325,6 +1356,34 @@ GHOST_EventKey *GHOST_SystemWin32::processKeyEvent(GHOST_WindowWin32 *window, RA
   }
 
   return event;
+}
+
+GHOST_EventKey *GHOST_SystemWin32::processKeyEvent_raw(GHOST_WindowWin32 *window,
+                                                       RAWINPUT const &raw)
+{
+  return processKeyEvent(window,
+                         raw.data.keyboard.Message,
+                         raw.data.keyboard.VKey,
+                         raw.data.keyboard.MakeCode,
+                         raw.data.keyboard.Flags,
+                         nullptr);
+}
+
+GHOST_EventKey *GHOST_SystemWin32::processKeyEvent_key(GHOST_WindowWin32 *window,
+                                                       USHORT msg,
+                                                       WPARAM wParam,
+                                                       LPARAM lParam)
+{
+  WORD key_flags = HIWORD(lParam);
+  USHORT scan_code = LOBYTE(key_flags);
+  USHORT flags = (lParam & KF_UP) ? RI_KEY_BREAK : RI_KEY_MAKE;
+  // extended-key flag, 1 if scancode has 0xE0 prefix
+  if ((key_flags & KF_EXTENDED) == KF_EXTENDED) {
+    scan_code = MAKEWORD(scan_code, 0xE0);
+    flags |= RI_KEY_E0;
+  }
+  bool is_key_down_repeat = (lParam & KF_UP) ? false : (lParam & KF_REPEAT);
+  return processKeyEvent(window, msg, wParam, scan_code, flags, &is_key_down_repeat);
 }
 
 GHOST_Event *GHOST_SystemWin32::processWindowSizeEvent(GHOST_WindowWin32 *window)
@@ -1359,7 +1418,45 @@ GHOST_Event *GHOST_SystemWin32::processImeEvent(GHOST_TEventType type,
                                                 GHOST_TEventImeData *data)
 {
   GHOST_SystemWin32 *system = (GHOST_SystemWin32 *)getSystem();
-  return new GHOST_EventIME(getMessageTime(system), type, window, data);
+
+  GHOST_TEventImeData *data_copy = nullptr;
+
+  /* For most IMEs we don't need to copyout the ime data,
+   * but in some extreme case, e.g. the following message occurred very recently:
+   * 1. WM_IME_COMPOSITION -> GCS_RESULTSTR
+   * 2. WM_IME_ENDCOMPOSITION
+   * 3. WM_IME_STARTCOMPOSITION
+   * 4. WM_IME_COMPOSITION -> GCS_COMPSTR
+   * Ime data of message 4 will cover the one of message 1.
+   * See also "Note: New Microsoft Korean IME composite events" in GHOST_ImeWin32.hh.
+   *
+   * Ime data just use for WM_IME_COMPOSITION.
+   *
+   * Event handler get the copy of ime data by #wmEvent.customdata.
+   * The copy of ime data is free on #wm_event_custom_free.
+   */
+  if (type == GHOST_kEventImeComposition) {
+    data_copy = (GHOST_TEventImeData *)malloc(sizeof(GHOST_TEventImeData));
+    memcpy(data_copy, data, sizeof(GHOST_TEventImeData));
+    if (data->result_len != 0) {
+      data_copy->result = (char *)malloc((size_t)data->result_len + 1);
+      memcpy(data_copy->result, data->result, (size_t)data->result_len);
+      ((char *)data_copy->result)[(size_t)data->result_len] = '\0';
+    }
+    else {
+      data_copy->result = 0;
+    }
+    if (data->composite_len != 0) {
+      data_copy->composite = (char *)malloc((size_t)data->composite_len + 1);
+      memcpy(data_copy->composite, data->composite, (size_t)data->composite_len);
+      ((char *)data_copy->composite)[(size_t)data->composite_len] = '\0';
+    }
+    else {
+      data_copy->composite = 0;
+    }
+  }
+
+  return new GHOST_EventIME(getMessageTime(system), type, window, data_copy);
 }
 #endif
 
@@ -1529,9 +1626,6 @@ LRESULT WINAPI GHOST_SystemWin32::s_wndProc(HWND hwnd, uint msg, WPARAM wParam, 
 
   LRESULT lResult = 0;
   GHOST_SystemWin32 *system = (GHOST_SystemWin32 *)getSystem();
-#ifdef WITH_INPUT_IME
-  GHOST_EventManager *eventManager = system->getEventManager();
-#endif
   GHOST_ASSERT(system, "GHOST_SystemWin32::s_wndProc(): system not initialized");
 
   if (hwnd) {
@@ -1555,10 +1649,11 @@ LRESULT WINAPI GHOST_SystemWin32::s_wndProc(HWND hwnd, uint msg, WPARAM wParam, 
       switch (msg) {
         /* We need to check if new key layout has AltGr. */
         case WM_INPUTLANGCHANGE: {
+          printx(CCFA "====================");
+          printx(CCFA "WM_INPUTLANGCHANGE");
           system->handleKeyboardChange();
 #ifdef WITH_INPUT_IME
           window->getImeInput()->UpdateInputLanguage();
-          window->getImeInput()->UpdateConversionStatus(hwnd);
 #endif
           break;
         }
@@ -1574,7 +1669,62 @@ LRESULT WINAPI GHOST_SystemWin32::s_wndProc(HWND hwnd, uint msg, WPARAM wParam, 
 
           switch (raw.header.dwType) {
             case RIM_TYPEKEYBOARD: {
-              event = processKeyEvent(window, raw);
+
+#ifdef WITH_INPUT_IME
+              if (DEBUG_IME) {
+                uint _msg = raw.data.keyboard.Message;
+                bool _key_down = !(raw.data.keyboard.Flags & RI_KEY_BREAK) && _msg != WM_KEYUP &&
+                                 _msg != WM_SYSKEYUP;
+                wchar_t key_name[256] = L"??";
+                bool _extended = raw.data.keyboard.Flags & (RI_KEY_E0 | RI_KEY_E1);
+                LPARAM _key_lp = MAKELPARAM(
+                    0, (_extended ? KF_EXTENDED : 0) | (raw.data.keyboard.MakeCode & 0xff));
+                GetKeyNameTextW(_key_lp, (LPWSTR)&key_name, 256);
+                printx(CCFR "====================");
+                printx(CCFR "WM_INPUT: \"%ls\", %s", key_name, _key_down ? "Down" : "Up");
+              }
+
+              /**
+               * - If IME off, process the key.
+               * - If IME on, ingnore the key (except Win(OS) key).
+               *   - If the key is not processed by IME (checked in WM_KEYDOWN message),
+               *     finaly it will be processed by processKeyEvent() in WM_KEYDOWN.
+               *   - If the key is processed by IME,
+               *     finaly it will be processed by processImeEvent() in WM_IME_STARTCOMPOSITION.
+               *
+               * NOTE: IME may handle some key in English mode.
+               * e.g. if Full Width mode on, IME will convert alpha keys to full width letter.
+               * So here use `IsEnabled()` not `!IsEnglishMode()`.
+               *
+               * NOTE:
+               * Blender setting the modifier state based on press/release.
+               * See: #wm_event_add_ghostevent and #wmEvent.modifier.
+               *
+               * It will case some problem with IME switch shortcut Win+Space.
+               *
+               * The events of Win+Space was:
+               * WM_INPUT   [Win  , press               ]
+               * WM_KEYDOWN [Win  , press  , not ime key]
+               * WM_INPUT   [Space, release             ]
+               * WM_KEYUP   [Space, release, not ime key]
+               * WM_INPUT   [Win  , release             ]
+               * * we can't received any Space key press event)
+               * * we can't received Win key release event on WM_KEYUP)
+               *
+               * Win(OS) key press event case KM_OSKEY set in #event.modifier.
+               * If we don't process the Win(OS) key on WM_INPUT,
+               * we will lost the Win(OS) key release event,
+               * and #event.modifier will out of sync.
+               */
+              GHOST_ImeWin32 *ime = window->getImeInput();
+              if (ime->IsEnabled() && !ime->IsIgnoreKey(raw.data.keyboard.VKey)) {
+                printx(CCFR "  [Delay]: IME is enabled");
+                break;
+              }
+              printx(CCFG "  [Pass]");
+#endif
+
+              event = processKeyEvent_raw(window, raw);
               if (!event) {
                 GHOST_PRINT("GHOST_SystemWin32::wndProc: key event ");
                 GHOST_PRINT(msg);
@@ -1594,56 +1744,191 @@ LRESULT WINAPI GHOST_SystemWin32::s_wndProc(HWND hwnd, uint msg, WPARAM wParam, 
           break;
         }
 #ifdef WITH_INPUT_IME
+        /* ========================
+         * Keyboard events, just use for IME
+         * About VK_PROCESSKEY, see:
+         * https://learn.microsoft.com/en-us/windows/win32/learnwin32/keyboard-input#character-messages
+         * https://learn.microsoft.com/en-us/windows/win32/api/immdev/nf-immdev-immgetvirtualkey
+         * ======================== */
+        case WM_KEYDOWN:
+        case WM_SYSKEYDOWN: {
+          wchar_t key_name[256] = L"??";
+          GetKeyNameTextW(lParam, (LPWSTR)&key_name, 256);
+
+          GHOST_ImeWin32 *ime = window->getImeInput();
+          if (ime->IsEnabled() && wParam != VK_PROCESSKEY && !ime->IsIgnoreKey(wParam)) {
+            printx(CCFG "  WM_KEYDOWN [Pass]: NOT IME KEY: \"%ls\"", key_name);
+            event = processKeyEvent_key(window, msg, wParam, lParam);
+            if (!event) {
+              GHOST_PRINT("GHOST_SystemWin32::wndProc: key event ");
+              GHOST_PRINT(msg);
+              GHOST_PRINT(" key ignored\n");
+            }
+          }
+          else {
+            printx(CCFR "  WM_KEYDOWN [Block]: IME KEY: \"%ls\"", key_name);
+          }
+        } break;
+        case WM_KEYUP:
+        case WM_SYSKEYUP: {
+          wchar_t key_name[256] = L"??";
+          GetKeyNameTextW(lParam, (LPWSTR)&key_name, 256);
+
+          GHOST_ImeWin32 *ime = window->getImeInput();
+          if (ime->IsEnabled() && wParam != VK_PROCESSKEY && !ime->IsIgnoreKey(wParam)) {
+            printx(CCFG "  WM_KEYUP [Pass]: NOT IME KEY: \"%ls\"", key_name);
+            event = processKeyEvent_key(window, msg, wParam, lParam);
+            if (!event) {
+              GHOST_PRINT("GHOST_SystemWin32::wndProc: key event ");
+              GHOST_PRINT(msg);
+              GHOST_PRINT(" key ignored\n");
+            }
+          }
+          else {
+            printx(CCFR "  WM_KEYUP [Block]: IME KEY : \"%ls\"", key_name);
+          }
+
+          if (wParam == VK_SHIFT && ime->IsPaused()) {
+            printx(CCFA "IME Resume");
+            ime->ResumeIME();
+          }
+        } break;
         /* =================================================
          * IME events, processed, read more in `GHOST_IME.h`
          * ================================================= */
         case WM_IME_NOTIFY: {
-          /* Update conversion status when IME is changed or input mode is changed. */
-          if (wParam == IMN_SETOPENSTATUS || wParam == IMN_SETCONVERSIONMODE) {
-            window->getImeInput()->UpdateConversionStatus(hwnd);
+          /**
+           * IMN_OPENSTATUSWINDOW/IMN_CLOSESTATUSWINDOW is send after
+           * window active/deactive (WM_ACTIVE), whenever IMM context is NULL or not NULL.
+           * We can use this feature to capture the window activation event,
+           * so we don't need to put the IME related code to WM_ACTIVE.
+           */
+          GHOST_ImeWin32 *ime = window->getImeInput();
+          printx(CCFA "====================");
+          printx(CCFA "WM_IME_NOTIFY");
+          switch (wParam) {
+            case IMN_OPENSTATUSWINDOW:
+              printx(CCFA "  IMN_OPENSTATUSWINDOW");
+              ime->CheckFirst();
+              ime->OnWindowActivated();
+              break;
+            case IMN_CLOSESTATUSWINDOW:
+              printx(CCFA "  IMN_CLOSESTATUSWINDOW");
+              ime->OnWindowDeactivated();
+              break;
+            case IMN_CHANGECANDIDATE:
+              printx(CCFA "  IMN_SETOPENSTATUS");
+              break;
+            case IMN_CLOSECANDIDATE:
+              printx(CCFA "  IMN_CLOSECANDIDATE");
+              break;
+            case IMN_GUIDELINE:
+              printx(CCFA "  IMN_GUIDELINE");
+              break;
+            case IMN_OPENCANDIDATE:
+              printx(CCFA "  IMN_OPENCANDIDATE");
+              ime->MoveIME();
+              break;
+            case IMN_SETCANDIDATEPOS:
+              printx(CCFA "  IMN_SETCANDIDATEPOS");
+              break;
+            case IMN_SETCOMPOSITIONFONT:
+              printx(CCFA "  IMN_SETCOMPOSITIONFONT");
+              break;
+            case IMN_SETCOMPOSITIONWINDOW:
+              printx(CCFA "  IMN_SETCOMPOSITIONWINDOW");
+              break;
+            case IMN_SETCONVERSIONMODE:
+              printx(CCFA "  IMN_SETCONVERSIONMODE");
+              break;
+            case IMN_SETOPENSTATUS:
+              printx(CCFA "  IMN_SETOPENSTATUS");
+              break;
+            case IMN_SETSENTENCEMODE:
+              printx(CCFA "  IMN_SETSENTENCEMODE");
+              break;
+            case IMN_SETSTATUSWINDOWPOS:
+              printx(CCFA "  IMN_SETSTATUSWINDOWPOS");
+              break;
           }
           break;
         }
         case WM_IME_SETCONTEXT: {
-          GHOST_ImeWin32 *ime = window->getImeInput();
-          ime->UpdateInputLanguage();
-          ime->UpdateConversionStatus(hwnd);
-          ime->CreateImeWindow(hwnd);
-          ime->CleanupComposition(hwnd);
-          ime->CheckFirst(hwnd);
+          /**
+           * WM_IME_SETCONTEXT (wParam==True/False) is send after
+           * window active/deactive (WM_ACTIVE), whenever IMM context is NULL or not NULL.
+           * But it is also send after IMM context changed, and always with a pair:
+           * 1. WM_IME_SETCONTEXT (wParam==False)
+           * 2. WM_IME_SETCONTEXT (wParam==True)
+           * So we can't use this message to capture the window activation event.
+           * We just set the IME windows style on this message.
+           */
+          printx(CCFA "====================");
+          printx(CCFA "WM_IME_SETCONTEXT: window %s (unreliable)", wParam ? "active" : "deactive");
+          eventHandled = window->getImeInput()->SetImeWindowStyle(msg, wParam, lParam);
           break;
         }
         case WM_IME_STARTCOMPOSITION: {
+          printx(CCFR "====================");
+          printx(CCFR "WM_IME_STARTCOMPOSITION");
           GHOST_ImeWin32 *ime = window->getImeInput();
           eventHandled = true;
-          ime->CreateImeWindow(hwnd);
-          ime->ResetComposition(hwnd);
-          event = processImeEvent(GHOST_kEventImeCompositionStart, window, &ime->eventImeData);
+          ime->OnCompositionStart();
+          event = processImeEvent(GHOST_kEventImeCompositionStart, window, nullptr);
           break;
         }
         case WM_IME_COMPOSITION: {
+          printx(CCFR "====================");
+          printx(CCFR "WM_IME_COMPOSITION: %x", (unsigned int)lParam);
+          if (lParam & GCS_COMPATTR) {
+            printx(CCFR "  GCS_COMPATTR");
+          }
+          if (lParam & GCS_COMPCLAUSE) {
+            printx(CCFR "  GCS_COMPCLAUSE");
+          }
+          if (lParam & GCS_COMPREADATTR) {
+            printx(CCFR "  GCS_COMPREADATTR");
+          }
+          if (lParam & GCS_COMPREADCLAUSE) {
+            printx(CCFR "  GCS_COMPREADCLAUSE");
+          }
+          if (lParam & GCS_COMPREADSTR) {
+            printx(CCFR "  GCS_COMPREADSTR");
+          }
+          if (lParam & GCS_COMPSTR) {
+            printx(CCFR "  GCS_COMPSTR");
+          }
+          if (lParam & GCS_CURSORPOS) {
+            printx(CCFR "  GCS_CURSORPOS");
+          }
+          if (lParam & GCS_DELTASTART) {
+            printx(CCFR "  GCS_DELTASTART");
+          }
+          if (lParam & GCS_RESULTCLAUSE) {
+            printx(CCFR "  GCS_RESULTCLAUSE");
+          }
+          if (lParam & GCS_RESULTREADSTR) {
+            printx(CCFR "  GCS_RESULTREADSTR");
+          }
+          if (lParam & GCS_RESULTSTR) {
+            printx(CCFR "  GCS_RESULTSTR");
+          }
           GHOST_ImeWin32 *ime = window->getImeInput();
           eventHandled = true;
-          ime->UpdateImeWindow(hwnd);
-          ime->UpdateInfo(hwnd);
-          if (ime->eventImeData.result_len) {
-            /* remove redundant IME event */
-            eventManager->removeTypeEvents(GHOST_kEventImeComposition, window);
-          }
+          ime->OnCompositionUpdate(lParam);
           event = processImeEvent(GHOST_kEventImeComposition, window, &ime->eventImeData);
           break;
         }
         case WM_IME_ENDCOMPOSITION: {
+          printx(CCFR "====================");
+          printx(CCFR "WM_IME_ENDCOMPOSITION");
           GHOST_ImeWin32 *ime = window->getImeInput();
           eventHandled = true;
-          /* remove input event after end comp event, avoid redundant input */
-          eventManager->removeTypeEvents(GHOST_kEventKeyDown, window);
-          ime->ResetComposition(hwnd);
-          ime->DestroyImeWindow(hwnd);
-          event = processImeEvent(GHOST_kEventImeCompositionEnd, window, &ime->eventImeData);
+          ime->OnCompositionEnd();
+          event = processImeEvent(GHOST_kEventImeCompositionEnd, window, nullptr);
           break;
         }
-#endif /* WITH_INPUT_IME */
+#else /* WITH_INPUT_IME */
         /* ========================
          * Keyboard events, ignored
          * ======================== */
@@ -1652,6 +1937,7 @@ LRESULT WINAPI GHOST_SystemWin32::s_wndProc(HWND hwnd, uint msg, WPARAM wParam, 
         case WM_KEYUP:
         case WM_SYSKEYUP:
           /* These functions were replaced by #WM_INPUT. */
+#endif
         case WM_CHAR:
           /* The #WM_CHAR message is posted to the window with the keyboard focus when
            * a WM_KEYDOWN message is translated by the #TranslateMessage function.
@@ -1820,6 +2106,20 @@ LRESULT WINAPI GHOST_SystemWin32::s_wndProc(HWND hwnd, uint msg, WPARAM wParam, 
         case WM_POINTERUPDATE:
         case WM_POINTERDOWN:
         case WM_POINTERUP: {
+#ifdef WITH_INPUT_IME
+          if (msg == WM_POINTERDOWN) {
+            GHOST_ImeWin32 *ime = window->getImeInput();
+            if (ime->IsEnabled() && !ime->IsComposing()) {
+              if (HIBYTE(GetKeyState(VK_SHIFT)) && !HIBYTE(GetKeyState(VK_CONTROL)) &&
+                  !HIBYTE(GetKeyState(VK_MENU)))
+              {
+                printx(CCFA "====================");
+                printx(CCFA "WM_POINTERDOWN");
+                ime->PauseIME();
+              }
+            }
+          }
+#endif
           processPointerEvent(msg, window, wParam, lParam, eventHandled);
           break;
         }
@@ -1841,18 +2141,66 @@ LRESULT WINAPI GHOST_SystemWin32::s_wndProc(HWND hwnd, uint msg, WPARAM wParam, 
          * Mouse events, processed
          * ======================= */
         case WM_LBUTTONDOWN: {
+#ifdef WITH_INPUT_IME
+          GHOST_ImeWin32 *ime = window->getImeInput();
+          if (ime->IsEnabled() && !ime->IsComposing()) {
+            if (HIBYTE(GetKeyState(VK_SHIFT)) && !HIBYTE(GetKeyState(VK_CONTROL)) &&
+                !HIBYTE(GetKeyState(VK_MENU)))
+            {
+              printx(CCFA "====================");
+              printx(CCFA "WM_LBUTTONDOWN");
+              ime->PauseIME();
+            }
+          }
+#endif
           event = processButtonEvent(GHOST_kEventButtonDown, window, GHOST_kButtonMaskLeft);
           break;
         }
         case WM_MBUTTONDOWN: {
+#ifdef WITH_INPUT_IME
+          GHOST_ImeWin32 *ime = window->getImeInput();
+          if (ime->IsEnabled() && !ime->IsComposing()) {
+            if (HIBYTE(GetKeyState(VK_SHIFT)) && !HIBYTE(GetKeyState(VK_CONTROL)) &&
+                !HIBYTE(GetKeyState(VK_MENU)))
+            {
+              printx(CCFA "====================");
+              printx(CCFA "WM_MBUTTONDOWN");
+              ime->PauseIME();
+            }
+          }
+#endif
           event = processButtonEvent(GHOST_kEventButtonDown, window, GHOST_kButtonMaskMiddle);
           break;
         }
         case WM_RBUTTONDOWN: {
+#ifdef WITH_INPUT_IME
+          GHOST_ImeWin32 *ime = window->getImeInput();
+          if (ime->IsEnabled() && !ime->IsComposing()) {
+            if (HIBYTE(GetKeyState(VK_SHIFT)) && !HIBYTE(GetKeyState(VK_CONTROL)) &&
+                !HIBYTE(GetKeyState(VK_MENU)))
+            {
+              printx(CCFA "====================");
+              printx(CCFA "WM_RBUTTONDOWN");
+              ime->PauseIME();
+            }
+          }
+#endif
           event = processButtonEvent(GHOST_kEventButtonDown, window, GHOST_kButtonMaskRight);
           break;
         }
         case WM_XBUTTONDOWN: {
+#ifdef WITH_INPUT_IME
+          GHOST_ImeWin32 *ime = window->getImeInput();
+          if (ime->IsEnabled() && !ime->IsComposing()) {
+            if (HIBYTE(GetKeyState(VK_SHIFT)) && !HIBYTE(GetKeyState(VK_CONTROL)) &&
+                !HIBYTE(GetKeyState(VK_MENU)))
+            {
+              printx(CCFA "====================");
+              printx(CCFA "WM_XBUTTONDOWN");
+              ime->PauseIME();
+            }
+          }
+#endif
           if (short(HIWORD(wParam)) == XBUTTON1) {
             event = processButtonEvent(GHOST_kEventButtonDown, window, GHOST_kButtonMaskButton4);
           }

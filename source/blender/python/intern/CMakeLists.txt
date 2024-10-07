@@ -386,6 +386,10 @@ if(WITH_HARU)
   add_definitions(-DWITH_HARU)
 endif()
 
+if(WITH_INPUT_IME)
+  add_definitions(-DWITH_INPUT_IME)
+endif()
+
 if(WITH_HYDRA)
   list(APPEND LIB
     bf_render_hydra

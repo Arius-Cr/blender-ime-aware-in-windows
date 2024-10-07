@@ -240,8 +240,8 @@ enum {
 
 #define WM_KEYCONFIG_STR_DEFAULT "Blender"
 
-/* IME is win32 and apple only! */
-#if !(defined(WIN32) || defined(__APPLE__)) && !defined(DNA_DEPRECATED)
+/* IME is apple only! */
+#if !defined(__APPLE__) && !defined(DNA_DEPRECATED)
 #  ifdef __GNUC__
 #    define ime_data ime_data __attribute__((deprecated))
 #  endif
@@ -367,7 +367,7 @@ typedef struct wmWindow {
 
   /**
    * Input Method Editor data - complex character input (especially for Asian character input)
-   * Currently WIN32 and APPLE, runtime-only data.
+   * Currently APPLE, runtime-only data.
    */
   const struct wmIMEData *ime_data;
   char ime_data_is_composing;

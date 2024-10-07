@@ -24,6 +24,15 @@ int console_char_pick(SpaceConsole *sc, const ARegion *region, const int mval[2]
 void console_scrollback_prompt_begin(SpaceConsole *sc, ConsoleLine *cl_dummy);
 void console_scrollback_prompt_end(SpaceConsole *sc, ConsoleLine *cl_dummy);
 
+bool ED_console_region_location_from_cursor_offset(const SpaceConsole *sc,
+                                                   const ARegion *region,
+                                                   const int cursor,
+                                                   int r_pixel_co[2]);
+bool ED_console_region_location_from_cursor_index(const SpaceConsole *sc,
+                                                  const ARegion *region,
+                                                  const int cursor,
+                                                  int r_pixel_co[2]);
+
 /* `console_ops.cc` */
 
 void console_history_free(SpaceConsole *sc, ConsoleLine *cl);
@@ -54,6 +63,18 @@ void CONSOLE_OT_paste(wmOperatorType *ot);
 void CONSOLE_OT_select_set(wmOperatorType *ot);
 void CONSOLE_OT_select_all(wmOperatorType *ot);
 void CONSOLE_OT_select_word(wmOperatorType *ot);
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+
+void CONSOLE_OT_ime_input(wmOperatorType *ot);
+void CONSOLE_OT_ime_insert(wmOperatorType *ot);
+
+void console_reposition_ime_window(wmWindow *win,
+                                   ScrArea *area,
+                                   ARegion *region,
+                                   void *ime_input_data);
+
+#endif
 
 enum { LINE_BEGIN, LINE_END, PREV_CHAR, NEXT_CHAR, PREV_WORD, NEXT_WORD };
 enum {
