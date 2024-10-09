@@ -1,5 +1,11 @@
 # 文档更新记录
 
+2024-10-09：
+
+- 新增 Gitee 仓库。
+- 新增夸克网盘下载通道。
+- 修改问题反馈渠道。
+
 2024-10-07：文档发布
 
 # 项目说明
@@ -60,9 +66,7 @@
 
 1、**项目说明文档**
 
-就是本文档。
-
-该文档用于说明项目相关信息，并且通过评论区收集问题反馈。
+就是本文档。用于说明项目相关信息。
 
 2、**项目相关视频**
 
@@ -70,7 +74,9 @@
 
 3、**项目开源仓库**
 
-https://github.com/Arius-Cr/blender-ime-aware-in-windows
+- [GitHub](https://github.com/Arius-Cr/blender-ime-aware-in-windows)
+
+- [Gitee](https://gitee.com/arius-cr/blender-ime-aware-in-windows)
 
 **注意**：该仓库仅用于公开源码和收集问题反馈，当整个项目完成后，该仓库将会被**删除**！。
 
@@ -90,15 +96,17 @@ https://github.com/Arius-Cr/blender-ime-aware-in-windows
 
 你可以在以下渠道中反馈问题：
 
-1. 项目说明文档的评论区和B站私信
+1. 以下视频的评论区：
 
-    你可以在本文档的评论区中反馈问题。
+    - [Blender 输入法增强版公测](https://www.bilibili.com/video/BV19N11YKEu3/)
+
+2. B站私信
 
     私信的第一条消息必须表明反馈的问题是什么，否则不予回复。
 
-2. GitHub 仓库
+3. GitHub 或 Gitee 仓库
 
-反馈问题时能附带图片和视频是最好的，当然最重要的是，尽量提供可以重新触发问题的步骤。
+    反馈问题时能附带图片和视频是最好的，当然最重要的是，尽量提供可以重新触发问题的步骤。
 
 **注意**：
 
@@ -116,7 +124,9 @@ https://github.com/Arius-Cr/blender-ime-aware-in-windows
 
 下载地址：
 
-https://pan.baidu.com/s/1pDZzNVQxKqX_3UH95d6K-A?pwd=k1ab
+[百度网盘](https://pan.baidu.com/s/1pDZzNVQxKqX_3UH95d6K-A?pwd=k1ab)
+
+[夸克网盘](https://pan.quark.cn/s/8f90fade8802)
 
 提供的是官方版本对应的输入法增强版，根据自己平时使用的 Blender 版本下载即可。
 
