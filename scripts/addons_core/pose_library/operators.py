@@ -30,7 +30,6 @@ from bpy.types import (
     Object,
     Operator,
 )
-from bpy_extras import asset_utils
 from bpy.app.translations import pgettext_tip as tip_
 
 
@@ -98,6 +97,16 @@ class POSELIB_OT_create_pose_asset(PoseAssetCreator, Operator):
         anim_data = context.object.animation_data_create()
         context.window_manager.poselib_previous_action = anim_data.action
         anim_data.action = asset
+        # The `pass` on `AttributeError` and `IndexError` is just for while
+        # slotted actions are still behind an experimental flag, and thus the
+        # `slots` attribute may not exist when Blender is built without
+        # experimental features or it might be empty when the flag is simply
+        # disabled. The `try/except` here can be removed when slotted actions
+        # are taken out of experimental.
+        try:
+            anim_data.action_slot = asset.slots[0]
+        except (AttributeError, IndexError):
+            pass
 
     def _activate_asset_in_browser(self, context: Context, asset: Action) -> None:
         """Activate the new asset in the appropriate Asset Browser.
@@ -257,6 +266,8 @@ class POSELIB_OT_paste_asset(Operator):
 
     @classmethod
     def poll(cls, context: Context) -> bool:
+        from bpy_extras import asset_utils
+
         if not asset_utils.SpaceAssetInfo.is_asset_browser(context.space_data):
             cls.poll_message_set("Current editor is not an asset browser")
             return False

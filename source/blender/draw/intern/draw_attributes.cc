@@ -50,6 +50,9 @@ void drw_attributes_clear(DRW_Attributes *attributes)
 
 void drw_attributes_merge(DRW_Attributes *dst, const DRW_Attributes *src, std::mutex &render_mutex)
 {
+  if (src->num_requests == 0) {
+    return;
+  }
   std::lock_guard lock{render_mutex};
   drw_attributes_merge_requests(src, dst);
 }
@@ -90,9 +93,10 @@ bool drw_custom_data_match_attribute(const CustomData &custom_data,
                                      int *r_layer_index,
                                      eCustomDataType *r_type)
 {
-  const eCustomDataType possible_attribute_types[10] = {
+  const eCustomDataType possible_attribute_types[11] = {
       CD_PROP_BOOL,
       CD_PROP_INT8,
+      CD_PROP_INT16_2D,
       CD_PROP_INT32_2D,
       CD_PROP_INT32,
       CD_PROP_FLOAT,

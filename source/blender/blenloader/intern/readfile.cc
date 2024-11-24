@@ -108,6 +108,7 @@
 #include "SEQ_utils.hh"
 
 #include "readfile.hh"
+#include "versioning_common.hh"
 
 /* Make preferences read-only. */
 #define U (*((const UserDef *)&U))
@@ -184,7 +185,6 @@ static CLG_LogRef LOG_UNDO = {"blo.readfile.undo"};
 static void read_libraries(FileData *basefd, ListBase *mainlist);
 static void *read_struct(FileData *fd, BHead *bh, const char *blockname, const int id_type_index);
 static BHead *find_bhead_from_code_name(FileData *fd, const short idcode, const char *name);
-static BHead *find_bhead_from_idname(FileData *fd, const char *idname);
 
 struct BHeadN {
   BHeadN *next, *prev;
@@ -210,7 +210,10 @@ struct BHeadN {
 /** \name Blend Loader Reporting Wrapper
  * \{ */
 
-void BLO_reportf_wrap(BlendFileReadReport *reports, eReportType type, const char *format, ...)
+void BLO_reportf_wrap(BlendFileReadReport *reports,
+                      const eReportType type,
+                      const char *format,
+                      ...)
 {
   char fixed_buf[1024]; /* should be long enough */
 
@@ -261,7 +264,7 @@ static OldNewMap *oldnewmap_new()
  * \return `true` if the \a oldaddr key has been successfully added to the \a onm, and no existing
  * entry was overwritten.
  */
-static bool oldnewmap_insert(OldNewMap *onm, const void *oldaddr, void *newaddr, int nr)
+static bool oldnewmap_insert(OldNewMap *onm, const void *oldaddr, void *newaddr, const int nr)
 {
   if (oldaddr == nullptr || newaddr == nullptr) {
     return false;
@@ -270,17 +273,20 @@ static bool oldnewmap_insert(OldNewMap *onm, const void *oldaddr, void *newaddr,
   return onm->map.add_overwrite(oldaddr, NewAddress{newaddr, nr});
 }
 
-static void oldnewmap_lib_insert(FileData *fd, const void *oldaddr, ID *newaddr, int id_code)
+static void oldnewmap_lib_insert(FileData *fd, const void *oldaddr, ID *newaddr, const int id_code)
 {
   oldnewmap_insert(fd->libmap, oldaddr, newaddr, id_code);
 }
 
-void blo_do_versions_oldnewmap_insert(OldNewMap *onm, const void *oldaddr, void *newaddr, int nr)
+void blo_do_versions_oldnewmap_insert(OldNewMap *onm,
+                                      const void *oldaddr,
+                                      void *newaddr,
+                                      const int nr)
 {
   oldnewmap_insert(onm, oldaddr, newaddr, nr);
 }
 
-static void *oldnewmap_lookup_and_inc(OldNewMap *onm, const void *addr, bool increase_users)
+static void *oldnewmap_lookup_and_inc(OldNewMap *onm, const void *addr, const bool increase_users)
 {
   NewAddress *entry = onm->map.lookup_ptr(addr);
   if (entry == nullptr) {
@@ -652,7 +658,7 @@ static void switch_endian_bh8(BHead8 *bhead)
   }
 }
 
-static void bh4_from_bh8(BHead *bhead, BHead8 *bhead8, bool do_endian_swap)
+static void bh4_from_bh8(BHead *bhead, BHead8 *bhead8, const bool do_endian_swap)
 {
   BHead4 *bhead4 = (BHead4 *)bhead;
   int64_t old;
@@ -944,45 +950,91 @@ AssetMetaData *blo_bhead_id_asset_data_address(const FileData *fd, const BHead *
              nullptr;
 }
 
-static void decode_blender_header(FileData *fd)
+/** A header that has been parsed successfully. */
+struct BlenderHeader {
+  /** 4 or 8. */
+  int pointer_size;
+  /** L_ENDIAN or B_ENDIAN. */
+  int endian;
+  /** #BLENDER_FILE_VERSION. */
+  int file_version;
+};
+
+/** The file is detected to be a Blender file, but it could not be decoded successfully. */
+struct UnknownBlenderHeader {};
+
+/** The file is not a Blender file. */
+struct InvalidHeader {};
+
+using BlenderHeaderVariant = std::variant<InvalidHeader, UnknownBlenderHeader, BlenderHeader>;
+
+static BlenderHeaderVariant decode_blender_header(FileData *fd)
 {
-  char header[SIZEOFBLENDERHEADER], num[4];
-  int64_t readsize;
-
-  /* read in the header data */
-  readsize = fd->file->read(fd->file, header, sizeof(header));
-
-  if (readsize == sizeof(header) && STREQLEN(header, "BLENDER", 7) && ELEM(header[7], '_', '-') &&
-      ELEM(header[8], 'v', 'V') &&
-      (isdigit(header[9]) && isdigit(header[10]) && isdigit(header[11])))
-  {
-    fd->flags |= FD_FLAGS_FILE_OK;
-
-    /* what size are pointers in the file ? */
-    if (header[7] == '_') {
-      fd->flags |= FD_FLAGS_FILE_POINTSIZE_IS_4;
-      if (sizeof(void *) != 4) {
-        fd->flags |= FD_FLAGS_POINTSIZE_DIFFERS;
-      }
-    }
-    else {
-      if (sizeof(void *) != 8) {
-        fd->flags |= FD_FLAGS_POINTSIZE_DIFFERS;
-      }
-    }
-
-    /* is the file saved in a different endian
-     * than we need ?
-     */
-    if (((header[8] == 'v') ? L_ENDIAN : B_ENDIAN) != ENDIAN_ORDER) {
-      fd->flags |= FD_FLAGS_SWITCH_ENDIAN;
-    }
-
-    /* get the version number */
-    memcpy(num, header + 9, 3);
-    num[3] = 0;
-    fd->fileversion = atoi(num);
+  char header_bytes[SIZEOFBLENDERHEADER];
+  const int64_t readsize = fd->file->read(fd->file, header_bytes, sizeof(header_bytes));
+  if (readsize != sizeof(header_bytes)) {
+    return InvalidHeader{};
   }
+  if (!STREQLEN(header_bytes, "BLENDER", 7)) {
+    return InvalidHeader{};
+  }
+  /* If the first 7 bytes are BLENDER, it is very likely that this is a newer version of the
+   * blendfile format. If the rest of the decode fails, we can still report that this was a Blender
+   * file of a potentially future version. */
+
+  BlenderHeader header;
+  switch (header_bytes[7]) {
+    case '_':
+      header.pointer_size = 4;
+      break;
+    case '-':
+      header.pointer_size = 8;
+      break;
+    default:
+      return UnknownBlenderHeader{};
+  }
+  switch (header_bytes[8]) {
+    case 'v':
+      header.endian = L_ENDIAN;
+      break;
+    case 'V':
+      header.endian = B_ENDIAN;
+      break;
+    default:
+      return UnknownBlenderHeader{};
+  }
+  if (!isdigit(header_bytes[9]) || !isdigit(header_bytes[10]) || !isdigit(header_bytes[11])) {
+    return UnknownBlenderHeader{};
+  }
+  char version_str[4];
+  memcpy(version_str, header_bytes + 9, 3);
+  version_str[3] = '\0';
+  header.file_version = atoi(version_str);
+  return header;
+}
+
+static void read_blender_header(FileData *fd)
+{
+  const BlenderHeaderVariant header_variant = decode_blender_header(fd);
+  if (std::holds_alternative<InvalidHeader>(header_variant)) {
+    return;
+  }
+  if (std::holds_alternative<UnknownBlenderHeader>(header_variant)) {
+    fd->flags |= FD_FLAGS_FILE_FUTURE;
+    return;
+  }
+  const BlenderHeader &header = std::get<BlenderHeader>(header_variant);
+  fd->flags |= FD_FLAGS_FILE_OK;
+  if (header.pointer_size == 4) {
+    fd->flags |= FD_FLAGS_FILE_POINTSIZE_IS_4;
+  }
+  if (header.pointer_size != sizeof(void *)) {
+    fd->flags |= FD_FLAGS_POINTSIZE_DIFFERS;
+  }
+  if (header.endian != ENDIAN_ORDER) {
+    fd->flags |= FD_FLAGS_SWITCH_ENDIAN;
+  }
+  fd->fileversion = header.file_version;
 }
 
 /**
@@ -1159,7 +1211,7 @@ static bool is_minversion_older_than_blender(FileData *fd, ReportList *reports)
 
 static FileData *blo_decode_and_check(FileData *fd, ReportList *reports)
 {
-  decode_blender_header(fd);
+  read_blender_header(fd);
 
   if (fd->flags & FD_FLAGS_FILE_OK) {
     const char *error_message = nullptr;
@@ -1174,9 +1226,17 @@ static FileData *blo_decode_and_check(FileData *fd, ReportList *reports)
       fd = nullptr;
     }
   }
-  else {
+  else if (fd->flags & FD_FLAGS_FILE_FUTURE) {
     BKE_reportf(
-        reports, RPT_ERROR, "Failed to read blend file '%s', not a blend file", fd->relabase);
+        reports,
+        RPT_ERROR,
+        "Cannot read blend file '%s', incomplete header, may be from a newer version of Blender",
+        fd->relabase);
+    blo_filedata_free(fd);
+    fd = nullptr;
+  }
+  else {
+    BKE_reportf(reports, RPT_ERROR, "Failed to read file '%s', not a blend file", fd->relabase);
     blo_filedata_free(fd);
     fd = nullptr;
   }
@@ -1186,7 +1246,7 @@ static FileData *blo_decode_and_check(FileData *fd, ReportList *reports)
 
 static FileData *blo_filedata_from_file_descriptor(const char *filepath,
                                                    BlendFileReadReport *reports,
-                                                   int filedes)
+                                                   const int filedes)
 {
   char header[7];
   FileReader *rawfile = BLI_filereader_new_file(filedes);
@@ -1286,7 +1346,7 @@ static FileData *blo_filedata_from_file_minimal(const char *filepath)
   BlendFileReadReport read_report{};
   FileData *fd = blo_filedata_from_file_open(filepath, &read_report);
   if (fd != nullptr) {
-    decode_blender_header(fd);
+    read_blender_header(fd);
     if (fd->flags & FD_FLAGS_FILE_OK) {
       return fd;
     }
@@ -1295,7 +1355,9 @@ static FileData *blo_filedata_from_file_minimal(const char *filepath)
   return nullptr;
 }
 
-FileData *blo_filedata_from_memory(const void *mem, int memsize, BlendFileReadReport *reports)
+FileData *blo_filedata_from_memory(const void *mem,
+                                   const int memsize,
+                                   BlendFileReadReport *reports)
 {
   if (!mem || memsize < SIZEOFBLENDERHEADER) {
     BKE_report(
@@ -1556,7 +1618,7 @@ static void blo_cache_storage_entry_register(
 
 /** Restore a cache data entry from old ID into new one, when reading some undo memfile. */
 static void blo_cache_storage_entry_restore_in_new(
-    ID *id, const IDCacheKey *key, void **cache_p, uint flags, void *cache_storage_v)
+    ID *id, const IDCacheKey *key, void **cache_p, const uint flags, void *cache_storage_v)
 {
   BLOCacheStorage *cache_storage = static_cast<BLOCacheStorage *>(cache_storage_v);
 
@@ -1590,8 +1652,11 @@ static void blo_cache_storage_entry_restore_in_new(
 }
 
 /** Clear as needed a cache data entry from old ID, when reading some undo memfile. */
-static void blo_cache_storage_entry_clear_in_old(
-    ID * /*id*/, const IDCacheKey *key, void **cache_p, uint /*flags*/, void *cache_storage_v)
+static void blo_cache_storage_entry_clear_in_old(ID * /*id*/,
+                                                 const IDCacheKey *key,
+                                                 void **cache_p,
+                                                 const uint /*flags*/,
+                                                 void *cache_storage_v)
 {
   BLOCacheStorage *cache_storage = static_cast<BLOCacheStorage *>(cache_storage_v);
 
@@ -1712,12 +1777,12 @@ static void switch_endian_structs(const SDNA *filesdna, BHead *bhead)
  * Generate the final allocation string reference for read blocks of data. If \a blockname is
  * given, use it as 'owner block' info, otherwise use the id type index to get that info.
  *
- * \note: These strings are stored until Blender exits
+ * \note These strings are stored until Blender exits
  */
 static const char *get_alloc_name(FileData *fd,
                                   BHead *bh,
                                   const char *blockname,
-                                  int id_type_index = INDEX_ID_NULL)
+                                  const int id_type_index = INDEX_ID_NULL)
 {
 #ifndef NDEBUG
   /* Storage key is a pair of (string , int), where the first is the concatenation of the 'owner
@@ -1766,7 +1831,7 @@ static const char *get_alloc_name(FileData *fd,
   keyT key{block_alloc_name + struct_name, bh->nr};
   if (!storage.contains(key)) {
     const std::string alloc_string = fmt::format(
-        (is_id_data ? "{}{} (for ID type '{}')" : "{}{} (for block '{}')"),
+        fmt::runtime((is_id_data ? "{}{} (for ID type '{}')" : "{}{} (for block '{}')")),
         struct_name,
         bh->nr > 1 ? fmt::format("[{}]", bh->nr) : "",
         block_alloc_name);
@@ -2088,10 +2153,6 @@ static void direct_link_id_common(
     id->session_uid = MAIN_ID_SESSION_UID_UNSET;
   }
 
-  if ((id_tag & ID_TAG_TEMP_MAIN) == 0) {
-    BKE_lib_libblock_session_uid_ensure(id);
-  }
-
   id->lib = current_library;
   if (id->lib) {
     /* Always fully clear fake user flag for linked data. */
@@ -2109,6 +2170,10 @@ static void direct_link_id_common(
   }
   else {
     id->tag = id_tag;
+  }
+
+  if ((id_tag & ID_TAG_TEMP_MAIN) == 0) {
+    BKE_lib_libblock_session_uid_ensure(id);
   }
 
   if (ID_IS_LINKED(id)) {
@@ -2761,7 +2826,7 @@ static void read_libblock_undo_restore_at_old_address(FileData *fd, Main *main, 
 }
 
 static bool read_libblock_undo_restore(
-    FileData *fd, Main *main, BHead *bhead, int id_tag, ID **r_id_old)
+    FileData *fd, Main *main, BHead *bhead, const int id_tag, ID **r_id_old)
 {
   BLI_assert(fd->old_idmap_uid != nullptr);
 
@@ -3619,13 +3684,22 @@ BlendFileData *blo_read_file_internal(FileData *fd, const char *filepath)
         bhead->code = ID_SCR;
         /* pass on to default */
         ATTR_FALLTHROUGH;
-      default:
-        if (fd->skip_flags & BLO_READ_SKIP_DATA) {
-          bhead = blo_bhead_next(fd, bhead);
+      default: {
+        if (blo_bhead_is_id_valid_type(bhead)) {
+          /* BHead is a valid known ID type one, read the whole ID and its sub-data, unless reading
+           * actual data is skipped. */
+          if (fd->skip_flags & BLO_READ_SKIP_DATA) {
+            bhead = blo_bhead_next(fd, bhead);
+          }
+          else {
+            bhead = read_libblock(fd, bfd->main, bhead, ID_TAG_LOCAL, false, nullptr);
+          }
         }
         else {
-          bhead = read_libblock(fd, bfd->main, bhead, ID_TAG_LOCAL, false, nullptr);
+          /* Unknown BHead type (or ID type), ignore it and skip to next BHead. */
+          bhead = blo_bhead_next(fd, bhead);
         }
+      }
     }
 
     if (bfd->main->is_read_invalid) {
@@ -3706,7 +3780,11 @@ BlendFileData *blo_read_file_internal(FileData *fd, const char *filepath)
       /* Yep, second splitting... but this is a very cheap operation, so no big deal. */
       blo_split_main(&mainlist, bfd->main);
       LISTBASE_FOREACH (Main *, mainvar, &mainlist) {
-        BLI_assert(mainvar->versionfile != 0);
+        /* Do versioning for newly added linked data-blocks. If no data-blocks were read from a
+         * library versionfile will still be zero and we can skip it. */
+        if (mainvar->versionfile == 0) {
+          continue;
+        }
         do_versions_after_linking((mainvar->curlib && mainvar->curlib->runtime.filedata) ?
                                       mainvar->curlib->runtime.filedata :
                                       fd,
@@ -3722,11 +3800,32 @@ BlendFileData *blo_read_file_internal(FileData *fd, const char *filepath)
       BKE_main_id_refcount_recompute(bfd->main, false);
     }
 
-    LISTBASE_FOREACH (Library *, lib, &bfd->main->libraries) {
+    LISTBASE_FOREACH_MUTABLE (Library *, lib, &bfd->main->libraries) {
       /* Now we can clear this runtime library filedata, it is not needed anymore. */
       if (lib->runtime.filedata) {
+        BLI_assert(lib->runtime.versionfile != 0);
         blo_filedata_free(lib->runtime.filedata);
         lib->runtime.filedata = nullptr;
+      }
+      /* If no data-blocks were read from a library (should only happen when all references to a
+       * library's data are `ID_FLAG_INDIRECT_WEAK_LINK`), its versionfile will still be zero and
+       * it can be deleted.
+       *
+       * NOTES:
+       *  - In case the library blendfile exists but is missing all the referenced linked IDs, the
+       *    placeholders IDs created will reference the library ID, and the library ID will have a
+       *    valid version number as the file was read to search for the linked IDs.
+       *  - In case the library blendfile does not exist, its local Library ID will get the version
+       *    of the current local Main (i.e. the loaded blendfile). */
+      else if (lib->runtime.versionfile == 0) {
+#ifndef NDEBUG
+        ID *id_iter;
+        FOREACH_MAIN_ID_BEGIN (bfd->main, id_iter) {
+          BLI_assert(id_iter->lib != lib);
+        }
+        FOREACH_MAIN_ID_END;
+#endif
+        BKE_id_delete(bfd->main, lib);
       }
     }
 
@@ -3933,9 +4032,27 @@ static BHead *find_bhead_from_code_name(FileData *fd, const short idcode, const 
 static BHead *find_bhead_from_idname(FileData *fd, const char *idname)
 {
 #ifdef USE_GHASH_BHEAD
-  return static_cast<BHead *>(BLI_ghash_lookup(fd->bhead_idname_hash, idname));
+  BHead *bhead = static_cast<BHead *>(BLI_ghash_lookup(fd->bhead_idname_hash, idname));
 #else
-  return find_bhead_from_code_name(fd, GS(idname), idname + 2);
+  BHead *bhead = find_bhead_from_code_name(fd, GS(idname), idname + 2);
+#endif
+  if (LIKELY(bhead)) {
+    return bhead;
+  }
+
+  /* Expected ID was not found, attempt to load the same name, but for an older, deprecated and
+   * converted ID type. */
+  const short id_code_old = do_versions_new_to_old_idcode_get(GS(idname));
+  if (id_code_old == ID_LINK_PLACEHOLDER) {
+    return bhead;
+  }
+#ifdef USE_GHASH_BHEAD
+  char id_name_old[MAX_ID_NAME];
+  BLI_strncpy(id_name_old, idname, sizeof(id_name_old));
+  *reinterpret_cast<short *>(id_name_old) = id_code_old;
+  return static_cast<BHead *>(BLI_ghash_lookup(fd->bhead_idname_hash, id_name_old));
+#else
+  return find_bhead_from_code_name(fd, id_code_old, idname + 2);
 #endif
 }
 
@@ -3975,6 +4092,13 @@ static void expand_doit_library(void *fdhandle, Main *mainvar, void *old)
 
   BHead *bhead = find_bhead(fd, old);
   if (bhead == nullptr) {
+    return;
+  }
+  /* In 2.50+ file identifier for screens is patched, forward compatibility. */
+  if (bhead->code == ID_SCRN) {
+    bhead->code = ID_SCR;
+  }
+  if (!blo_bhead_is_id_valid_type(bhead)) {
     return;
   }
 
@@ -4047,11 +4171,6 @@ static void expand_doit_library(void *fdhandle, Main *mainvar, void *old)
   }
   else {
     /* Data-block in same library. */
-    /* In 2.50+ file identifier for screens is patched, forward compatibility. */
-    if (bhead->code == ID_SCRN) {
-      bhead->code = ID_SCR;
-    }
-
     ID *id = library_id_is_yet_read(fd, mainvar, bhead);
     if (id == nullptr) {
       read_libblock(
@@ -4157,7 +4276,7 @@ static ID *link_named_part(
 
   BLI_assert(BKE_idtype_idcode_is_linkable(idcode) && BKE_idtype_idcode_is_valid(idcode));
 
-  if (bhead) {
+  if (bhead && blo_bhead_is_id_valid_type(bhead)) {
     id = library_id_is_yet_read(fd, mainl, bhead);
     if (id == nullptr) {
       /* not read yet */
@@ -4190,8 +4309,7 @@ static ID *link_named_part(
     id = nullptr;
   }
 
-  /* if we found the id but the id is nullptr, this is really bad */
-  BLI_assert(!((bhead != nullptr) && (id == nullptr)));
+  /* NOTE: `id` may be `nullptr` even if a BHead was found, in case e.g. it is an invalid BHead. */
 
   return id;
 }
@@ -4823,7 +4941,7 @@ void *BLO_read_struct_array_with_size(BlendDataReader *reader,
 
 void *BLO_read_struct_by_name_array(BlendDataReader *reader,
                                     const char *struct_name,
-                                    const uint32_t items_num,
+                                    const int64_t items_num,
                                     const void *old_address)
 {
   const int struct_index = DNA_struct_find_with_alias(reader->fd->memsdna, struct_name);
@@ -4841,7 +4959,7 @@ ID *BLO_read_get_new_id_address(BlendLibReader *reader,
   return static_cast<ID *>(newlibadr(reader->fd, self_id, is_linked_only, id));
 }
 
-ID *BLO_read_get_new_id_address_from_session_uid(BlendLibReader *reader, uint session_uid)
+ID *BLO_read_get_new_id_address_from_session_uid(BlendLibReader *reader, const uint session_uid)
 {
   return BKE_main_idmap_lookup_uid(reader->fd->new_idmap_uid, session_uid);
 }
@@ -4877,25 +4995,25 @@ void BLO_read_struct_list_with_size(BlendDataReader *reader,
   list->last = prev;
 }
 
-void BLO_read_char_array(BlendDataReader *reader, int array_size, char **ptr_p)
+void BLO_read_char_array(BlendDataReader *reader, const int64_t array_size, char **ptr_p)
 {
   *ptr_p = reinterpret_cast<char *>(
       BLO_read_struct_array_with_size(reader, *((void **)ptr_p), sizeof(char) * array_size));
 }
 
-void BLO_read_uint8_array(BlendDataReader *reader, int array_size, uint8_t **ptr_p)
+void BLO_read_uint8_array(BlendDataReader *reader, const int64_t array_size, uint8_t **ptr_p)
 {
   *ptr_p = reinterpret_cast<uint8_t *>(
       BLO_read_struct_array_with_size(reader, *((void **)ptr_p), sizeof(uint8_t) * array_size));
 }
 
-void BLO_read_int8_array(BlendDataReader *reader, int array_size, int8_t **ptr_p)
+void BLO_read_int8_array(BlendDataReader *reader, const int64_t array_size, int8_t **ptr_p)
 {
   *ptr_p = reinterpret_cast<int8_t *>(
       BLO_read_struct_array_with_size(reader, *((void **)ptr_p), sizeof(int8_t) * array_size));
 }
 
-void BLO_read_int32_array(BlendDataReader *reader, int array_size, int32_t **ptr_p)
+void BLO_read_int32_array(BlendDataReader *reader, const int64_t array_size, int32_t **ptr_p)
 {
   *ptr_p = reinterpret_cast<int32_t *>(
       BLO_read_struct_array_with_size(reader, *((void **)ptr_p), sizeof(int32_t) * array_size));
@@ -4905,7 +5023,7 @@ void BLO_read_int32_array(BlendDataReader *reader, int array_size, int32_t **ptr
   }
 }
 
-void BLO_read_uint32_array(BlendDataReader *reader, int array_size, uint32_t **ptr_p)
+void BLO_read_uint32_array(BlendDataReader *reader, const int64_t array_size, uint32_t **ptr_p)
 {
   *ptr_p = reinterpret_cast<uint32_t *>(
       BLO_read_struct_array_with_size(reader, *((void **)ptr_p), sizeof(uint32_t) * array_size));
@@ -4915,7 +5033,7 @@ void BLO_read_uint32_array(BlendDataReader *reader, int array_size, uint32_t **p
   }
 }
 
-void BLO_read_float_array(BlendDataReader *reader, int array_size, float **ptr_p)
+void BLO_read_float_array(BlendDataReader *reader, const int64_t array_size, float **ptr_p)
 {
   *ptr_p = reinterpret_cast<float *>(
       BLO_read_struct_array_with_size(reader, *((void **)ptr_p), sizeof(float) * array_size));
@@ -4925,12 +5043,12 @@ void BLO_read_float_array(BlendDataReader *reader, int array_size, float **ptr_p
   }
 }
 
-void BLO_read_float3_array(BlendDataReader *reader, int array_size, float **ptr_p)
+void BLO_read_float3_array(BlendDataReader *reader, const int64_t array_size, float **ptr_p)
 {
   BLO_read_float_array(reader, array_size * 3, ptr_p);
 }
 
-void BLO_read_double_array(BlendDataReader *reader, int array_size, double **ptr_p)
+void BLO_read_double_array(BlendDataReader *reader, const int64_t array_size, double **ptr_p)
 {
   *ptr_p = reinterpret_cast<double *>(
       BLO_read_struct_array_with_size(reader, *((void **)ptr_p), sizeof(double) * array_size));
@@ -4970,7 +5088,7 @@ void BLO_read_string(BlendDataReader *reader, const char **ptr_p)
 }
 
 static void convert_pointer_array_64_to_32(BlendDataReader *reader,
-                                           uint array_size,
+                                           const int64_t array_size,
                                            const uint64_t *src,
                                            uint32_t *dst)
 {
@@ -4990,7 +5108,7 @@ static void convert_pointer_array_64_to_32(BlendDataReader *reader,
 }
 
 static void convert_pointer_array_32_to_64(BlendDataReader * /*reader*/,
-                                           uint array_size,
+                                           const int64_t array_size,
                                            const uint32_t *src,
                                            uint64_t *dst)
 {
@@ -5000,7 +5118,7 @@ static void convert_pointer_array_32_to_64(BlendDataReader * /*reader*/,
   }
 }
 
-void BLO_read_pointer_array(BlendDataReader *reader, const int array_size, void **ptr_p)
+void BLO_read_pointer_array(BlendDataReader *reader, const int64_t array_size, void **ptr_p)
 {
   FileData *fd = reader->fd;
 

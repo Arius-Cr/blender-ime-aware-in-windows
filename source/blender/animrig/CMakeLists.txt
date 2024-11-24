@@ -34,6 +34,7 @@ set(SRC
   intern/fcurve.cc
   intern/keyframing.cc
   intern/keyframing_auto.cc
+  intern/keyingsets.cc
   intern/nla.cc
   intern/pose.cc
   intern/visualkey.cc
@@ -64,15 +65,10 @@ set(LIB
   bf::blenlib
   PRIVATE bf::depsgraph
   bf::dna
-  PRIVATE bf_editor_interface
   PRIVATE bf::intern::guardedalloc
   PRIVATE bf::intern::atomic
   PRIVATE bf::intern::clog
 )
-
-if(WITH_EXPERIMENTAL_FEATURES)
-  add_definitions(-DWITH_ANIM_BAKLAVA)
-endif()
 
 blender_add_lib(bf_animrig "${SRC}" "${INC}" "${INC_SYS}" "${LIB}")
 add_library(bf::animrig ALIAS bf_animrig)

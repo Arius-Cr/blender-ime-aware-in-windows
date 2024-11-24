@@ -58,6 +58,18 @@ struct State {
   bool clear_in_front;
   bool use_in_front;
   bool is_wireframe_mode;
+  /** Whether we are rendering for an image (viewport render). */
+  bool is_viewport_image_render;
+  /** Whether we are rendering for an image. */
+  bool is_image_render;
+  /** True if rendering only to query the depth. Can be for auto-depth rotation. */
+  bool is_depth_only_drawing;
+  /** When drag-dropping material onto objects to assignment. */
+  bool is_material_select;
+  /** Whether we should render the background or leave it transparent. */
+  bool draw_background;
+  /** Should text draw in this mode? */
+  bool show_text;
   bool hide_overlays;
   bool xray_enabled;
   bool xray_enabled_and_not_wire;
@@ -87,6 +99,78 @@ struct State {
       view_dist = 1.0f / max_ff(fabsf(winmat[0][0]), fabsf(winmat[1][1]));
     }
     return view_dist;
+  }
+
+  /** Convenience functions. */
+
+  bool is_space_v3d() const
+  {
+    return this->space_type == SPACE_VIEW3D;
+  }
+  bool is_space_image() const
+  {
+    return this->space_type == SPACE_IMAGE;
+  }
+  bool is_space_node() const
+  {
+    return this->space_type == SPACE_NODE;
+  }
+
+  bool show_extras() const
+  {
+    return (this->overlay.flag & V3D_OVERLAY_HIDE_OBJECT_XTRAS) == 0;
+  }
+  bool show_face_orientation() const
+  {
+    return (this->overlay.flag & V3D_OVERLAY_FACE_ORIENTATION);
+  }
+  bool show_bone_selection() const
+  {
+    return (this->overlay.flag & V3D_OVERLAY_BONE_SELECT);
+  }
+  bool show_wireframes() const
+  {
+    return (this->overlay.flag & V3D_OVERLAY_WIREFRAMES);
+  }
+  bool show_motion_paths() const
+  {
+    return (this->overlay.flag & V3D_OVERLAY_HIDE_MOTION_PATHS) == 0;
+  }
+  bool show_bones() const
+  {
+    return (this->overlay.flag & V3D_OVERLAY_HIDE_BONES) == 0;
+  }
+  bool show_object_origins() const
+  {
+    return (this->overlay.flag & V3D_OVERLAY_HIDE_OBJECT_ORIGINS) == 0;
+  }
+  bool show_fade_inactive() const
+  {
+    return (this->overlay.flag & V3D_OVERLAY_FADE_INACTIVE);
+  }
+  bool show_attribute_viewer() const
+  {
+    return (this->overlay.flag & V3D_OVERLAY_VIEWER_ATTRIBUTE);
+  }
+  bool show_attribute_viewer_text() const
+  {
+    return (this->overlay.flag & V3D_OVERLAY_VIEWER_ATTRIBUTE_TEXT);
+  }
+  bool show_sculpt_mask() const
+  {
+    return (this->overlay.flag & V3D_OVERLAY_SCULPT_SHOW_MASK);
+  }
+  bool show_sculpt_face_sets() const
+  {
+    return (this->overlay.flag & V3D_OVERLAY_SCULPT_SHOW_FACE_SETS);
+  }
+  bool show_sculpt_curves_cage() const
+  {
+    return (this->overlay.flag & V3D_OVERLAY_SCULPT_CURVES_CAGE);
+  }
+  bool show_light_colors() const
+  {
+    return (this->overlay.flag & V3D_OVERLAY_SHOW_LIGHT_COLORS);
   }
 };
 
@@ -201,6 +285,11 @@ class ShaderModule {
 
  public:
   /** Shaders */
+  ShaderPtr attribute_viewer_mesh;
+  ShaderPtr attribute_viewer_pointcloud;
+  ShaderPtr attribute_viewer_curve;
+  ShaderPtr attribute_viewer_curves;
+
   ShaderPtr anti_aliasing = shader("overlay_antialiasing");
   ShaderPtr armature_degrees_of_freedom;
   ShaderPtr background_fill = shader("overlay_background");
@@ -210,7 +299,7 @@ class ShaderModule {
   ShaderPtr curve_edit_handles = shader("overlay_edit_curves_handle_next");
   ShaderPtr extra_point;
   ShaderPtr facing;
-  ShaderPtr grid = shader("overlay_grid");
+  ShaderPtr grid = shader("overlay_grid_next");
   ShaderPtr grid_background;
   ShaderPtr grid_grease_pencil = shader("overlay_gpencil_canvas");
   ShaderPtr grid_image;
@@ -289,8 +378,10 @@ class ShaderModule {
   ShaderPtr fluid_velocity_mac;
   ShaderPtr fluid_velocity_needle;
   ShaderPtr image_plane;
+  ShaderPtr image_plane_depth_bias;
   ShaderPtr lattice_points;
   ShaderPtr lattice_wire;
+  ShaderPtr light_spot_cone;
   ShaderPtr particle_dot;
   ShaderPtr particle_shape;
   ShaderPtr particle_hair;
@@ -347,6 +438,7 @@ struct Resources : public select::SelectMap {
   TextureFromPool overlay_tx = {"overlay_tx"};
   /* Target containing depth of overlays when xray is enabled. */
   TextureFromPool xray_depth_tx = {"xray_depth_tx"};
+  TextureFromPool xray_depth_in_front_tx = {"xray_depth_in_front_tx"};
 
   /* Texture that are usually allocated inside. These are fallback when they aren't.
    * They are then wrapped inside the #TextureRefs below. */
@@ -354,6 +446,8 @@ struct Resources : public select::SelectMap {
   TextureFromPool color_overlay_alloc_tx = {"overlay_color_overlay_alloc_tx"};
   TextureFromPool color_render_alloc_tx = {"overlay_color_render_alloc_tx"};
 
+  /* 1px texture containing only maximum depth. To be used for fulfilling bindings when depth
+   * texture is not available or not needed. */
   Texture dummy_depth_tx = {"dummy_depth_tx"};
 
   /** TODO(fclem): Copy of G_data.block that should become theme colors only and managed by the
@@ -505,6 +599,14 @@ struct Resources : public select::SelectMap {
       BKE_movieclip_free_gputexture(clip);
     }
   }
+
+  /** Convenience functions. */
+
+  /* Returns true if drawing for any selection mode. */
+  bool is_selection() const
+  {
+    return this->selection_type != SelectionType::DISABLED;
+  }
 };
 
 /**
@@ -651,5 +753,19 @@ struct LinePrimitiveBuf : public VertexPrimitiveBuf {
     VertexPrimitiveBuf::end_sync(pass, GPU_PRIM_LINES);
   }
 };
+
+/* Consider instance any object form a set or a dupli system.
+ * This hides some overlay to avoid making the viewport unreadable. */
+static inline bool is_from_dupli_or_set(const Object *ob)
+{
+  return ob->base_flag & (BASE_FROM_SET | BASE_FROM_DUPLI);
+}
+
+/* Consider instance any object form a set or a dupli system.
+ * This hides some overlay to avoid making the viewport unreadable. */
+static inline bool is_from_dupli_or_set(const ObjectRef &ob_ref)
+{
+  return is_from_dupli_or_set(ob_ref.object);
+}
 
 }  // namespace blender::draw::overlay

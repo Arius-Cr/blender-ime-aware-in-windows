@@ -18,6 +18,7 @@
 
 #include "BKE_object.hh"
 #include "BKE_particle.h"
+#include "BKE_screen.hh"
 
 #include "ED_image.hh"
 #include "ED_screen.hh"
@@ -119,7 +120,7 @@ static void external_engine_init(void *vedata)
 
   /* Progressive render samples are tagged with no rebuild, in that case we
    * can skip updating the depth buffer */
-  if (region && (region->do_draw & RGN_DRAW_NO_REBUILD)) {
+  if (region && (region->runtime->do_draw & RGN_DRAW_NO_REBUILD)) {
     stl->g_data->update_depth = false;
   }
 }
@@ -164,6 +165,7 @@ static void external_cache_init(void *vedata)
     psl->depth_pass = DRW_pass_create("Depth Pass",
                                       DRW_STATE_WRITE_DEPTH | DRW_STATE_DEPTH_LESS_EQUAL);
     stl->g_data->depth_shgrp = DRW_shgroup_create(e_data.depth_sh, psl->depth_pass);
+    DRW_shgroup_uniform_block(stl->g_data->depth_shgrp, "globalsBlock", G_draw.block_ubo);
   }
 
   if (v3d != nullptr) {

@@ -138,8 +138,6 @@ ENUM_OPERATORS(NodeResizeDirection, NODE_RESIZE_LEFT);
 #define NODE_HEIGHT(node) (node.height * UI_SCALE_FAC)
 #define NODE_MARGIN_X (1.2f * U.widget_unit)
 #define NODE_SOCKSIZE (0.25f * U.widget_unit)
-#define NODE_SOCKSIZE_DRAW_MULIPLIER 2.25f
-#define NODE_SOCK_OUTLINE_SCALE 1.0f
 #define NODE_MULTI_INPUT_LINK_GAP (0.25f * U.widget_unit)
 #define NODE_RESIZE_MARGIN (0.20f * U.widget_unit)
 #define NODE_LINK_RESOL 12
@@ -239,6 +237,17 @@ NodeResizeDirection node_get_resize_direction(const SpaceNode &snode,
                                               int x,
                                               int y);
 
+/* node socket batched drawing */
+void UI_node_socket_draw_cache_flush();
+void nodesocket_batch_start();
+void nodesocket_batch_end();
+void node_draw_nodesocket(const rctf *rect,
+                          const float color_inner[4],
+                          const float color_outline[4],
+                          float outline_thickness,
+                          int shape,
+                          float aspect);
+
 void nodelink_batch_start(SpaceNode &snode);
 void nodelink_batch_end(SpaceNode &snode);
 
@@ -308,6 +317,7 @@ void NODE_OT_default_group_width_set(wmOperatorType *ot);
 
 void update_multi_input_indices_for_removed_links(bNode &node);
 bool all_links_muted(const bNodeSocket &socket);
+/** Get the "main" socket based on the node declaration or an heuristic. */
 bNodeSocket *get_main_socket(bNodeTree &ntree, bNode &node, eNodeSocketInOut in_out);
 
 void NODE_OT_link(wmOperatorType *ot);
@@ -334,8 +344,6 @@ float2 node_link_calculate_multi_input_position(const float2 &socket_position,
                                                 int total_inputs);
 
 float node_socket_calculate_height(const bNodeSocket &socket);
-
-void snode_set_context(const bContext &C);
 
 bool composite_node_active(bContext *C);
 /** Operator poll callback. */

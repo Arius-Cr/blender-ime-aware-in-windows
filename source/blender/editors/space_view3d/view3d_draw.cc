@@ -23,13 +23,14 @@
 #include "BKE_context.hh"
 #include "BKE_customdata.hh"
 #include "BKE_global.hh"
-#include "BKE_image.h"
+#include "BKE_image.hh"
 #include "BKE_key.hh"
 #include "BKE_layer.hh"
 #include "BKE_main.hh"
 #include "BKE_object.hh"
 #include "BKE_paint.hh"
 #include "BKE_scene.hh"
+#include "BKE_screen.hh"
 #include "BKE_unit.hh"
 
 #include "BLF_api.hh"
@@ -48,7 +49,6 @@
 
 #include "ED_gpencil_legacy.hh"
 #include "ED_info.hh"
-#include "ED_keyframing.hh"
 #include "ED_scene.hh"
 #include "ED_screen.hh"
 #include "ED_view3d_offscreen.hh"
@@ -79,6 +79,8 @@
 
 #include "IMB_imbuf.hh"
 #include "IMB_imbuf_types.hh"
+
+#include "ANIM_keyframing.hh"
 
 #include "view3d_intern.hh" /* own include */
 
@@ -1393,17 +1395,10 @@ static void draw_selected_name(
     }
 
     /* color depends on whether there is a keyframe */
-    if (id_frame_has_keyframe((ID *)ob, /* BKE_scene_ctime_get(scene) */ float(cfra))) {
+    if (blender::animrig::id_frame_has_keyframe((ID *)ob,
+                                                /* BKE_scene_ctime_get(scene) */ float(cfra)))
+    {
       UI_FontThemeColor(font_id, TH_TIME_KEYFRAME);
-    }
-    else if (ED_gpencil_has_keyframe_v3d(scene, ob, cfra)) {
-      UI_FontThemeColor(font_id, TH_TIME_GP_KEYFRAME);
-    }
-  }
-  else {
-    /* no object */
-    if (ED_gpencil_has_keyframe_v3d(scene, nullptr, cfra)) {
-      UI_FontThemeColor(font_id, TH_TIME_GP_KEYFRAME);
     }
   }
 
@@ -1791,6 +1786,8 @@ void ED_view3d_draw_offscreen_simple(Depsgraph *depsgraph,
 {
   View3D v3d = blender::dna::shallow_zero_initialize();
   ARegion ar = {nullptr};
+  blender::bke::ARegionRuntime region_runtime{};
+  ar.runtime = &region_runtime;
   RegionView3D rv3d = {{{0}}};
 
   v3d.regionbase.first = v3d.regionbase.last = &ar;
@@ -1861,6 +1858,11 @@ void ED_view3d_draw_offscreen_simple(Depsgraph *depsgraph,
   /* Actually not used since we pass in the projection matrix. */
   v3d.lens = 0;
 
+  /* WORKAROUND: Disable overscan because it is not supported for arbitrary input matrices.
+   * The proper fix to this would be to support arbitrary matrices in `eevee::Camera::sync()`. */
+  float overscan = scene->eevee.overscan;
+  scene->eevee.overscan = 0.0f;
+
   ED_view3d_draw_offscreen(depsgraph,
                            scene,
                            drawtype,
@@ -1877,6 +1879,9 @@ void ED_view3d_draw_offscreen_simple(Depsgraph *depsgraph,
                            true,
                            ofs,
                            viewport);
+
+  /* Restore overscan. */
+  scene->eevee.overscan = overscan;
 }
 
 ImBuf *ED_view3d_draw_offscreen_imbuf(Depsgraph *depsgraph,
@@ -2056,6 +2061,8 @@ ImBuf *ED_view3d_draw_offscreen_imbuf_simple(Depsgraph *depsgraph,
 {
   View3D v3d = blender::dna::shallow_zero_initialize();
   ARegion region = {nullptr};
+  blender::bke::ARegionRuntime region_runtime{};
+  region.runtime = &region_runtime;
   RegionView3D rv3d = {{{0}}};
 
   /* connect data */
@@ -2418,14 +2425,7 @@ void ED_view3d_depth_override(Depsgraph *depsgraph,
         DRW_draw_depth_loop(depsgraph, region, v3d, viewport, true, true, false, false);
         break;
       case V3D_DEPTH_NO_GPENCIL:
-        DRW_draw_depth_loop(depsgraph,
-                            region,
-                            v3d,
-                            viewport,
-                            false,
-                            true,
-                            (v3d->flag2 & V3D_HIDE_OVERLAYS) == 0,
-                            false);
+        DRW_draw_depth_loop(depsgraph, region, v3d, viewport, false, true, false, false);
         break;
       case V3D_DEPTH_GPENCIL_ONLY:
         DRW_draw_depth_loop(depsgraph, region, v3d, viewport, true, false, false, false);

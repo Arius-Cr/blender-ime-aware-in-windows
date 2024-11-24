@@ -219,8 +219,7 @@ static void ObjectToTransData(TransInfo *t, TransData *td, Object *ob)
   ob->transflag &= ~OB_NEG_SCALE;
   ob->transflag |= (object_eval->transflag & OB_NEG_SCALE);
 
-  td->ob = ob;
-
+  td->extra = ob;
   td->loc = ob->loc;
   copy_v3_v3(td->iloc, td->loc);
 
@@ -600,11 +599,11 @@ static void createTransObject(bContext *C, TransInfo *t)
   }
 
   if (t->options & CTX_OBMODE_XFORM_OBDATA) {
-    GSet *objects_in_transdata = BLI_gset_ptr_new_ex(__func__, tc->data_len);
+    blender::Set<Object *> objects_in_transdata;
     td = tc->data;
     for (int i = 0; i < tc->data_len; i++, td++) {
       if ((td->flag & TD_SKIP) == 0) {
-        BLI_gset_add(objects_in_transdata, td->ob);
+        objects_in_transdata.add(static_cast<Object *>(td->extra));
       }
     }
 
@@ -624,10 +623,10 @@ static void createTransObject(bContext *C, TransInfo *t)
 
         Object *ob_parent = ob->parent;
         if (ob_parent != nullptr) {
-          if (!BLI_gset_haskey(objects_in_transdata, ob)) {
+          if (!objects_in_transdata.contains(ob)) {
             bool parent_in_transdata = false;
             while (ob_parent != nullptr) {
-              if (BLI_gset_haskey(objects_in_transdata, ob_parent)) {
+              if (objects_in_transdata.contains(ob_parent)) {
                 parent_in_transdata = true;
                 break;
               }
@@ -640,7 +639,6 @@ static void createTransObject(bContext *C, TransInfo *t)
         }
       }
     }
-    BLI_gset_free(objects_in_transdata, nullptr);
   }
 
   if (t->options & CTX_OBMODE_XFORM_SKIP_CHILDREN) {
@@ -651,12 +649,12 @@ static void createTransObject(bContext *C, TransInfo *t)
 \
   ((base->flag_legacy & BA_WAS_SEL) && (base->flag & BASE_SELECTED) == 0)
 
-    GSet *objects_in_transdata = BLI_gset_ptr_new_ex(__func__, tc->data_len);
+    blender::Set<Object *> objects_in_transdata;
     GHash *objects_parent_root = BLI_ghash_ptr_new_ex(__func__, tc->data_len);
     td = tc->data;
     for (int i = 0; i < tc->data_len; i++, td++) {
       if ((td->flag & TD_SKIP) == 0) {
-        BLI_gset_add(objects_in_transdata, td->ob);
+        objects_in_transdata.add(static_cast<Object *>(td->extra));
       }
     }
 
@@ -667,8 +665,8 @@ static void createTransObject(bContext *C, TransInfo *t)
     LISTBASE_FOREACH (Base *, base, BKE_view_layer_object_bases_get(view_layer)) {
       Object *ob = base->object;
       if (ob->parent != nullptr) {
-        if (ob->parent && !BLI_gset_haskey(objects_in_transdata, ob->parent) &&
-            !BLI_gset_haskey(objects_in_transdata, ob))
+        if (ob->parent && !objects_in_transdata.contains(ob->parent) &&
+            !objects_in_transdata.contains(ob))
         {
           if ((base->flag_legacy & BA_WAS_SEL) && (base->flag & BASE_SELECTED) == 0) {
             Base *base_parent = BKE_view_layer_base_find(view_layer, ob->parent);
@@ -676,7 +674,7 @@ static void createTransObject(bContext *C, TransInfo *t)
               Object *ob_parent_recurse = ob->parent;
               if (ob_parent_recurse != nullptr) {
                 while (ob_parent_recurse != nullptr) {
-                  if (BLI_gset_haskey(objects_in_transdata, ob_parent_recurse)) {
+                  if (objects_in_transdata.contains(ob_parent_recurse)) {
                     break;
                   }
                   ob_parent_recurse = ob_parent_recurse->parent;
@@ -698,15 +696,13 @@ static void createTransObject(bContext *C, TransInfo *t)
     LISTBASE_FOREACH (Base *, base, BKE_view_layer_object_bases_get(view_layer)) {
       Object *ob = base->object;
 
-      if (BASE_XFORM_INDIRECT(base) || BLI_gset_haskey(objects_in_transdata, ob)) {
+      if (BASE_XFORM_INDIRECT(base) || objects_in_transdata.contains(ob)) {
         /* Pass. */
       }
       else if (ob->parent != nullptr) {
         Base *base_parent = BKE_view_layer_base_find(view_layer, ob->parent);
         if (base_parent) {
-          if (BASE_XFORM_INDIRECT(base_parent) ||
-              BLI_gset_haskey(objects_in_transdata, ob->parent))
-          {
+          if (BASE_XFORM_INDIRECT(base_parent) || objects_in_transdata.contains(ob->parent)) {
             object::object_xform_skip_child_container_item_ensure(
                 tdo->xcs, ob, nullptr, object::XFORM_OB_SKIP_CHILD_PARENT_IS_XFORM);
             base->flag_legacy |= BA_TRANSFORM_LOCKED_IN_PLACE;
@@ -725,7 +721,6 @@ static void createTransObject(bContext *C, TransInfo *t)
         }
       }
     }
-    BLI_gset_free(objects_in_transdata, nullptr);
     BLI_ghash_free(objects_parent_root, nullptr, nullptr);
 
 #undef BASE_XFORM_INDIRECT
@@ -851,7 +846,7 @@ static void recalcData_objects(TransInfo *t)
     TransData *td = tc->data;
 
     for (int i = 0; i < tc->data_len; i++, td++) {
-      Object *ob = td->ob;
+      Object *ob = static_cast<Object *>(td->extra);
       if (td->flag & TD_SKIP) {
         continue;
       }
@@ -908,18 +903,13 @@ static void special_aftertrans_update__object(bContext *C, TransInfo *t)
   bool motionpath_update = false;
 
   if (blender::animrig::is_autokey_on(t->scene) && !canceled) {
-    blender::Vector<Object *> objects;
-    for (int i = 0; i < tc->data_len; i++) {
-      const TransData *td = &tc->data[i];
-      objects.append(td->ob);
-    }
     ANIM_deselect_keys_in_animation_editors(C);
   }
 
   for (int i = 0; i < tc->data_len; i++) {
     TransData *td = tc->data + i;
     ListBase pidlist;
-    ob = td->ob;
+    ob = static_cast<Object *>(td->extra);
 
     if (td->flag & TD_SKIP) {
       continue;

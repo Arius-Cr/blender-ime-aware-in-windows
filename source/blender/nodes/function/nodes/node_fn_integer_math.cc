@@ -13,8 +13,10 @@
 #include "UI_interface.hh"
 #include "UI_resources.hh"
 
+#include "NOD_inverse_eval_params.hh"
 #include "NOD_rna_define.hh"
 #include "NOD_socket_search_link.hh"
+#include "NOD_value_elem_eval.hh"
 
 #include "node_function_util.hh"
 
@@ -106,7 +108,7 @@ static void node_label(const bNodeTree * /*ntree*/, const bNode *node, char *lab
   if (!enum_label) {
     name = "Unknown";
   }
-  BLI_strncpy(label, IFACE_(name), maxlen);
+  BLI_strncpy(label, CTX_IFACE_(BLT_I18NCONTEXT_ID_NODETREE, name), maxlen);
 }
 
 /* Derived from `divide_round_i` but fixed to be safe and handle negative inputs. */
@@ -212,6 +214,75 @@ static void node_build_multi_function(NodeMultiFunctionBuilder &builder)
   builder.set_matching_fn(fn);
 }
 
+static void node_eval_elem(value_elem::ElemEvalParams &params)
+{
+  using namespace value_elem;
+  const NodeIntegerMathOperation op = NodeIntegerMathOperation(params.node.custom1);
+  switch (op) {
+    case NODE_INTEGER_MATH_ADD:
+    case NODE_INTEGER_MATH_SUBTRACT:
+    case NODE_INTEGER_MATH_MULTIPLY:
+    case NODE_INTEGER_MATH_DIVIDE: {
+      IntElem output_elem = params.get_input_elem<IntElem>("Value");
+      output_elem.merge(params.get_input_elem<IntElem>("Value_001"));
+      params.set_output_elem("Value", output_elem);
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+static void node_eval_inverse_elem(value_elem::InverseElemEvalParams &params)
+{
+  const NodeIntegerMathOperation op = NodeIntegerMathOperation(params.node.custom1);
+  switch (op) {
+    case NODE_INTEGER_MATH_ADD:
+    case NODE_INTEGER_MATH_SUBTRACT:
+    case NODE_INTEGER_MATH_MULTIPLY:
+    case NODE_INTEGER_MATH_DIVIDE: {
+      params.set_input_elem("Value", params.get_output_elem<value_elem::IntElem>("Value"));
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+static void node_eval_inverse(inverse_eval::InverseEvalParams &params)
+{
+  const NodeIntegerMathOperation op = NodeIntegerMathOperation(params.node.custom1);
+  const StringRef first_input_id = "Value";
+  const StringRef second_input_id = "Value_001";
+  const StringRef output_id = "Value";
+  switch (op) {
+    case NODE_INTEGER_MATH_ADD: {
+      params.set_input(first_input_id,
+                       params.get_output<int>(output_id) - params.get_input<int>(second_input_id));
+      break;
+    }
+    case NODE_INTEGER_MATH_SUBTRACT: {
+      params.set_input(first_input_id,
+                       params.get_output<int>(output_id) + params.get_input<int>(second_input_id));
+      break;
+    }
+    case NODE_INTEGER_MATH_MULTIPLY: {
+      params.set_input(first_input_id,
+                       math::safe_divide(params.get_output<int>(output_id),
+                                         params.get_input<int>(second_input_id)));
+      break;
+    }
+    case NODE_INTEGER_MATH_DIVIDE: {
+      params.set_input(first_input_id,
+                       params.get_output<int>(output_id) * params.get_input<int>(second_input_id));
+      break;
+    }
+    default: {
+      break;
+    }
+  }
+}
+
 static void node_rna(StructRNA *srna)
 {
   PropertyRNA *prop;
@@ -223,6 +294,7 @@ static void node_rna(StructRNA *srna)
                            rna_enum_node_integer_math_items,
                            NOD_inline_enum_accessors(custom1),
                            NODE_INTEGER_MATH_ADD);
+  RNA_def_property_translation_context(prop, BLT_I18NCONTEXT_ID_NODETREE);
   RNA_def_property_update_runtime(prop, rna_Node_socket_update);
 }
 
@@ -237,6 +309,9 @@ static void node_register()
   ntype.build_multi_function = node_build_multi_function;
   ntype.draw_buttons = node_layout;
   ntype.gather_link_search_ops = node_gather_link_searches;
+  ntype.eval_elem = node_eval_elem;
+  ntype.eval_inverse_elem = node_eval_inverse_elem;
+  ntype.eval_inverse = node_eval_inverse;
 
   blender::bke::node_register_type(&ntype);
 

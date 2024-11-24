@@ -18,6 +18,7 @@
 #include "BKE_node.hh"
 #include "BKE_node_runtime.hh"
 #include "BKE_node_tree_update.hh"
+#include "BKE_screen.hh"
 
 #include "ED_node.hh" /* own include */
 #include "ED_render.hh"
@@ -981,14 +982,14 @@ static void draw_draglink_tooltip_activate(const ARegion &region, bNodeLinkDrag 
 {
   if (nldrag.draw_handle == nullptr) {
     nldrag.draw_handle = ED_region_draw_cb_activate(
-        region.type, draw_draglink_tooltip, &nldrag, REGION_DRAW_POST_PIXEL);
+        region.runtime->type, draw_draglink_tooltip, &nldrag, REGION_DRAW_POST_PIXEL);
   }
 }
 
 static void draw_draglink_tooltip_deactivate(const ARegion &region, bNodeLinkDrag &nldrag)
 {
   if (nldrag.draw_handle) {
-    ED_region_draw_cb_exit(region.type, nldrag.draw_handle);
+    ED_region_draw_cb_exit(region.runtime->type, nldrag.draw_handle);
     nldrag.draw_handle = nullptr;
   }
 }
@@ -2255,18 +2256,6 @@ static bNode *get_selected_node_for_insertion(bNodeTree &node_tree)
   if (selected_node->input_sockets().is_empty() || selected_node->output_sockets().is_empty()) {
     return nullptr;
   }
-  if (std::any_of(selected_node->input_sockets().begin(),
-                  selected_node->input_sockets().end(),
-                  [&](const bNodeSocket *socket) { return socket->is_directly_linked(); }))
-  {
-    return nullptr;
-  }
-  if (std::any_of(selected_node->output_sockets().begin(),
-                  selected_node->output_sockets().end(),
-                  [&](const bNodeSocket *socket) { return socket->is_directly_linked(); }))
-  {
-    return nullptr;
-  };
   return selected_node;
 }
 
@@ -2298,7 +2287,8 @@ static bool node_can_be_inserted_on_link(bNodeTree &tree, bNode &node, const bNo
 
 void node_insert_on_link_flags_set(SpaceNode &snode,
                                    const ARegion &region,
-                                   const bool attach_enabled)
+                                   const bool attach_enabled,
+                                   const bool is_new_node)
 {
   bNodeTree &node_tree = *snode.edittree;
   node_tree.ensure_topology_cache();
@@ -2309,6 +2299,16 @@ void node_insert_on_link_flags_set(SpaceNode &snode,
   if (!node_to_insert) {
     return;
   }
+  Vector<bNodeSocket *> already_linked_sockets;
+  for (bNodeSocket *socket : node_to_insert->input_sockets()) {
+    already_linked_sockets.extend(socket->directly_linked_sockets());
+  }
+  for (bNodeSocket *socket : node_to_insert->output_sockets()) {
+    already_linked_sockets.extend(socket->directly_linked_sockets());
+  }
+  if (!is_new_node && !already_linked_sockets.is_empty()) {
+    return;
+  }
 
   /* Find link to select/highlight. */
   bNodeLink *selink = nullptr;
@@ -2316,6 +2316,24 @@ void node_insert_on_link_flags_set(SpaceNode &snode,
   LISTBASE_FOREACH (bNodeLink *, link, &node_tree.links) {
     if (node_link_is_hidden_or_dimmed(region.v2d, *link)) {
       continue;
+    }
+    if (ELEM(node_to_insert, link->fromnode, link->tonode)) {
+      /* Don't insert on a link that is connected to the node already. */
+      continue;
+    }
+    if (is_new_node && !already_linked_sockets.is_empty()) {
+      /* Only allow links coming from or going to the already linked socket after
+       * link-drag-search. */
+      bool is_linked_to_linked = false;
+      for (const bNodeSocket *socket : already_linked_sockets) {
+        if (ELEM(socket, link->fromsock, link->tosock)) {
+          is_linked_to_linked = true;
+          break;
+        }
+      }
+      if (!is_linked_to_linked) {
+        continue;
+      }
     }
 
     std::array<float2, NODE_LINK_RESOL + 1> coords;
@@ -2359,7 +2377,7 @@ void node_insert_on_link_flags_clear(bNodeTree &node_tree)
   }
 }
 
-void node_insert_on_link_flags(Main &bmain, SpaceNode &snode)
+void node_insert_on_link_flags(Main &bmain, SpaceNode &snode, bool is_new_node)
 {
   bNodeTree &node_tree = *snode.edittree;
   node_tree.ensure_topology_cache();
@@ -2384,8 +2402,30 @@ void node_insert_on_link_flags(Main &bmain, SpaceNode &snode)
     return;
   }
 
-  bNodeSocket *best_input = get_main_socket(ntree, *node_to_insert, SOCK_IN);
-  bNodeSocket *best_output = get_main_socket(ntree, *node_to_insert, SOCK_OUT);
+  bNodeSocket *best_input = nullptr;
+  if (is_new_node) {
+    for (bNodeSocket *socket : node_to_insert->input_sockets()) {
+      if (!socket->directly_linked_sockets().is_empty()) {
+        best_input = socket;
+        break;
+      }
+    }
+  }
+  if (!best_input) {
+    best_input = get_main_socket(ntree, *node_to_insert, SOCK_IN);
+  }
+  bNodeSocket *best_output = nullptr;
+  if (is_new_node) {
+    for (bNodeSocket *socket : node_to_insert->output_sockets()) {
+      if (!socket->directly_linked_sockets().is_empty()) {
+        best_output = socket;
+        break;
+      }
+    }
+  }
+  if (!best_output) {
+    best_output = get_main_socket(ntree, *node_to_insert, SOCK_OUT);
+  }
 
   if (node_to_insert->type != NODE_REROUTE) {
     /* Ignore main sockets when the types don't match. */
@@ -2407,6 +2447,8 @@ void node_insert_on_link_flags(Main &bmain, SpaceNode &snode)
   bNodeSocket *from_socket = old_link->fromsock;
   bNode *to_node = old_link->tonode;
 
+  const bool best_input_is_linked = best_input && best_input->is_directly_linked();
+
   if (best_output != nullptr) {
     /* Relink the "start" of the existing link to the newly inserted node. */
     old_link->fromnode = node_to_insert;
@@ -2418,8 +2460,11 @@ void node_insert_on_link_flags(Main &bmain, SpaceNode &snode)
   }
 
   if (best_input != nullptr) {
-    /* Add a new link that connects the node on the left to the newly inserted node. */
-    bke::node_add_link(&ntree, from_node, from_socket, node_to_insert, best_input);
+    /* Don't change an existing link. */
+    if (!best_input_is_linked) {
+      /* Add a new link that connects the node on the left to the newly inserted node. */
+      bke::node_add_link(&ntree, from_node, from_socket, node_to_insert, best_input);
+    }
   }
 
   /* Set up insert offset data, it needs stuff from here. */
@@ -2474,7 +2519,6 @@ static int get_main_socket_priority(const bNodeSocket *socket)
   return -1;
 }
 
-/** Get the "main" socket based on the node declaration or an heuristic. */
 bNodeSocket *get_main_socket(bNodeTree &ntree, bNode &node, eNodeSocketInOut in_out)
 {
   ListBase *sockets = (in_out == SOCK_IN) ? &node.inputs : &node.outputs;

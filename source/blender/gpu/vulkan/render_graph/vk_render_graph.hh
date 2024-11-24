@@ -197,6 +197,7 @@ class VKRenderGraph : public NonCopyable {
   ADD_NODE(VKDrawIndexedIndirectNode)
   ADD_NODE(VKDrawIndirectNode)
   ADD_NODE(VKResetQueryPoolNode)
+  ADD_NODE(VKUpdateBufferNode)
   ADD_NODE(VKUpdateMipmapsNode)
 #undef ADD_NODE
 
@@ -229,6 +230,10 @@ class VKRenderGraph : public NonCopyable {
    */
   void submit();
 
+  /**  Submit render graph with CPU synchronization event. */
+  void submit_synchronization_event(VkFence vk_fence);
+  /** Wait and reset for a CPU synchronization event. */
+  void wait_synchronization_event(VkFence vk_fence);
   /**
    * Push a new debugging group to the stack with the given name.
    *

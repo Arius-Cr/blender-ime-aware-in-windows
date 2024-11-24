@@ -221,6 +221,195 @@ class ArmatureSymmetrizeTest(AbstractAnimationTest, unittest.TestCase):
                 value, vec2[idx], 3, "%s does not match with expected value on bone %s" % (check_str, bone_name))
 
 
+def create_armature() -> tuple[bpy.types.Object, bpy.types.Armature]:
+    arm = bpy.data.armatures.new('Armature')
+    arm_ob = bpy.data.objects.new('ArmObject', arm)
+
+    # Link to the scene just for giggles. And ease of debugging when things
+    # go bad.
+    bpy.context.scene.collection.objects.link(arm_ob)
+
+    return arm_ob, arm
+
+
+def set_edit_bone_selected(ebone: bpy.types.EditBone, selected: bool):
+    # Helper to select all parts of an edit bone.
+    ebone.select = selected
+    ebone.select_tail = selected
+    ebone.select_head = selected
+
+
+def create_copy_loc_constraint(pose_bone, target_ob, subtarget):
+    pose_bone.constraints.new("COPY_LOCATION")
+    pose_bone.constraints[0].target = target_ob
+    pose_bone.constraints[0].subtarget = subtarget
+
+
+class ArmatureSymmetrizeTargetsTest(unittest.TestCase):
+    arm_ob: bpy.types.Object
+    arm: bpy.types.Armature
+
+    def setUp(self):
+        bpy.ops.wm.read_homefile(use_factory_startup=True)
+        self.arm_ob, self.arm = create_armature()
+        bpy.context.view_layer.objects.active = self.arm_ob
+        bpy.ops.object.mode_set(mode='EDIT')
+        ebone = self.arm.edit_bones.new(name="test.l")
+        ebone.tail = (1, 0, 0)
+
+    def test_symmetrize_selection(self):
+        # Only selected things are symmetrized.
+        set_edit_bone_selected(self.arm.edit_bones["test.l"], False)
+        bpy.ops.armature.symmetrize()
+        self.assertEqual(len(self.arm.edit_bones), 1, "If nothing is selected, no bone is symmetrized")
+
+        set_edit_bone_selected(self.arm.edit_bones["test.l"], True)
+        bpy.ops.armature.symmetrize()
+        self.assertEqual(len(self.arm.edit_bones), 2, "Selected EditBone should have been symmetrized")
+        self.assertTrue("test.r" in self.arm.edit_bones)
+        self.assertTrue("test.l" in self.arm.edit_bones)
+
+    def test_symmetrize_constraint_sub_target(self):
+        # Explicitly test that constraints targeting another armature are symmetrized.
+        bpy.ops.object.mode_set(mode='OBJECT')
+        target_arm_ob, target_arm = create_armature()
+        bpy.context.view_layer.objects.active = target_arm_ob
+        bpy.ops.object.mode_set(mode='EDIT')
+        target_arm.edit_bones.new("target.l")
+        target_arm.edit_bones.new("target.r")
+        target_arm.edit_bones["target.l"].tail = (1, 0, 0)
+        target_arm.edit_bones["target.r"].tail = (1, 0, 0)
+
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.context.view_layer.objects.active = self.arm_ob
+
+        bpy.ops.object.mode_set(mode='POSE')
+        pose_bone_l = self.arm_ob.pose.bones["test.l"]
+        create_copy_loc_constraint(pose_bone_l, target_arm_ob, "target.l")
+
+        bpy.ops.object.mode_set(mode='EDIT')
+        set_edit_bone_selected(self.arm.edit_bones["test.l"], True)
+        bpy.ops.armature.symmetrize()
+        self.assertEqual(len(self.arm.edit_bones), 2, "Bone should have been symmetrized")
+        self.assertTrue("test.r" in self.arm.edit_bones)
+        self.assertTrue("test.l" in self.arm.edit_bones)
+
+        bpy.ops.object.mode_set(mode='POSE')
+        self.assertEqual(len(self.arm_ob.pose.bones["test.r"].constraints), 1, "Constraint should have been copied")
+        symm_constraint = self.arm_ob.pose.bones["test.r"].constraints[0]
+        self.assertEqual(symm_constraint.subtarget, "target.r")
+
+    def test_symmetrize_invalid_subtarget(self):
+        # Blender shouldn't crash when there is an invalid subtarget specified.
+        bpy.ops.object.mode_set(mode='OBJECT')
+        target_ob = bpy.data.objects.new("target", None)
+        bpy.context.scene.collection.objects.link(target_ob)
+
+        bpy.context.view_layer.objects.active = self.arm_ob
+
+        bpy.ops.object.mode_set(mode='POSE')
+        pose_bone_l = self.arm_ob.pose.bones["test.l"]
+        create_copy_loc_constraint(pose_bone_l, target_ob, "invalid_subtarget")
+
+        bpy.ops.object.mode_set(mode='EDIT')
+        set_edit_bone_selected(self.arm.edit_bones["test.l"], True)
+        bpy.ops.armature.symmetrize()
+        self.assertEqual(len(self.arm.edit_bones), 2, "Bone should have been symmetrized")
+        self.assertTrue("test.r" in self.arm.edit_bones)
+        self.assertTrue("test.l" in self.arm.edit_bones)
+
+        bpy.ops.object.mode_set(mode='POSE')
+        self.assertEqual(len(self.arm_ob.pose.bones["test.r"].constraints), 1, "Constraint should have been copied")
+        symm_constraint = self.arm_ob.pose.bones["test.r"].constraints[0]
+        self.assertEqual(symm_constraint.subtarget, "invalid_subtarget")
+
+
+class ArmatureSymmetrizeCollectionAssignments(unittest.TestCase):
+    arm_ob: bpy.types.Object
+    arm: bpy.types.Armature
+
+    def setUp(self):
+        bpy.ops.wm.read_homefile(use_factory_startup=True)
+        self.arm_ob, self.arm = create_armature()
+        bpy.context.view_layer.objects.active = self.arm_ob
+        bpy.ops.object.mode_set(mode='EDIT')
+        ebone = self.arm.edit_bones.new(name="test.l")
+        ebone.tail = (1, 0, 0)
+
+        parent_coll = self.arm.collections.new("parent")
+        left_coll = self.arm.collections.new("collection.l", parent=parent_coll)
+        self.assertTrue(left_coll.assign(ebone))
+        self.assertEqual(len(ebone.collections), 1)
+
+    def test_symmetrize_to_existing_collection(self):
+        other_parent = self.arm.collections.new("other_parent")
+        right_coll = self.arm.collections.new("collection.r", parent=other_parent)
+
+        set_edit_bone_selected(self.arm.edit_bones["test.l"], True)
+        bpy.ops.armature.symmetrize()
+
+        right_bone = self.arm.edit_bones["test.r"]
+        self.assertEqual(len(right_bone.collections), 1)
+        self.assertEqual(right_bone.collections[0], right_coll)
+
+        # Parents should not be modified.
+        left_coll = self.arm.collections_all["collection.l"]
+        self.assertNotEqual(right_coll.parent, left_coll.parent)
+
+    def test_no_symmetrize(self):
+        # If the collection name cannot be flipped, nothing changes.
+        non_flip_collection = self.arm.collections.new("foobar")
+        left_bone = self.arm.edit_bones["test.l"]
+        self.arm.collections_all["collection.l"].unassign(left_bone)
+        self.assertTrue(non_flip_collection.assign(left_bone))
+
+        set_edit_bone_selected(left_bone, True)
+        bpy.ops.armature.symmetrize()
+
+        right_bone = self.arm.edit_bones["test.r"]
+        self.assertEqual(len(right_bone.collections), 1)
+        self.assertEqual(right_bone.collections[0], non_flip_collection)
+
+    def test_create_missing_collection(self):
+        set_edit_bone_selected(self.arm.edit_bones["test.l"], True)
+        self.assertFalse("collection.r" in self.arm.collections_all)
+        bpy.ops.armature.symmetrize()
+
+        # Missing collections are created.
+        self.assertTrue("collection.r" in self.arm.collections_all)
+        right_coll = self.arm.collections_all["collection.r"]
+        # When the collection is created, it is parented to the same collection as the source collection.
+        left_coll = self.arm.collections_all["collection.l"]
+        self.assertEqual(right_coll.parent, left_coll.parent)
+
+        right_bone = self.arm.edit_bones["test.r"]
+        self.assertEqual(len(right_bone.collections), 1)
+        self.assertEqual(right_bone.collections[0], right_coll)
+
+    def test_symmetrize_to_existing_bone(self):
+        right_bone = self.arm.edit_bones.new(name="test.r")
+        right_bone.tail = (1, 0, 0)
+        unique_right_coll = self.arm.collections.new("unique")
+        unique_right_coll.assign(right_bone)
+
+        set_edit_bone_selected(self.arm.edit_bones["test.l"], True)
+        bpy.ops.armature.symmetrize()
+
+        # Missing collection is created.
+        self.assertTrue("collection.r" in self.arm.collections_all)
+        self.assertEqual(len(right_bone.collections), 2)
+        self.assertTrue("collection.r" in right_bone.collections)
+        self.assertTrue("unique" in right_bone.collections,
+                        "Mirrored bone shouldn't have lost the unique collection assignment")
+
+        # Symmetrizing twice shouldn't double invert the collection assignments.
+        set_edit_bone_selected(self.arm.edit_bones["test.l"], True)
+        set_edit_bone_selected(right_bone, False)
+        bpy.ops.armature.symmetrize()
+        self.assertTrue("collection.r" in right_bone.collections)
+        self.assertTrue("collection.l" not in right_bone.collections)
+
+
 def main():
     global args
     import argparse

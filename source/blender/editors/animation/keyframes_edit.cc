@@ -179,8 +179,6 @@ static short agrp_keyframes_loop(KeyframeEditData *ked,
   return 0;
 }
 
-#ifdef WITH_ANIM_BAKLAVA
-
 /* Loop over all keyframes in the layered Action. */
 static short action_layered_keyframes_loop(KeyframeEditData *ked,
                                            animrig::Action &action,
@@ -202,8 +200,6 @@ static short action_layered_keyframes_loop(KeyframeEditData *ked,
   }
   return 0;
 }
-
-#endif
 
 /* This function is used to loop over the keyframe data in an Action */
 static short action_legacy_keyframes_loop(KeyframeEditData *ked,
@@ -365,15 +361,11 @@ static short summary_keyframes_loop(KeyframeEditData *ked,
           float f1 = ked->f1;
           float f2 = ked->f2;
 
-          if (ked->iterflags & (KED_F1_NLA_UNMAP | KED_F2_NLA_UNMAP)) {
-            AnimData *adt = ANIM_nla_mapping_get(ac, ale);
-
-            if (ked->iterflags & KED_F1_NLA_UNMAP) {
-              ked->f1 = BKE_nla_tweakedit_remap(adt, f1, NLATIME_CONVERT_UNMAP);
-            }
-            if (ked->iterflags & KED_F2_NLA_UNMAP) {
-              ked->f2 = BKE_nla_tweakedit_remap(adt, f2, NLATIME_CONVERT_UNMAP);
-            }
+          if (ked->iterflags & KED_F1_NLA_UNMAP) {
+            ked->f1 = ANIM_nla_tweakedit_remap(ale, f1, NLATIME_CONVERT_UNMAP);
+          }
+          if (ked->iterflags & KED_F2_NLA_UNMAP) {
+            ked->f2 = ANIM_nla_tweakedit_remap(ale, f2, NLATIME_CONVERT_UNMAP);
           }
 
           /* now operate on the channel as per normal */
@@ -430,26 +422,18 @@ short ANIM_animchannel_keyframes_loop(KeyframeEditData *ked,
     case ALE_GROUP: /* action group */
       return agrp_keyframes_loop(ked, (bActionGroup *)ale->data, key_ok, key_cb, fcu_cb);
     case ALE_ACTION_LAYERED: { /* Layered Action. */
-#ifdef WITH_ANIM_BAKLAVA
       /* This assumes that the ALE_ACTION_LAYERED channel is shown in the dopesheet context,
        * underneath the data-block that owns `ale->adt`. So that means that the loop is limited to
        * the keys that belong to that slot. */
       animrig::Action &action = static_cast<bAction *>(ale->key_data)->wrap();
       animrig::Slot *slot = action.slot_for_handle(ale->adt->slot_handle);
       return action_layered_keyframes_loop(ked, action, slot, key_ok, key_cb, fcu_cb);
-#else
-      return 0;
-#endif
     }
     case ALE_ACTION_SLOT: {
-#ifdef WITH_ANIM_BAKLAVA
       animrig::Action *action = static_cast<animrig::Action *>(ale->key_data);
       BLI_assert(action);
       animrig::Slot *slot = static_cast<animrig::Slot *>(ale->data);
       return action_layered_keyframes_loop(ked, *action, slot, key_ok, key_cb, fcu_cb);
-#else
-      return 0;
-#endif
     }
 
     case ALE_ACT: /* Legacy Action. */

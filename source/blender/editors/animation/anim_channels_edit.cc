@@ -63,6 +63,7 @@
 #include "ANIM_fcurve.hh"
 
 #include "WM_api.hh"
+#include "WM_message.hh"
 #include "WM_types.hh"
 
 #include "BLT_translation.hh"
@@ -72,7 +73,6 @@
  * \{ */
 
 static bool get_normalized_fcurve_bounds(FCurve *fcu,
-                                         AnimData *anim_data,
                                          SpaceLink *space_link,
                                          Scene *scene,
                                          ID *id,
@@ -102,8 +102,6 @@ static bool get_normalized_fcurve_bounds(FCurve *fcu,
     r_bounds->ymin -= (min_height - height) / 2;
     r_bounds->ymax += (min_height - height) / 2;
   }
-  r_bounds->xmin = BKE_nla_tweakedit_remap(anim_data, r_bounds->xmin, NLATIME_CONVERT_MAP);
-  r_bounds->xmax = BKE_nla_tweakedit_remap(anim_data, r_bounds->xmax, NLATIME_CONVERT_MAP);
 
   return true;
 }
@@ -187,9 +185,12 @@ static bool get_channel_bounds(bAnimContext *ac,
 
     case ALE_FCURVE: {
       FCurve *fcu = (FCurve *)ale->key_data;
-      AnimData *anim_data = ANIM_nla_mapping_get(ac, ale);
       found_bounds = get_normalized_fcurve_bounds(
-          fcu, anim_data, ac->sl, ac->scene, ale->id, include_handles, range, r_bounds);
+          fcu, ac->sl, ac->scene, ale->id, include_handles, range, r_bounds);
+      if (found_bounds) {
+        r_bounds->xmin = ANIM_nla_tweakedit_remap(ale, r_bounds->xmin, NLATIME_CONVERT_MAP);
+        r_bounds->xmax = ANIM_nla_tweakedit_remap(ale, r_bounds->xmax, NLATIME_CONVERT_MAP);
+      }
       break;
     }
     case ALE_NONE:
@@ -1722,7 +1723,7 @@ static void rearrange_layered_action_channel_groups(bAnimContext *ac,
           continue;
         }
         blender::animrig::ChannelBag &bag = group->channel_bag->wrap();
-        const int group_index = bag.channel_groups().as_span().first_index_try(group);
+        const int group_index = bag.channel_groups().first_index_try(group);
         const int to_index = group_index - 1;
         BLI_assert(group_index >= 0);
 
@@ -1760,7 +1761,7 @@ static void rearrange_layered_action_channel_groups(bAnimContext *ac,
           continue;
         }
         blender::animrig::ChannelBag &bag = group->channel_bag->wrap();
-        const int group_index = bag.channel_groups().as_span().first_index_try(group);
+        const int group_index = bag.channel_groups().first_index_try(group);
         const int to_index = group_index + 1;
         BLI_assert(group_index >= 0);
 
@@ -1874,7 +1875,7 @@ static void rearrange_layered_action_fcurves(bAnimContext *ac,
         }
 
         blender::animrig::ChannelBag &bag = group.channel_bag->wrap();
-        const int fcurve_index = bag.fcurves().as_span().first_index_try(fcurve);
+        const int fcurve_index = bag.fcurves().first_index_try(fcurve);
         const int to_index = fcurve_index - 1;
 
         /* We skip moving when the destination is also selected because that
@@ -1917,7 +1918,7 @@ static void rearrange_layered_action_fcurves(bAnimContext *ac,
         }
 
         blender::animrig::ChannelBag &bag = group.channel_bag->wrap();
-        const int fcurve_index = bag.fcurves().as_span().first_index_try(fcurve);
+        const int fcurve_index = bag.fcurves().first_index_try(fcurve);
         const int to_index = fcurve_index + 1;
 
         /* We skip moving when the destination is also selected because that
@@ -2063,34 +2064,42 @@ static void rearrange_grease_pencil_channels(bAnimContext *ac, eRearrangeAnimCha
   ANIM_animdata_filter(
       ac, &anim_data, eAnimFilter_Flags(filter), ac->data, eAnimCont_Types(ac->datatype));
 
-  LISTBASE_FOREACH (bAnimListElem *, ale, &anim_data) {
-    GreasePencil &grease_pencil = *reinterpret_cast<GreasePencil *>(ale->id);
-    Layer *layer = static_cast<Layer *>(ale->data);
+  if (mode == REARRANGE_ANIMCHAN_TOP) {
+    LISTBASE_FOREACH_BACKWARD (bAnimListElem *, ale, &anim_data) {
+      GreasePencil &grease_pencil = *reinterpret_cast<GreasePencil *>(ale->id);
+      Layer *layer = static_cast<Layer *>(ale->data);
+      if (layer->is_selected()) {
+        grease_pencil.move_node_top(layer->as_node());
+      }
+    }
+  }
+  else {
+    LISTBASE_FOREACH (bAnimListElem *, ale, &anim_data) {
+      GreasePencil &grease_pencil = *reinterpret_cast<GreasePencil *>(ale->id);
+      Layer *layer = static_cast<Layer *>(ale->data);
 
-    switch (mode) {
-      case REARRANGE_ANIMCHAN_TOP: {
-        if (layer->is_selected()) {
-          grease_pencil.move_node_top(layer->as_node());
+      switch (mode) {
+        case REARRANGE_ANIMCHAN_UP: {
+          if (layer->is_selected()) {
+            grease_pencil.move_node_up(layer->as_node());
+          }
+          break;
         }
-        break;
-      }
-      case REARRANGE_ANIMCHAN_UP: {
-        if (layer->is_selected()) {
-          grease_pencil.move_node_up(layer->as_node());
+        case REARRANGE_ANIMCHAN_DOWN: {
+          if (layer->is_selected()) {
+            grease_pencil.move_node_down(layer->as_node());
+          }
+          break;
         }
-        break;
-      }
-      case REARRANGE_ANIMCHAN_DOWN: {
-        if (layer->is_selected()) {
-          grease_pencil.move_node_down(layer->as_node());
+        case REARRANGE_ANIMCHAN_BOTTOM: {
+          if (layer->is_selected()) {
+            grease_pencil.move_node_bottom(layer->as_node());
+          }
+          break;
         }
-        break;
-      }
-      case REARRANGE_ANIMCHAN_BOTTOM: {
-        if (layer->is_selected()) {
-          grease_pencil.move_node_bottom(layer->as_node());
-        }
-        break;
+        case REARRANGE_ANIMCHAN_TOP:
+          /* Handled separately before the switch case. */
+          break;
       }
     }
   }
@@ -2750,7 +2759,9 @@ static int animchannels_delete_exec(bContext *C, wmOperator * /*op*/)
         FCurve *fcu = (FCurve *)ale->data;
 
         /* try to free F-Curve */
-        blender::animrig::animdata_fcurve_delete(&ac, adt, fcu);
+        BLI_assert_msg((fcu->driver != nullptr) == (ac.datatype == ANIMCONT_DRIVERS),
+                       "Expecting only driver F-Curves in the drivers editor");
+        blender::animrig::animdata_fcurve_delete(adt, fcu);
         tag_update_animation_element(ale);
         break;
       }
@@ -4431,6 +4442,9 @@ static int click_select_channel_grease_pencil_layer(bContext *C,
   /* Active channel is not changed during range select. */
   if (layer->is_selected() && (selectmode != SELECT_EXTEND_RANGE)) {
     grease_pencil->set_active_layer(layer);
+    WM_msg_publish_rna_prop(
+        CTX_wm_message_bus(C), &grease_pencil->id, &grease_pencil, GreasePencilv3Layers, active);
+    DEG_id_tag_update(&grease_pencil->id, ID_RECALC_GEOMETRY);
   }
 
   WM_event_add_notifier(C, NC_GPENCIL | ND_DATA | NA_EDITED, nullptr);
@@ -5079,10 +5093,10 @@ static int channels_bake_exec(bContext *C, wmOperator *op)
     if (!fcu->bezt) {
       continue;
     }
-    AnimData *adt = ANIM_nla_mapping_get(&ac, ale);
-    blender::int2 nla_mapped_range;
-    nla_mapped_range[0] = int(BKE_nla_tweakedit_remap(adt, frame_range[0], NLATIME_CONVERT_UNMAP));
-    nla_mapped_range[1] = int(BKE_nla_tweakedit_remap(adt, frame_range[1], NLATIME_CONVERT_UNMAP));
+    blender::int2 nla_mapped_range = {
+        int(ANIM_nla_tweakedit_remap(ale, frame_range[0], NLATIME_CONVERT_UNMAP)),
+        int(ANIM_nla_tweakedit_remap(ale, frame_range[1], NLATIME_CONVERT_UNMAP)),
+    };
     /* Save current state of modifier flags so they can be reapplied after baking. */
     blender::Vector<short> modifier_flags;
     if (!bake_modifiers) {
@@ -5186,8 +5200,6 @@ static void ANIM_OT_channels_bake(wmOperatorType *ot)
                   "Bake Modifiers",
                   "Bake Modifiers into keyframes and delete them after");
 }
-
-#ifdef WITH_ANIM_BAKLAVA
 
 static int slot_channels_move_to_new_action_exec(bContext *C, wmOperator * /* op */)
 {
@@ -5348,8 +5360,6 @@ static void ANIM_OT_separate_slots(wmOperatorType *ot)
   ot->flag = OPTYPE_REGISTER | OPTYPE_UNDO;
 }
 
-#endif /* WITH_ANIM_BAKLAVA */
-
 /**
  *  Find a Graph Editor area and set the context arguments accordingly.
  */
@@ -5491,14 +5501,8 @@ static rctf calculate_fcurve_bounds_and_unhide(SpaceLink *space_link,
   for (FCurve *fcurve : fcurves) {
     fcurve->flag |= (FCURVE_SELECTED | FCURVE_VISIBLE);
     rctf fcu_bounds;
-    get_normalized_fcurve_bounds(fcurve,
-                                 anim_data,
-                                 space_link,
-                                 scene,
-                                 id,
-                                 include_handles,
-                                 mapped_frame_range,
-                                 &fcu_bounds);
+    get_normalized_fcurve_bounds(
+        fcurve, space_link, scene, id, include_handles, mapped_frame_range, &fcu_bounds);
 
     if (BLI_rctf_is_valid(&fcu_bounds)) {
       BLI_rctf_union(&bounds, &fcu_bounds);
@@ -5732,10 +5736,8 @@ void ED_operatortypes_animchannels()
 
   WM_operatortype_append(ANIM_OT_channels_bake);
 
-#ifdef WITH_ANIM_BAKLAVA
   WM_operatortype_append(ANIM_OT_slot_channels_move_to_new_action);
   WM_operatortype_append(ANIM_OT_separate_slots);
-#endif
 }
 
 void ED_keymap_animchannels(wmKeyConfig *keyconf)

@@ -141,6 +141,27 @@ class InsertKeyTest(AbstractKeyframingTest, unittest.TestCase):
         _insert_from_user_preference_test({"SCALE"}, ["scale"])
         _insert_from_user_preference_test({"LOCATION", "ROTATION", "SCALE"}, ["location", "rotation_euler", "scale"])
 
+    def test_keying_creates_default_groups(self):
+        keyed_object = _create_animation_object()
+
+        bpy.context.preferences.edit.key_insert_channels = {'LOCATION'}
+        with bpy.context.temp_override(**_get_view3d_context()):
+            bpy.ops.anim.keyframe_insert()
+
+        # Check the F-Curves paths.
+        expect_paths = ["location", "location", "location"]
+        actual_paths = [fcurve.data_path for fcurve in keyed_object.animation_data.action.fcurves]
+        self.assertEqual(actual_paths, expect_paths)
+
+        # The actual reason for this test: check that these curves have the right group.
+        expect_groups = ["Object Transforms"]
+        actual_groups = [group.name for group in keyed_object.animation_data.action.groups]
+        self.assertEqual(actual_groups, expect_groups)
+
+        expect_groups = 3 * [keyed_object.animation_data.action.groups[0]]
+        actual_groups = [fcurve.group for fcurve in keyed_object.animation_data.action.fcurves]
+        self.assertEqual(actual_groups, expect_groups)
+
     def test_insert_custom_properties(self):
         # Used to create a datablock reference property.
         ref_object = bpy.data.objects.new("ref_object", None)
@@ -190,6 +211,60 @@ class InsertKeyTest(AbstractKeyframingTest, unittest.TestCase):
             self.assertEqual(len(fcurve.keyframe_points), 2)
             self.assertFalse(fcurve.keyframe_points[0].select_control_point)
             self.assertTrue(fcurve.keyframe_points[1].select_control_point)
+
+    def test_keyframe_insert_py_func(self):
+        curve_object = _create_animation_object()
+
+        # Test on location, which is a 3-item array, without explicitly passing an array index.
+        self.assertTrue(curve_object.keyframe_insert('location'))
+
+        ob_fcurves = curve_object.animation_data.action.fcurves
+
+        self.assertEqual(len(ob_fcurves), 3,
+                         "Keying 'location' without any array index should have created 3 F-Curves")
+        self.assertEqual(3 * ['location'], [fcurve.data_path for fcurve in ob_fcurves])
+        self.assertEqual([0, 1, 2], [fcurve.array_index for fcurve in ob_fcurves])
+
+        ob_fcurves.clear()
+
+        # Test on 'rotation_quaterion' (4 items), with explicit index=-1.
+        self.assertTrue(curve_object.keyframe_insert('rotation_quaternion', index=-1))
+        self.assertEqual(len(ob_fcurves), 4,
+                         "Keying 'rotation_quaternion' with index=-1 should have created 4 F-Curves")
+        self.assertEqual(4 * ['rotation_quaternion'], [fcurve.data_path for fcurve in ob_fcurves])
+        self.assertEqual([0, 1, 2, 3], [fcurve.array_index for fcurve in ob_fcurves])
+
+        ob_fcurves.clear()
+
+        # Test on 'scale' (3 items) with explicit index=1.
+        self.assertTrue(curve_object.keyframe_insert('scale', index=2))
+        self.assertEqual(len(ob_fcurves), 1,
+                         "Keying 'scale' with index=2 should have created 1 F-Curve")
+        self.assertEqual('scale', ob_fcurves[0].data_path)
+        self.assertEqual(2, ob_fcurves[0].array_index)
+
+    def test_keyframe_insert_py_func_with_group(self):
+        curve_object = _create_animation_object()
+
+        # Test with property for which Blender knows a group name too ('Object Transforms').
+        self.assertTrue(curve_object.keyframe_insert('location', group="Téšt"))
+
+        fcurves = curve_object.animation_data.action.fcurves
+        fgroups = curve_object.animation_data.action.groups
+
+        self.assertEqual(3 * ['location'], [fcurve.data_path for fcurve in fcurves])
+        self.assertEqual([0, 1, 2], [fcurve.array_index for fcurve in fcurves])
+        self.assertEqual(["Téšt"], [group.name for group in fgroups])
+        self.assertEqual(3 * ["Téšt"], [fcurve.group and fcurve.group.name for fcurve in fcurves])
+
+        fcurves.clear()
+        while fgroups:
+            fgroups.remove(fgroups[0])
+
+        # Test with property that does not have predefined group name.
+        self.assertTrue(curve_object.keyframe_insert('show_wire', group="Téšt"))
+        self.assertEqual('show_wire', fcurves[0].data_path)
+        self.assertEqual(["Téšt"], [group.name for group in fgroups])
 
 
 class VisualKeyingTest(AbstractKeyframingTest, unittest.TestCase):
@@ -271,6 +346,15 @@ class CycleAwareKeyingTest(AbstractKeyframingTest, unittest.TestCase):
         super().setUp()
         bpy.context.scene.tool_settings.use_keyframe_cycle_aware = True
 
+        # Deselect the default cube, because this test works on a specific
+        # object. Operators that work on all selected objects shouldn't work on
+        # anything else but that object.
+        bpy.ops.object.select_all(action='DESELECT')
+
+    def tearDown(self):
+        bpy.context.scene.tool_settings.use_keyframe_cycle_aware = False
+        super().tearDown()
+
     def test_insert_by_name(self):
         # In order to make cycle aware keying work, the action needs to be created and have the
         # frame_range set plus the use_frame_range flag set to True.
@@ -300,14 +384,11 @@ class CycleAwareKeyingTest(AbstractKeyframingTest, unittest.TestCase):
         # Check that only location keys have been created.
         _fcurve_paths_match(action.fcurves, ["location"])
 
-        expected_keys = [1, 3, 5, 9, 20]
+        expected_keys = [1.0, 3.0, 5.0, 9.0, 20.0]
 
         for fcurve in action.fcurves:
-            self.assertEqual(len(fcurve.keyframe_points), len(expected_keys))
-            key_index = 0
-            for key in fcurve.keyframe_points:
-                self.assertEqual(key.co.x, expected_keys[key_index])
-                key_index += 1
+            actual_keys = [key.co.x for key in fcurve.keyframe_points]
+            self.assertEqual(expected_keys, actual_keys)
 
             # All fcurves should have a cycles modifier.
             self.assertTrue(fcurve.modifiers[0].type == "CYCLES")
@@ -333,14 +414,11 @@ class CycleAwareKeyingTest(AbstractKeyframingTest, unittest.TestCase):
             bpy.context.scene.frame_set(22)
             bpy.ops.anim.keyframe_insert()
 
-        expected_keys = [1, 3, 5, 20]
+        expected_keys = [1.0, 3.0, 5.0, 20.0]
 
         for fcurve in action.fcurves:
-            self.assertEqual(len(fcurve.keyframe_points), len(expected_keys))
-            key_index = 0
-            for key in fcurve.keyframe_points:
-                self.assertEqual(key.co.x, expected_keys[key_index])
-                key_index += 1
+            actual_keys = [key.co.x for key in fcurve.keyframe_points]
+            self.assertEqual(expected_keys, actual_keys)
 
             # All fcurves should have a cycles modifier.
             self.assertTrue(fcurve.modifiers[0].type == "CYCLES")
@@ -594,6 +672,7 @@ def _create_nla_anim_object():
     fcu.keyframe_points.insert(0, value=0).interpolation = 'LINEAR'
     fcu.keyframe_points.insert(10, value=1).interpolation = 'LINEAR'
     track.strips.new("base_strip", 0, action_base)
+    assert action_base.is_action_layered
 
     track = anim_object.animation_data.nla_tracks.new()
     track.name = "add"
@@ -603,6 +682,7 @@ def _create_nla_anim_object():
     fcu.keyframe_points.insert(10, value=1).interpolation = 'LINEAR'
     strip = track.strips.new("add_strip", 0, action_add)
     strip.blend_type = "ADD"
+    assert action_add.is_action_layered
 
     track = anim_object.animation_data.nla_tracks.new()
     track.name = "top"
@@ -611,6 +691,7 @@ def _create_nla_anim_object():
     fcu.keyframe_points.insert(0, value=0).interpolation = 'LINEAR'
     fcu.keyframe_points.insert(10, value=0).interpolation = 'LINEAR'
     track.strips.new("top_strip", 0, action_top)
+    assert action_top.is_action_layered
 
     return anim_object
 
@@ -631,6 +712,11 @@ class NlaInsertTest(AbstractKeyframingTest, unittest.TestCase):
                 continue
             area.type = "NLA_EDITOR"
             break
+
+        # Deselect the default cube, because the NLA tests work on a specific
+        # object created for that test. Operators that work on all selected
+        # objects shouldn't work on anything else but that object.
+        bpy.ops.object.select_all(action='DESELECT')
 
     def test_insert_failure(self):
         # If the topmost track is set to "REPLACE" the system will fail
@@ -660,6 +746,9 @@ class NlaInsertTest(AbstractKeyframingTest, unittest.TestCase):
         nla_anim_object = _create_nla_anim_object()
         tracks = nla_anim_object.animation_data.nla_tracks
 
+        self.assertEqual(nla_anim_object, bpy.context.active_object)
+        self.assertEqual(None, nla_anim_object.animation_data.action)
+
         # This leaves the additive track as the topmost track with influence
         tracks["top"].mute = True
 
@@ -669,12 +758,25 @@ class NlaInsertTest(AbstractKeyframingTest, unittest.TestCase):
             tracks["base"].strips[0].select = True
             bpy.ops.nla.tweakmode_enter(use_upper_stack_evaluation=True)
 
+        base_action = bpy.data.actions["action_base"]
+
+        # Verify that tweak mode has switched to the correct Action.
+        self.assertEqual(base_action, nla_anim_object.animation_data.action)
+
         # Inserting over the existing keyframe.
         bpy.context.scene.frame_set(10)
         with bpy.context.temp_override(**_get_view3d_context()):
             bpy.ops.anim.keyframe_insert()
 
-        base_action = bpy.data.actions["action_base"]
+        # Check that the expected F-Curves exist.
+        fcurves_actual = {(f.data_path, f.array_index) for f in base_action.fcurves}
+        fcurves_expect = {
+            ("location", 0),
+            ("location", 1),
+            ("location", 2),
+        }
+        self.assertEqual(fcurves_actual, fcurves_expect)
+
         # This should have added keys to Y and Z but not X.
         # X already had two keys from the file setup.
         self.assertEqual(len(base_action.fcurves.find("location", index=0).keyframe_points), 2)

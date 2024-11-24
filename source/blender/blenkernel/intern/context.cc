@@ -345,8 +345,8 @@ static eContextResult ctx_data_get(bContext *C, const char *member, bContextData
   }
   if (done != 1 && recursion < 2 && (region = CTX_wm_region(C))) {
     C->data.recursion = 2;
-    if (region->type && region->type->context) {
-      ret = region->type->context(C, member, result);
+    if (region->runtime->type && region->runtime->type->context) {
+      ret = region->runtime->type->context(C, member, result);
       if (ret) {
         done = -(-ret | -done);
       }
@@ -611,8 +611,8 @@ ListBase CTX_data_dir_get_ex(const bContext *C,
       data_dir_add(&lb, entry.name.c_str(), use_all);
     }
   }
-  if ((region = CTX_wm_region(C)) && region->type && region->type->context) {
-    region->type->context(C, "", &result);
+  if ((region = CTX_wm_region(C)) && region->runtime->type && region->runtime->type->context) {
+    region->runtime->type->context(C, "", &result);
 
     if (result.dir) {
       for (a = 0; result.dir[a]; a++) {
@@ -1226,7 +1226,7 @@ enum eContextObjectMode CTX_data_mode_enum_ex(const Object *obedit,
       if (object_mode & OB_MODE_PARTICLE_EDIT) {
         return CTX_MODE_PARTICLE;
       }
-      if (object_mode & OB_MODE_PAINT_GPENCIL_LEGACY) {
+      if (object_mode & OB_MODE_PAINT_GREASE_PENCIL) {
         if (ob->type == OB_GPENCIL_LEGACY) {
           return CTX_MODE_PAINT_GPENCIL_LEGACY;
         }
@@ -1237,7 +1237,7 @@ enum eContextObjectMode CTX_data_mode_enum_ex(const Object *obedit,
       if (object_mode & OB_MODE_EDIT_GPENCIL_LEGACY) {
         return CTX_MODE_EDIT_GPENCIL_LEGACY;
       }
-      if (object_mode & OB_MODE_SCULPT_GPENCIL_LEGACY) {
+      if (object_mode & OB_MODE_SCULPT_GREASE_PENCIL) {
         if (ob->type == OB_GPENCIL_LEGACY) {
           return CTX_MODE_SCULPT_GPENCIL_LEGACY;
         }
@@ -1245,7 +1245,7 @@ enum eContextObjectMode CTX_data_mode_enum_ex(const Object *obedit,
           return CTX_MODE_SCULPT_GREASE_PENCIL;
         }
       }
-      if (object_mode & OB_MODE_WEIGHT_GPENCIL_LEGACY) {
+      if (object_mode & OB_MODE_WEIGHT_GREASE_PENCIL) {
         if (ob->type == OB_GPENCIL_LEGACY) {
           return CTX_MODE_WEIGHT_GPENCIL_LEGACY;
         }
@@ -1253,7 +1253,7 @@ enum eContextObjectMode CTX_data_mode_enum_ex(const Object *obedit,
           return CTX_MODE_WEIGHT_GREASE_PENCIL;
         }
       }
-      if (object_mode & OB_MODE_VERTEX_GPENCIL_LEGACY) {
+      if (object_mode & OB_MODE_VERTEX_GREASE_PENCIL) {
         if (ob->type == OB_GPENCIL_LEGACY) {
           return CTX_MODE_VERTEX_GPENCIL_LEGACY;
         }
@@ -1494,36 +1494,6 @@ bool CTX_data_selected_pose_bones_from_active_object(const bContext *C,
 bool CTX_data_visible_pose_bones(const bContext *C, blender::Vector<PointerRNA> *list)
 {
   return ctx_data_collection_get(C, "visible_pose_bones", list);
-}
-
-bGPdata *CTX_data_gpencil_data(const bContext *C)
-{
-  return static_cast<bGPdata *>(ctx_data_pointer_get(C, "gpencil_data"));
-}
-
-bGPDlayer *CTX_data_active_gpencil_layer(const bContext *C)
-{
-  return static_cast<bGPDlayer *>(ctx_data_pointer_get(C, "active_gpencil_layer"));
-}
-
-bGPDframe *CTX_data_active_gpencil_frame(const bContext *C)
-{
-  return static_cast<bGPDframe *>(ctx_data_pointer_get(C, "active_gpencil_frame"));
-}
-
-bool CTX_data_visible_gpencil_layers(const bContext *C, blender::Vector<PointerRNA> *list)
-{
-  return ctx_data_collection_get(C, "visible_gpencil_layers", list);
-}
-
-bool CTX_data_editable_gpencil_layers(const bContext *C, blender::Vector<PointerRNA> *list)
-{
-  return ctx_data_collection_get(C, "editable_gpencil_layers", list);
-}
-
-bool CTX_data_editable_gpencil_strokes(const bContext *C, blender::Vector<PointerRNA> *list)
-{
-  return ctx_data_collection_get(C, "editable_gpencil_strokes", list);
 }
 
 const AssetLibraryReference *CTX_wm_asset_library_ref(const bContext *C)

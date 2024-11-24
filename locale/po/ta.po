@@ -1,9 +1,9 @@
 
 msgid ""
 msgstr ""
-"Project-Id-Version: Blender 4.3.0 Alpha (b'd52d70324d18')\n"
+"Project-Id-Version: Blender 4.3.0 Release Candidate (b'7dfe47164a63')\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-16 11:03+0000\n"
+"POT-Creation-Date: 2024-11-18 11:20+0000\n"
 "PO-Revision-Date: 2024-04-14 09:42+0000\n"
 "Last-Translator: தமிழ்நேரம் <anishprabu.t@gmail.com>\n"
 "Language-Team: Tamil <https://translate.blender.org/projects/blender-ui/ui/ta/>\n"
@@ -57,10 +57,6 @@ msgstr "aovகளின் பட்டியல்"
 
 msgid "Collection of AOVs"
 msgstr "aov களின் சேகரிப்பு"
-
-
-msgid "F-Curves"
-msgstr "எஃப்-வளைவுகள்"
 
 
 msgid "Action F-Curves"
@@ -247,38 +243,6 @@ msgid "Collection of action groups"
 msgstr "செயல் குழுக்களின் தொகுப்பு"
 
 
-msgid "Influence"
-msgstr "செல்வாக்கு"
-
-
-msgid "Mix Mode"
-msgstr "கலவை முறை"
-
-
-msgid "Replace"
-msgstr "மாற்றவும்"
-
-
-msgid "Offset"
-msgstr "ஈடுசெய்யும்"
-
-
-msgid "Add"
-msgstr "சேர்க்க"
-
-
-msgid "Subtract"
-msgstr "கழிக்க"
-
-
-msgid "Multiply"
-msgstr "பெருக்க"
-
-
-msgid "Strips"
-msgstr "கீற்றுகள்"
-
-
 msgid "Action Pose Markers"
 msgstr "செயல் நடிப்பு குறிப்பான்கள்"
 
@@ -301,18 +265,6 @@ msgstr "செயல்லில் உள்ள குருப்பானி�
 
 msgid "Index of active pose marker"
 msgstr "செயல்பாட்டில் உள்ளநடிப்பு குறிப்பானின் குறியீட்டு"
-
-
-msgid "Active"
-msgstr "செயலில்"
-
-
-msgid "Show Expanded"
-msgstr "நிகழ்ச்சி விரிவாக்கப்பட்டது"
-
-
-msgid "Keyframe"
-msgstr "கீஃப்ரேம்"
 
 
 msgid "Add-on"
@@ -555,6 +507,10 @@ msgid "Method used for combining Active Action's result with result of NLA stack
 msgstr "செயலில் செயலின் முடிவை என்எல்ஏ அடுக்கின் விளைவாக இணைக்கப் பயன்படுத்தப்படுகிறது"
 
 
+msgid "Replace"
+msgstr "மாற்றவும்"
+
+
 msgid "The strip values replace the accumulated results by amount specified by influence"
 msgstr "உரி மதிப்புகள் திரட்டப்பட்ட முடிவுகளை செல்வாக்கால் குறிப்பிடப்பட்ட அளவு மூலம் மாற்றுகின்றன"
 
@@ -567,12 +523,24 @@ msgid "The strip values are combined with accumulated results by appropriately u
 msgstr "சேனல் வகையின் அடிப்படையில் கூட்டல், பெருக்கல் அல்லது குவாட்டர்னியன் கணிதத்தைப் பயன்படுத்தி சரியான முறையில் பயன்படுத்துவதன் மூலம் உரி மதிப்புகள் திரட்டப்பட்ட முடிவுகளுடன் இணைக்கப்படுகின்றன"
 
 
+msgid "Add"
+msgstr "சேர்க்க"
+
+
 msgid "Weighted result of strip is added to the accumulated results"
 msgstr "உரிபின் எடையுள்ள முடிவு திரட்டப்பட்ட முடிவுகளில் சேர்க்கப்படுகிறது"
 
 
+msgid "Subtract"
+msgstr "கழிக்க"
+
+
 msgid "Weighted result of strip is removed from the accumulated results"
 msgstr "உரிபின் எடையுள்ள முடிவு திரட்டப்பட்ட முடிவுகளிலிருந்து அகற்றப்படுகிறது"
+
+
+msgid "Multiply"
+msgstr "பெருக்க"
 
 
 msgid "Weighted result of strip is multiplied with the accumulated results"
@@ -1851,10 +1819,6 @@ msgid "Active Attribute Index"
 msgstr "செயலில் பண்புக்கூறு அட்டவணை"
 
 
-msgid "Active attribute index"
-msgstr "செயலில் பண்புக்கூறு அட்டவணை"
-
-
 msgid "Active Color"
 msgstr "செயலில் நிறம்"
 
@@ -2735,10 +2699,6 @@ msgid "Main Grease Pencils"
 msgstr "முதன்மையான பசை எழுதுகோல்கள்"
 
 
-msgid "Collection of grease pencils"
-msgstr "பசை எழுதுகோல்களின் சேகரிப்பு"
-
-
 msgid "Main Hair Curves"
 msgstr "முதன்மையான முடி வளைவுகள்"
 
@@ -2961,6 +2921,150 @@ msgstr "முதன்மையான உலகங்கள்"
 
 msgid "Collection of worlds"
 msgstr "உலகங்களின் தொகுப்பு"
+
+
+msgid "ID Type"
+msgstr "ஐடி வகை"
+
+
+msgid "Armature"
+msgstr "ஆர்மேச்சர்"
+
+
+msgid "Brush"
+msgstr "தூரிகை"
+
+
+msgid "Cache File"
+msgstr "கேச் கோப்பு"
+
+
+msgid "Camera"
+msgstr "புகைப்பட கருவி"
+
+
+msgid "Collection"
+msgstr "சேகரிப்பு"
+
+
+msgid "Curve"
+msgstr "வளைவு"
+
+
+msgid "Font"
+msgstr "எழுத்துரு"
+
+
+msgid "Grease Pencil v3"
+msgstr "பசை எழுதுகோல் வி 3"
+
+
+msgid "Image"
+msgstr "படம்"
+
+
+msgid "Key"
+msgstr "விசை"
+
+
+msgid "Lattice"
+msgstr "நட்டு"
+
+
+msgid "Library"
+msgstr "நூலகம்"
+
+
+msgid "Light"
+msgstr "ஒளி"
+
+
+msgid "Light Probe"
+msgstr "ஒளி ஆய்வு"
+
+
+msgid "Line Style"
+msgstr "வரி நடை"
+
+
+msgid "Mask"
+msgstr "முகமூடி"
+
+
+msgid "Material"
+msgstr "மூலப்பொருள்"
+
+
+msgid "Mesh"
+msgstr "கண்ணி"
+
+
+msgid "Metaball"
+msgstr "வளர்சிதை மாற்ற"
+
+
+msgid "Movie Clip"
+msgstr "திரைப்பட கிளிப்"
+
+
+msgid "Node Tree"
+msgstr "முனை மரம்"
+
+
+msgid "Paint Curve"
+msgstr "பெயிண்ட் வளைவு"
+
+
+msgid "Palette"
+msgstr "தட்டு"
+
+
+msgid "Particle"
+msgstr "துகள்"
+
+
+msgid "Point Cloud"
+msgstr "புள்ளி முகில்"
+
+
+msgid "Scene"
+msgstr "காட்சி"
+
+
+msgid "Screen"
+msgstr "திரை"
+
+
+msgid "Sound"
+msgstr "ஒலி"
+
+
+msgid "Speaker"
+msgstr "அவைத்தலைவர்"
+
+
+msgid "Text"
+msgstr "உரை"
+
+
+msgid "Texture"
+msgstr "அமைப்பு"
+
+
+msgid "Volume"
+msgstr "கனஅளவு"
+
+
+msgid "Window Manager"
+msgstr "விண்டர் மேலாளர்"
+
+
+msgid "Workspace"
+msgstr "பணியிடம்"
+
+
+msgid "World"
+msgstr "உலகம்"
 
 
 msgid "Blender RNA"
@@ -3437,10 +3541,6 @@ msgstr "சராசரி"
 
 msgid "All rules are averaged"
 msgstr "அனைத்து விதிகளும் சராசரியாக உள்ளன"
-
-
-msgid "Volume"
-msgstr "கனஅளவு"
 
 
 msgid "Bone in an Armature data-block"
@@ -4283,10 +4383,6 @@ msgid "Grease Pencil Brush Settings"
 msgstr "பசை எழுதுகோல் தூரிகை அமைப்புகள்"
 
 
-msgid "Settings for grease pencil brush"
-msgstr "பசை எழுதுகோல் தூரிகைக்கான அமைப்புகள்"
-
-
 msgid "Active Smooth"
 msgstr "செயலில் மென்மையானது"
 
@@ -4323,12 +4419,12 @@ msgid "Preselected mode when using this brush"
 msgstr "இந்த தூரிகையைப் பயன்படுத்தும் போது முன்கூட்டியே தேர்ந்தெடுக்கப்பட்ட பயன்முறை"
 
 
+msgid "Active"
+msgstr "செயலில்"
+
+
 msgid "Use current mode"
 msgstr "தற்போதைய பயன்முறையைப் பயன்படுத்தவும்"
-
-
-msgid "Material"
-msgstr "மூலப்பொருள்"
 
 
 msgid "Use always material mode"
@@ -4797,10 +4893,6 @@ msgid "Use tablet pressure for jitter"
 msgstr "நடுக்கத்திற்கு டேப்லெட் அழுத்தத்தைப் பயன்படுத்தவும்"
 
 
-msgid "Keep caps"
-msgstr "தொப்பிகளை வைத்திருங்கள்"
-
-
 msgid "Keep the caps as they are and don't flatten them when erasing"
 msgstr "தொப்பிகளைப் போலவே வைத்திருங்கள், அழிக்கும்போது அவற்றை தட்டையாக்க வேண்டாம்"
 
@@ -4835,10 +4927,6 @@ msgstr "சீரற்ற தன்மையை மாற்றியமைக�
 
 msgid "Outline"
 msgstr "அவுட்லைன்"
-
-
-msgid "Convert stroke to perimeter"
-msgstr "பக்கவாதத்தை சுற்றளவுக்கு மாற்றவும்"
 
 
 msgid "Use Post-Process Settings"
@@ -5085,10 +5173,6 @@ msgid "Crop"
 msgstr "பயிர்"
 
 
-msgid "Image"
-msgstr "படம்"
-
-
 msgid "Image displayed and edited in this space"
 msgstr "இந்த இடத்தில் படம் காட்டப்பட்டு திருத்தப்பட்டது"
 
@@ -5107,6 +5191,10 @@ msgstr "பின்னணி படத்தை மீறவும்"
 
 msgid "In a local override camera, whether this background image comes from the linked reference camera, or is local to the override"
 msgstr "உள்ளக மேலெழுத கேமராவில், இந்த பின்னணி படம் இணைக்கப்பட்ட குறிப்பு கேமராவிலிருந்து வந்ததா, அல்லது மேலெழுதலுக்கு உள்ளக"
+
+
+msgid "Offset"
+msgstr "ஈடுசெய்யும்"
 
 
 msgid "Rotation"
@@ -5133,6 +5221,10 @@ msgid "Show this image as background"
 msgstr "இந்த படத்தை பின்னணியாகக் காட்டுங்கள்"
 
 
+msgid "Show Expanded"
+msgstr "நிகழ்ச்சி விரிவாக்கப்பட்டது"
+
+
 msgid "Show the details in the user interface"
 msgstr "பயனர் இடைமுகத்தில் விவரங்களைக் காட்டு"
 
@@ -5151,10 +5243,6 @@ msgstr "பின்னணி மூல"
 
 msgid "Data source used for background"
 msgstr "பின்னணிக்கு பயன்படுத்தப்படும் தரவு மூல"
-
-
-msgid "Movie Clip"
-msgstr "திரைப்பட கிளிப்"
 
 
 msgid "Camera Clip"
@@ -6361,10 +6449,6 @@ msgid "Color management settings used for displaying images on the display"
 msgstr "காட்சியில் படங்களைக் காண்பிக்கப் பயன்படுத்தப்படும் வண்ண மேலாண்மை அமைப்புகள்"
 
 
-msgid "Curve"
-msgstr "வளைவு"
-
-
 msgid "Color curve mapping applied before display transform"
 msgstr "காட்சி உருமாற்றத்திற்கு முன் வண்ண வளைவு மேப்பிங் பயன்படுத்தப்படுகிறது"
 
@@ -6467,10 +6551,6 @@ msgstr "இருண்ட"
 
 msgid "Lighten"
 msgstr "ஒளிரச் செய்யுங்கள்"
-
-
-msgid "Screen"
-msgstr "திரை"
 
 
 msgid "Overlay"
@@ -6704,6 +6784,10 @@ msgstr "சுழற்சி பிழை"
 
 msgid "Amount of residual error in radians for constraints that work on orientation"
 msgstr "நோக்குநிலையில் செயல்படும் தடைகளுக்கு ரேடியன்களில் எஞ்சியிருக்கும் பிழையின் அளவு"
+
+
+msgid "Influence"
+msgstr "செல்வாக்கு"
 
 
 msgid "Amount of influence constraint will have on the final solution"
@@ -6990,10 +7074,6 @@ msgid "Use transform property of target to look up pose for owner from an Action
 msgstr "ஒரு செயலிலிருந்து உரிமையாளருக்கு போசைப் பார்க்க இலக்கு உருமாற்ற சொத்தை பயன்படுத்தவும்"
 
 
-msgid "Armature"
-msgstr "ஆர்மேச்சர்"
-
-
 msgid "Apply weight-blended transformation from multiple bones like the Armature modifier"
 msgstr "ஆர்மேச்சர் மாற்றியமைத்தல் போன்ற பல எலும்புகளிலிருந்து எடை கலப்பு மாற்றத்தைப் பயன்படுத்துங்கள்"
 
@@ -7076,6 +7156,10 @@ msgstr "குறைந்தபட்சம்"
 
 msgid "Minimum value for target channel range"
 msgstr "இலக்கு சேனல் வரம்பிற்கான குறைந்தபட்ச மதிப்பு"
+
+
+msgid "Mix Mode"
+msgstr "கலவை முறை"
 
 
 msgid "Specify how existing transformations and the action channels are combined"
@@ -7768,10 +7852,6 @@ msgstr "ட்ராக் கட்டுப்பாட்டைப் பி�
 
 msgid "Lock motion to the target motion track"
 msgstr "இலக்கு இயக்க பாதைக்கு பூட்டு இயக்கம்"
-
-
-msgid "Camera"
-msgstr "புகைப்பட கருவி"
 
 
 msgid "Camera to which motion is parented (if empty active scene camera is used)"
@@ -8707,10 +8787,6 @@ msgid "Look up transformation from an external file"
 msgstr "வெளிப்புற கோப்பிலிருந்து மாற்றத்தைப் பாருங்கள்"
 
 
-msgid "Cache File"
-msgstr "கேச் கோப்பு"
-
-
 msgid "Path to the object in the Alembic archive used to lookup the transform matrix"
 msgstr "உருமாற்ற மேட்ரிக்சைத் தேடுவதற்குப் பயன்படுத்தப்படும் அலெம்பிக் காப்பகத்தில் பொருளுக்கான பாதை"
 
@@ -9487,10 +9563,6 @@ msgstr "காண்பிக்க அல்லது வழங்குவத�
 
 msgid "Evaluated objects in the dependency graph"
 msgstr "சார்பு வரைபடத்தில் மதிப்பிடப்பட்ட பொருள்கள்"
-
-
-msgid "Scene"
-msgstr "காட்சி"
 
 
 msgid "Original scene dependency graph is built for"
@@ -10737,10 +10809,6 @@ msgstr "புறஊதா அமைப்பு"
 
 msgid "Data Layer"
 msgstr "தரவு அடுக்கு"
-
-
-msgid "Texture"
-msgstr "அமைப்பு"
 
 
 msgid "Is Active"
@@ -12751,10 +12819,6 @@ msgstr "எழுத்துருக்கள்"
 
 msgid "Show Font data-blocks"
 msgstr "எழுத்துரு தரவு-தொகுதிகளைக் காட்டு"
-
-
-msgid "Show Grease pencil data-blocks"
-msgstr "பசை எழுதுகோல் தரவு-தொகுதிகளைக் காட்டு"
 
 
 msgid "Show Image data-blocks"
@@ -14930,16 +14994,24 @@ msgid "Controls fluid emission from within the mesh (higher value results in gre
 msgstr "கண்ணிக்குள் இருந்து திரவ உமிழ்வைக் கட்டுப்படுத்துகிறது (அதிக மதிப்பு கண்ணி உள்ளே இருந்து அதிக உமிழ்வை ஏற்படுத்துகிறது)"
 
 
+msgid "Color of the corresponding socket type in the node editor"
+msgstr "முனை திருத்தியில் தொடர்புடைய சாக்கெட் வகையின் நிறம்"
+
+
+msgid "Socket Type"
+msgstr "சாக்கெட் வகை"
+
+
+msgid "Menu"
+msgstr "பட்டியல்"
+
+
 msgid "Freestyle Line Set"
 msgstr "ஃப்ரீபாணி வரி தொகுப்பு"
 
 
 msgid "Line set for associating lines and style parameters"
 msgstr "கோடுகள் மற்றும் பாணி அளவுருக்களை இணைப்பதற்கான வரி அமைக்கப்பட்டுள்ளது"
-
-
-msgid "Collection"
-msgstr "சேகரிப்பு"
 
 
 msgid "A collection of objects based on which feature edges are selected"
@@ -15120,10 +15192,6 @@ msgstr "கொடுக்கப்பட்ட முக அடையாள ந
 
 msgid "Select feature edges not satisfying the given face mark conditions"
 msgstr "கொடுக்கப்பட்ட முக அடையாள நிலைமைகளை திருப்திப்படுத்தாத அம்ச விளிம்புகளைத் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Line Style"
-msgstr "வரி நடை"
 
 
 msgid "Line style settings"
@@ -16160,6 +16228,10 @@ msgid "Type of keyframe"
 msgstr "கீஃப்ரேம் வகை"
 
 
+msgid "Keyframe"
+msgstr "கீஃப்ரேம்"
+
+
 msgid "Normal keyframe, e.g. for key poses"
 msgstr "சாதாரண கீஃப்ரேம், எ.கா. முக்கிய போச்களுக்கு"
 
@@ -16312,10 +16384,6 @@ msgid "Grease Pencil Mask Layers"
 msgstr "பசை எழுதுகோல் முகமூடி அடுக்குகள்"
 
 
-msgid "Collection of grease pencil masking layers"
-msgstr "பசை எழுதுகோல் முகமூடி அடுக்குகளின் சேகரிப்பு"
-
-
 msgid "Active Layer Mask Index"
 msgstr "செயலில் அடுக்கு முகமூடி அட்டவணை"
 
@@ -16438,94 +16506,6 @@ msgstr "ஒரு சொத்து தரவு-தொகுதிக்கா
 
 msgid "Type identifier of this data-block"
 msgstr "இந்த தரவு-தொகுதியின் அடையாளங்காட்டியைத் தட்டச்சு செய்க"
-
-
-msgid "Brush"
-msgstr "தூரிகை"
-
-
-msgid "Font"
-msgstr "எழுத்துரு"
-
-
-msgid "Grease Pencil v3"
-msgstr "பசை எழுதுகோல் வி 3"
-
-
-msgid "Key"
-msgstr "விசை"
-
-
-msgid "Lattice"
-msgstr "நட்டு"
-
-
-msgid "Library"
-msgstr "நூலகம்"
-
-
-msgid "Light"
-msgstr "ஒளி"
-
-
-msgid "Light Probe"
-msgstr "ஒளி ஆய்வு"
-
-
-msgid "Mask"
-msgstr "முகமூடி"
-
-
-msgid "Mesh"
-msgstr "கண்ணி"
-
-
-msgid "Metaball"
-msgstr "வளர்சிதை மாற்ற"
-
-
-msgid "Node Tree"
-msgstr "முனை மரம்"
-
-
-msgid "Paint Curve"
-msgstr "பெயிண்ட் வளைவு"
-
-
-msgid "Palette"
-msgstr "தட்டு"
-
-
-msgid "Particle"
-msgstr "துகள்"
-
-
-msgid "Point Cloud"
-msgstr "புள்ளி முகில்"
-
-
-msgid "Sound"
-msgstr "ஒலி"
-
-
-msgid "Speaker"
-msgstr "அவைத்தலைவர்"
-
-
-msgid "Text"
-msgstr "உரை"
-
-
-msgid "Window Manager"
-msgstr "விண்டர் மேலாளர்"
-
-
-msgid "Workspace"
-msgstr "பணியிடம்"
-
-
-msgid "World"
-msgstr "உலகம்"
 
 
 msgid "Editable"
@@ -16660,6 +16640,10 @@ msgid "The combined frame range of all F-Curves within this action"
 msgstr "இந்த செயலுக்குள் அனைத்து எஃப்-வளைவுகளின் ஒருங்கிணைந்த பிரேம் வரம்பு"
 
 
+msgid "F-Curves"
+msgstr "எஃப்-வளைவுகள்"
+
+
 msgid "The individual F-Curves that make up the action"
 msgstr "செயலை உருவாக்கும் தனிப்பட்ட எஃப்-வளைவுகள்"
 
@@ -16695,10 +16679,6 @@ msgstr "ஐடி வேர் வகை"
 
 msgid "Type of ID block that action can be used on - DO NOT CHANGE UNLESS YOU KNOW WHAT YOU ARE DOING"
 msgstr "ஐடி பிளாக் வகை அந்த செயலைப் பயன்படுத்தலாம் - நீங்கள் என்ன செய்கிறீர்கள் என்று உங்களுக்குத் தெரியாவிட்டால் மாற வேண்டாம்"
-
-
-msgid "Layers"
-msgstr "அடுக்குகள்"
 
 
 msgid "Pose Markers"
@@ -18692,10 +18672,6 @@ msgid "Use Paint"
 msgstr "வண்ணப்பூச்சு பயன்படுத்தவும்"
 
 
-msgid "Use this brush in grease pencil drawing mode"
-msgstr "இந்த தூரிகையை பசை எழுதுகோல் வரைதல் பயன்முறையில் பயன்படுத்தவும்"
-
-
 msgid "Use this brush in texture paint mode"
 msgstr "இந்த தூரிகையை அமைப்பு வண்ணப்பூச்சு பயன்முறையில் பயன்படுத்தவும்"
 
@@ -18866,10 +18842,6 @@ msgstr "இடைவெளிக்கு வலிமையை சரிசெ�
 
 msgid "Automatically adjust strength to give consistent results for different spacings"
 msgstr "வெவ்வேறு இடைவெளிகளுக்கு நிலையான முடிவுகளை வழங்க வலிமையை தானாக சரிசெய்யவும்"
-
-
-msgid "Use this brush in grease pencil vertex color mode"
-msgstr "இந்த தூரிகையை பசை எழுதுகோல் வெர்டெக்ச் வண்ண பயன்முறையில் பயன்படுத்தவும்"
 
 
 msgid "Use Pressure for Wet Mix"
@@ -20879,6 +20851,10 @@ msgid "Freehand annotation sketchbook"
 msgstr "ஃப்ரீஏண்ட் சிறுகுறிப்பு ச்கெட்ச்புக்"
 
 
+msgid "Layers"
+msgstr "அடுக்குகள்"
+
+
 msgid "Grease Pencil data-block"
 msgstr "பசை எழுதுகோல் தரவு-தொகுதி"
 
@@ -20941,10 +20917,6 @@ msgstr "3d இடத்தில் வீச்சுகள் எவ்வா�
 
 msgid "2D Layers"
 msgstr "2 டி அடுக்குகள்"
-
-
-msgid "Display strokes using grease pencil layers to define order"
-msgstr "ஒழுங்கை வரையறுக்க பசை எழுதுகோல் அடுக்குகளைப் பயன்படுத்தி வீச்சுகள் காண்பி"
 
 
 msgid "3D Location"
@@ -21657,30 +21629,6 @@ msgid "Directional area Light"
 msgstr "திசை பரப்பு ஒளி"
 
 
-msgid "Contact Shadow Bias"
-msgstr "நிழல் சார்புகளைத் தொடர்பு கொள்ளுங்கள்"
-
-
-msgid "Bias to avoid self shadowing"
-msgstr "தன்வய நிழலைத் தவிர்க்க சார்பு"
-
-
-msgid "Contact Shadow Distance"
-msgstr "நிழல் தூரத்தை தொடர்பு கொள்ளவும்"
-
-
-msgid "World space distance in which to search for screen space occluder"
-msgstr "திரை ச்பேசைத் தேடுவதற்கான உலக விண்வெளி தூரம்"
-
-
-msgid "Contact Shadow Thickness"
-msgstr "நிழல் தடிமன் தொடர்பு கொள்ளவும்"
-
-
-msgid "Pixel thickness used to detect occlusion"
-msgstr "மறைவைக் கண்டறிய படப்புள்ளி தடிமன் பயன்படுத்தப்படுகிறது"
-
-
 msgctxt "Light"
 msgid "Power"
 msgstr "ஆற்றல்"
@@ -21690,28 +21638,12 @@ msgid "Light energy emitted over the entire area of the light in all directions"
 msgstr "ஒளியின் முழுப் பரப்பிலும் அனைத்து திசைகளிலும் வெளிச்சம் செலுத்தப்படுகிறது"
 
 
-msgid "Shadow Buffer Bias"
-msgstr "நிழல் இடையக சார்பு"
-
-
-msgid "Bias for reducing self shadowing"
-msgstr "தன்வய நிழலைக் குறைப்பதற்கான சார்பு"
-
-
 msgid "Shadow Buffer Clip Start"
 msgstr "நிழல் இடையக கிளிப் தொடங்குகிறது"
 
 
 msgid "Shadow map clip start, below which objects will not generate shadows"
 msgstr "நிழல் வரைபட கிளிப் தொடங்குகிறது, கீழே எந்த பொருள்கள் நிழல்களை உருவாக்காது"
-
-
-msgid "Shadow Color"
-msgstr "நிழல் நிறம்"
-
-
-msgid "Color of shadows cast by the light"
-msgstr "ஒளியால் செலுத்தப்படும் நிழல்களின் நிறம்"
 
 
 msgid "Shadow Soft Size"
@@ -21752,14 +21684,6 @@ msgstr "ஒளி பரப்பின் பரப்பு அளவு ச�
 
 msgid "How widely the emitted light fans out, as in the case of a gridded softbox"
 msgstr "ஒரு கட்டப்பட்ட சாப்ட்பாக்சின் விசயத்தைப் போலவே, உமிழும் ஒளி ரசிகர்கள் எவ்வளவு பரவலாக வெளியேறுகிறார்கள்"
-
-
-msgid "Contact Shadow"
-msgstr "நிழலை தொடர்பு கொள்ளுங்கள்"
-
-
-msgid "Use screen space ray-tracing to have correct shadowing near occluder, or for small features that does not appear in shadow maps"
-msgstr "அக்லுடருக்கு அருகில் சரியான நிழலைக் கொண்டிருக்க, அல்லது நிழல் வரைபடங்களில் தோன்றாத சிறிய அம்சங்களுக்கு திரை ச்பேச் கதிர்-தடமறிதல் பயன்படுத்தவும்"
 
 
 msgid "Point Light"
@@ -22251,16 +22175,8 @@ msgid "Grease Pencil Settings"
 msgstr "பசை எழுதுகோல் அமைப்புகள்"
 
 
-msgid "Grease pencil color settings for material"
-msgstr "மூலப்பொருளுக்கான பசை எழுதுகோல் வண்ண அமைப்புகள்"
-
-
 msgid "Is Grease Pencil"
 msgstr "பசை எழுதுகோல்"
-
-
-msgid "True if this material has grease pencil data"
-msgstr "இந்த மூலப்பொருள் பசை எழுதுகோல் தரவு இருந்தால் உண்மை"
 
 
 msgid "Line Color"
@@ -22393,38 +22309,6 @@ msgstr "கடினத்தன்மை"
 
 msgid "Roughness of the material"
 msgstr "மூலப்பொருளின் கடினத்தன்மை"
-
-
-msgid "Shadow Mode"
-msgstr "நிழல் பயன்முறை"
-
-
-msgid "Shadow mapping method"
-msgstr "நிழல் மேப்பிங் முறை"
-
-
-msgid "Material will cast no shadow"
-msgstr "மூலப்பொருள் எந்த நிழலையும் செலுத்தாது"
-
-
-msgid "Opaque"
-msgstr "ஒளிபுகா"
-
-
-msgid "Material will cast shadows without transparency"
-msgstr "மூலப்பொருள் வெளிப்படைத்தன்மை இல்லாமல் நிழல்களை வைக்கும்"
-
-
-msgid "Alpha Clip"
-msgstr "ஆல்பா கிளிப்"
-
-
-msgid "Alpha Hashed"
-msgstr "ஆல்பா ஆசெட்"
-
-
-msgid "Use noise to dither the binary visibility and use filtering to reduce the noise"
-msgstr "பைனரி தெரிவுநிலையை குறைக்க சத்தத்தைப் பயன்படுத்தவும், சத்தத்தைக் குறைக்க வடிகட்டலைப் பயன்படுத்தவும்"
 
 
 msgid "Show Backface"
@@ -22897,10 +22781,6 @@ msgstr "காட்சிகளின் ஆஃப்செட் அதன் 
 
 msgid "Global scene frame number at which this movie starts playing (affects all data associated with a clip)"
 msgstr "இந்த திரைப்படம் விளையாடத் தொடங்கும் உலகளாவிய காட்சி பிரேம் எண் (ஒரு கிளிப்புடன் தொடர்புடைய எல்லா தரவையும் பாதிக்கிறது)"
-
-
-msgid "Grease pencil data for this movie clip"
-msgstr "இந்த திரைப்பட கிளிப்பிற்கான பசை எழுதுகோல் தரவு"
 
 
 msgid "Width and height in pixels, zero when image data can't be loaded"
@@ -23957,10 +23837,6 @@ msgstr "ஆல்பாவைப் பயன்படுத்தவும்"
 
 msgid "Use alpha blending instead of alpha test (can produce sorting artifacts)"
 msgstr "ஆல்பா சோதனைக்கு பதிலாக ஆல்பா கலப்பைப் பயன்படுத்தவும் (வரிசையாக்க கலைப்பொருட்களை உருவாக்க முடியும்)"
-
-
-msgid "Lights affect grease pencil object"
-msgstr "விளக்குகள் பசை எழுதுகோல் பொருளை பாதிக்கின்றன"
 
 
 msgid "Scale to Face Sizes"
@@ -27808,28 +27684,8 @@ msgid "Codec"
 msgstr "கோடெக்"
 
 
-msgid "Codec settings for OpenEXR"
-msgstr "openexr க்கான கோடெக் அமைப்புகள்"
-
-
 msgid "Pxr24 (lossy)"
 msgstr "pxr24 (இழப்பு)"
-
-
-msgid "ZIP (lossless)"
-msgstr "சிப் (இழப்பற்றது)"
-
-
-msgid "PIZ (lossless)"
-msgstr "பிச் (இழப்பற்றது)"
-
-
-msgid "RLE (lossless)"
-msgstr "rle (இழப்பற்றது)"
-
-
-msgid "ZIPS (lossless)"
-msgstr "சிப்ச் (இழப்பற்ற)"
 
 
 msgid "B44 (lossy)"
@@ -31393,10 +31249,6 @@ msgid "ID-block to which masking element would be parented to or to its property
 msgstr "ஐடி-பிளாக் எந்த முகமூடி உறுப்பு அதன் சொத்துக்கு அல்லது ஊடுருவும்"
 
 
-msgid "ID Type"
-msgstr "ஐடி வகை"
-
-
 msgid "Name of parent object in specified data-block to which parenting happens"
 msgstr "பெற்றோர் பொருளின் பெயர் குறிப்பிட்ட தரவு-தடுப்பில் பெற்றோருக்குரியது"
 
@@ -31830,108 +31682,12 @@ msgid "Editor menu containing buttons"
 msgstr "பொத்தான்களைக் கொண்ட திருத்தி பட்டியல்"
 
 
-msgid "Bone Collections"
-msgstr "எலும்பு வசூல்"
-
-
-msgid "Names"
-msgstr "பெயர்கள்"
-
-
-msgid "Show/Hide"
-msgstr "காட்டு/மறைக்க"
-
-
-msgid "Apply"
-msgstr "இடு"
-
-
-msgid "Toggle Bone Options"
-msgstr "எலும்பு விருப்பங்களை மாற்றவும்"
-
-
-msgid "Enable Bone Options"
-msgstr "எலும்பு விருப்பங்களை இயக்கவும்"
-
-
-msgid "Disable Bone Options"
-msgstr "எலும்பு விருப்பங்களை முடக்கு"
-
-
-msgid "Mesh Select Mode"
-msgstr "கண்ணி தேர்ந்தெடுக்கப்பட்ட பயன்முறையைத் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Face Data"
-msgstr "முகத்தை முகம்"
-
-
-msgid "Select by Face Strength"
-msgstr "முக வலிமையால் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Set Face Strength"
-msgstr "முக வலிமையை அமைக்கவும்"
-
-
-msgid "Clean Up"
-msgstr "தூய்மை செய்"
-
-
-msgid "Merge"
-msgstr "ஒன்றிணைக்கவும்"
-
-
-msgid "Special Characters"
-msgstr "சிறப்பு எழுத்துக்கள்"
-
-
-msgid "Kerning"
-msgstr "கெர்னிங்"
-
-
-msgid "Bone Roll"
-msgstr "எலும்பு ரோல்"
-
-
-msgid "Generate Weights"
-msgstr "எடைகளை உருவாக்குங்கள்"
-
-
-msgid "Assign Material"
-msgstr "மூலப்பொருள் ஒதுக்க"
-
-
-msgid "Pivot Point"
-msgstr "பிவோட் புள்ளி"
+msgid "Mirror"
+msgstr "கண்ணாடி"
 
 
 msgid "Snap"
 msgstr "ச்னாப்"
-
-
-msgid "Proportional Editing Falloff"
-msgstr "விகிதாசார திருத்துதல் வீழ்ச்சி"
-
-
-msgid "Mask Edit"
-msgstr "முகமூடி திருத்து"
-
-
-msgid "Automasking"
-msgstr "ஆட்டோமேச்கிங்"
-
-
-msgid "Face Sets Edit"
-msgstr "முகம் தொகுப்புகள் திருத்து"
-
-
-msgid "Vertex Group Locks"
-msgstr "வெர்டெக்ச் குழு பூட்டுகள்"
-
-
-msgid "Mirror"
-msgstr "கண்ணாடி"
 
 
 msgid "UV Mapping"
@@ -31982,6 +31738,10 @@ msgid "Select Loops"
 msgstr "சுழல்களைத் தேர்ந்தெடுக்கவும்"
 
 
+msgid "Assign Material"
+msgstr "மூலப்பொருள் ஒதுக்க"
+
+
 msgid "Add Image"
 msgstr "படத்தைச் சேர்க்கவும்"
 
@@ -31994,12 +31754,24 @@ msgid "Rigid Body"
 msgstr "கடினமான உடல்"
 
 
+msgid "Apply"
+msgstr "இடு"
+
+
 msgid "Track"
 msgstr "டிராக்"
 
 
 msgid "Quick Effects"
 msgstr "விரைவான விளைவுகள்"
+
+
+msgid "Show/Hide"
+msgstr "காட்டு/மறைக்க"
+
+
+msgid "Clean Up"
+msgstr "தூய்மை செய்"
 
 
 msgid "Asset"
@@ -32020,6 +31792,10 @@ msgstr "இணைப்பு/பரிமாற்ற தரவு"
 
 msgid "Hooks"
 msgstr "கொக்கிகள்"
+
+
+msgid "Vertex Group Locks"
+msgstr "வெர்டெக்ச் குழு பூட்டுகள்"
 
 
 msgid "Sculpt Set Pivot"
@@ -32044,6 +31820,78 @@ msgstr "இன்-பெட்வீன்ச்"
 
 msgid "Propagate"
 msgstr "பிரச்சாரம்"
+
+
+msgid "Bone Collections"
+msgstr "எலும்பு வசூல்"
+
+
+msgid "Names"
+msgstr "பெயர்கள்"
+
+
+msgid "Toggle Bone Options"
+msgstr "எலும்பு விருப்பங்களை மாற்றவும்"
+
+
+msgid "Enable Bone Options"
+msgstr "எலும்பு விருப்பங்களை இயக்கவும்"
+
+
+msgid "Disable Bone Options"
+msgstr "எலும்பு விருப்பங்களை முடக்கு"
+
+
+msgid "Mesh Select Mode"
+msgstr "கண்ணி தேர்ந்தெடுக்கப்பட்ட பயன்முறையைத் தேர்ந்தெடுக்கவும்"
+
+
+msgid "Face Data"
+msgstr "முகத்தை முகம்"
+
+
+msgid "Select by Face Strength"
+msgstr "முக வலிமையால் தேர்ந்தெடுக்கவும்"
+
+
+msgid "Set Face Strength"
+msgstr "முக வலிமையை அமைக்கவும்"
+
+
+msgid "Merge"
+msgstr "ஒன்றிணைக்கவும்"
+
+
+msgid "Special Characters"
+msgstr "சிறப்பு எழுத்துக்கள்"
+
+
+msgid "Kerning"
+msgstr "கெர்னிங்"
+
+
+msgid "Bone Roll"
+msgstr "எலும்பு ரோல்"
+
+
+msgid "Pivot Point"
+msgstr "பிவோட் புள்ளி"
+
+
+msgid "Proportional Editing Falloff"
+msgstr "விகிதாசார திருத்துதல் வீழ்ச்சி"
+
+
+msgid "Mask Edit"
+msgstr "முகமூடி திருத்து"
+
+
+msgid "Automasking"
+msgstr "ஆட்டோமேச்கிங்"
+
+
+msgid "Face Sets Edit"
+msgstr "முகம் தொகுப்புகள் திருத்து"
 
 
 msgid "Keyframe Insert Pie"
@@ -32140,14 +31988,6 @@ msgid "Add Attribute"
 msgstr "பண்புக்கூறு சேர்க்கவும்"
 
 
-msgid "Light Linking Specials"
-msgstr "ஒளி இணைக்கும் சிறப்பு"
-
-
-msgid "Shadow Linking Specials"
-msgstr "நிழல் இணைக்கும் சிறப்பு"
-
-
 msgid "Channel"
 msgstr "சேனல்"
 
@@ -32168,28 +32008,8 @@ msgid "Files"
 msgstr "கோப்புகள்"
 
 
-msgid "Grease Pencil Vertex Groups"
-msgstr "பசை எழுதுகோல் வெர்டெக்ச் குழுக்கள்"
-
-
-msgid "Change Active Layer"
-msgstr "செயலில் அடுக்கை மாற்றவும்"
-
-
-msgid "Layer Specials"
-msgstr "அடுக்கு சிறப்பு"
-
-
-msgid "Change Active Material"
-msgstr "செயலில் உள்ள மூலப்பொருளை மாற்றவும்"
-
-
 msgid "Material Specials"
 msgstr "மூலப்பொருள் சிறப்பு"
-
-
-msgid "Move to Layer"
-msgstr "அடுக்குக்கு நகர்த்தவும்"
 
 
 msgid "Smooth"
@@ -32198,6 +32018,14 @@ msgstr "மென்மையான"
 
 msgid "Add Extra"
 msgstr "கூடுதல் சேர்க்கவும்"
+
+
+msgid "Change Active Layer"
+msgstr "செயலில் அடுக்கை மாற்றவும்"
+
+
+msgid "Move to Layer"
+msgstr "அடுக்குக்கு நகர்த்தவும்"
 
 
 msgid "UV"
@@ -32319,6 +32147,10 @@ msgid "Node Tree Interface Specials"
 msgstr "முனை மர இடைமுக சிறப்பு"
 
 
+msgid "Light Linking Specials"
+msgstr "ஒளி இணைக்கும் சிறப்பு"
+
+
 msgid "Add Modifier"
 msgstr "மாற்றியமைப்பாளரைச் சேர்க்கவும்"
 
@@ -32329,6 +32161,10 @@ msgstr "உருவாக்கு"
 
 msgid "Physics"
 msgstr "இயற்பியல்"
+
+
+msgid "Shadow Linking Specials"
+msgstr "நிழல் இணைக்கும் சிறப்பு"
 
 
 msgid "Particle Specials"
@@ -33455,10 +33291,6 @@ msgid "Convert faces into thickened edges"
 msgstr "முகங்களை தடிமனான விளிம்புகளாக மாற்றவும்"
 
 
-msgid "Mirror strokes"
-msgstr "கண்ணாடி பக்கவாதம்"
-
-
 msgid "Duplicate strokes like a mirror"
 msgstr "கண்ணாடி போன்ற நகல் வீச்சுகள்"
 
@@ -33471,8 +33303,8 @@ msgid "Simplify stroke reducing number of points"
 msgstr "பக்கவாதத்தை எளிதாக்குங்கள் புள்ளிகளின் எண்ணிக்கையை குறைத்தல்"
 
 
-msgid "Subdivide strokes"
-msgstr "துணைப்பிரிவு பக்கவாதம்"
+msgid "Subdivide"
+msgstr "உட்பிரிவு"
 
 
 msgid "Grease Pencil subdivide modifier"
@@ -33603,16 +33435,8 @@ msgid "Deform stroke points using objects"
 msgstr "பொருள்களைப் பயன்படுத்தி வீச்சு புள்ளிகளை சிதைக்கவும்"
 
 
-msgid "Generate noise wobble in grease pencil strokes"
-msgstr "கிரீச் பென்சில் பக்கங்களில் ஒலி தள்ளாடுவதை உருவாக்குங்கள்"
-
-
 msgid "Change stroke location, rotation, or scale"
 msgstr "பக்கவாதம் இருப்பிடம், சுழற்சி அல்லது அளவை மாற்றவும்"
-
-
-msgid "Smooth grease pencil strokes"
-msgstr "மென்மையான கிரீச் பென்சில் பக்கவாதம்"
 
 
 msgid "Change stroke thickness"
@@ -36154,20 +35978,12 @@ msgid "Use Edge Mark"
 msgstr "விளிம்பு அடையாளத்தைப் பயன்படுத்தவும்"
 
 
-msgid "Generate strokes from freestyle marked edges"
-msgstr "ஃப்ரீபாணி குறிக்கப்பட்ட விளிம்புகளிலிருந்து வீச்சுகள் உருவாக்குங்கள்"
-
-
 msgid "Handle Overlapping Edges"
 msgstr "ஒன்றுடன் ஒன்று விளிம்புகளைக் கையாளவும்"
 
 
 msgid "Filter Face Marks"
 msgstr "முக அடையாளங்களை வடிகட்டவும்"
-
-
-msgid "Filter feature lines using freestyle face marks"
-msgstr "ஃப்ரீபாணி முக அடையாளங்களைப் பயன்படுத்தி அம்ச வரிகளை வடிகட்டவும்"
 
 
 msgid "Boundaries"
@@ -37612,6 +37428,10 @@ msgstr "உருவகப்படுத்துதல் சுட்டு�
 
 msgid "Location on disk where the bake data is stored"
 msgstr "சுட்டுக்கொள்ள தரவு சேமிக்கப்படும் வட்டில் இருப்பிடம்"
+
+
+msgid "Packed"
+msgstr "நிரம்பியுள்ளது"
 
 
 msgid "Node Group"
@@ -40520,10 +40340,6 @@ msgid "Use Mask"
 msgstr "முகமூடியைப் பயன்படுத்தவும்"
 
 
-msgid "Use a grease pencil data-block as a mask to use only specified areas of pattern when tracking"
-msgstr "கண்காணிக்கும்போது குறிப்பிட்ட வடிவிலான பகுதிகளை மட்டுமே பயன்படுத்த கிரீச் பென்சில் தரவு-தொகுதியைப் பயன்படுத்தவும்"
-
-
 msgid "Normalize"
 msgstr "இயல்பாக்குங்கள்"
 
@@ -40750,10 +40566,6 @@ msgstr "மூவி கிளிப் திருத்தியில் ப
 
 msgid "Minimal value of correlation between matched pattern and reference that is still treated as successful tracking"
 msgstr "பொருந்திய வடிவத்திற்கும் குறிப்புக்கும் இடையிலான தொடர்புகளின் குறைந்தபட்ச மதிப்பு இன்னும் வெற்றிகரமான கண்காணிப்பாக கருதப்படுகிறது"
-
-
-msgid "Grease pencil data for this track"
-msgstr "இந்த பாதையில் பசை எழுதுகோல் தரவு"
 
 
 msgid "Has Bundle"
@@ -43721,10 +43533,6 @@ msgid "Input Type"
 msgstr "உள்ளீட்டு வகை"
 
 
-msgid "Menu"
-msgstr "பட்டியல்"
-
-
 msgid "Element-Wise"
 msgstr "உறுப்பு வாரியாக"
 
@@ -43849,6 +43657,11 @@ msgstr "பூச்சியத்தின் திசையில் நெ�
 
 msgid "Input value used for unconnected socket"
 msgstr "இணைக்கப்படாத சாக்கெட்டுக்கு பயன்படுத்தப்படும் உள்ளீட்டு மதிப்பு"
+
+
+msgctxt "NodeTree"
+msgid "Modulo"
+msgstr "மட்டு"
 
 
 msgid "Invert Rotation"
@@ -44575,6 +44388,22 @@ msgid "Reverse the order of the vertices and edges of selected faces, flipping t
 msgstr "தேர்ந்தெடுக்கப்பட்ட முகங்களின் செங்குத்துகள் மற்றும் விளிம்புகளின் வரிசையை மாற்றியமைத்து, அவற்றின் இயல்பான திசையை புரட்டுகிறது"
 
 
+msgid "Paired Output"
+msgstr "இணை வெளியீடு"
+
+
+msgid "Zone output node that this input node is paired with"
+msgstr "இந்த உள்ளீட்டு முனை சோடியாக இருக்கும் மண்டல வெளியீட்டு முனை"
+
+
+msgid "Inspection Index"
+msgstr "ஆய்வு அட்டவணை"
+
+
+msgid "Iteration index that is used by inspection features like the viewer node or socket inspection"
+msgstr "பார்வையாளர் முனை அல்லது சாக்கெட் ஆய்வு போன்ற ஆய்வு அம்சங்களால் பயன்படுத்தப்படும் மறு செய்கை குறியீடு"
+
+
 msgid "Geometry to Instance"
 msgstr "உதாரணத்திற்கு வடிவியல்"
 
@@ -44794,10 +44623,6 @@ msgstr "பண்புக்கூறு மதிப்புகளைப் �
 
 msgid "Named Layer Selection"
 msgstr "லேயர் தேர்வு என்று பெயரிடப்பட்டது"
-
-
-msgid "Output a selection of a grease pencil layer"
-msgstr "பசை எழுதுகோல் அடுக்கின் தேர்வு"
 
 
 msgid "Retrieve a unit length vector indicating the direction pointing away from the geometry at each element"
@@ -45224,24 +45049,8 @@ msgid "Repeat Input"
 msgstr "உள்ளீட்டை மீண்டும் செய்யவும்"
 
 
-msgid "Paired Output"
-msgstr "இணை வெளியீடு"
-
-
-msgid "Zone output node that this input node is paired with"
-msgstr "இந்த உள்ளீட்டு முனை சோடியாக இருக்கும் மண்டல வெளியீட்டு முனை"
-
-
 msgid "Repeat Output"
 msgstr "வெளியீட்டை மீண்டும் செய்யவும்"
-
-
-msgid "Inspection Index"
-msgstr "ஆய்வு அட்டவணை"
-
-
-msgid "Iteration index that is used by inspection features like the viewer node or socket inspection"
-msgstr "பார்வையாளர் முனை அல்லது சாக்கெட் ஆய்வு போன்ற ஆய்வு அம்சங்களால் பயன்படுத்தப்படும் மறு செய்கை குறியீடு"
 
 
 msgid "Replace Material"
@@ -47620,11 +47429,6 @@ msgid "The fraction part of A entry-wise"
 msgstr "நுழைவு வாரியாக பின்னம் பகுதி"
 
 
-msgctxt "NodeTree"
-msgid "Modulo"
-msgstr "மட்டு"
-
-
 msgid "Entry-wise modulo using fmod(A,B)"
 msgstr "fmod (a, b) ஐப் பயன்படுத்தி நுழைவு வாரியான மாடுலோ"
 
@@ -47830,20 +47634,12 @@ msgid "Attribute domain where the attribute is stored in the baked data"
 msgstr "சுட்டுக் கொல்லப்பட்ட தரவுகளில் பண்புக்கூறு சேமிக்கப்படும் பண்புக்கூறு டொமைன்"
 
 
-msgid "Color of the corresponding socket type in the node editor"
-msgstr "முனை திருத்தியில் தொடர்புடைய சாக்கெட் வகையின் நிறம்"
-
-
 msgid "Is Attribute"
 msgstr "பண்புக்கூறு"
 
 
 msgid "Bake item is an attribute stored on a geometry"
 msgstr "சுட்டுக்கொள்ள உருப்படி என்பது வடிவவியலில் சேமிக்கப்பட்ட ஒரு பண்புக்கூறு"
-
-
-msgid "Socket Type"
-msgstr "சாக்கெட் வகை"
 
 
 msgid "Collection of bake items"
@@ -49604,6 +49400,16 @@ msgid "Restore Previous Action"
 msgstr "முந்தைய செயலை மீட்டெடுக்கவும்"
 
 
+msgctxt "Operator"
+msgid "Disable Add-on"
+msgstr "துணை நிரலை முடக்கு"
+
+
+msgctxt "Operator"
+msgid "Enable Add-on"
+msgstr "கூடுதல் சேர்க்கவும்"
+
+
 msgid "Display information and preferences for this add-on"
 msgstr "இந்த துணை நிரலுக்கான செய்தி மற்றும் விருப்பங்களைக் காண்பி"
 
@@ -49931,10 +49737,6 @@ msgstr "பசை எழுதுகோல் தூரிகை முன்ன
 msgctxt "Operator"
 msgid "Add Grease Pencil Brush Preset"
 msgstr "பசை எழுதுகோல் தூரிகை முன்னமைவு சேர்க்கவும்"
-
-
-msgid "Add or remove grease pencil material preset"
-msgstr "பசை எழுதுகோல் மூலப்பொருள் முன்னமைவைச் சேர்க்கவும் அல்லது அகற்றவும்"
 
 
 msgctxt "Operator"
@@ -50487,18 +50289,8 @@ msgid "Disable add-on for workspace"
 msgstr "பணியிடத்திற்கான துணை நிரலை முடக்கு"
 
 
-msgctxt "Operator"
-msgid "Disable Add-on"
-msgstr "துணை நிரலை முடக்கு"
-
-
 msgid "Enable add-on for workspace"
 msgstr "பணியிடத்திற்கான சேர்க்கையை இயக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Enable Add-on"
-msgstr "கூடுதல் சேர்க்கவும்"
 
 
 msgid "Open a path in a file browser"
@@ -56696,6 +56488,10 @@ msgid "Export directional, point, and spot lights. Uses \"KHR_lights_punctual\" 
 msgstr "ஏற்றுமதி திசை, புள்ளி மற்றும் ச்பாட் விளக்குகள். \"khr_lights_punctual\" gltf நீட்டிப்பைப் பயன்படுத்துகிறது"
 
 
+msgid "Log Level"
+msgstr "பதிவு நிலை"
+
+
 msgid "Export materials"
 msgstr "ஏற்றுமதி மூலப்பொருட்கள்"
 
@@ -58107,24 +57903,6 @@ msgstr "செயலில் உள்ள கிச்மோவை மாற்
 
 
 msgctxt "Operator"
-msgid "Delete Active Frame"
-msgstr "செயலில் உள்ள சட்டகத்தை நீக்கு"
-
-
-msgid "Delete the active frame for the active Grease Pencil Layer"
-msgstr "செயலில் உள்ள பசை எழுதுகோல் அடுக்குக்கான செயலில் உள்ள சட்டத்தை நீக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Delete All Active Frames"
-msgstr "அனைத்து செயலில் உள்ள பிரேம்களையும் நீக்கு"
-
-
-msgid "Delete the active frame(s) of all editable Grease Pencil layers"
-msgstr "திருத்தக்கூடிய அனைத்து பசை எழுதுகோல் அடுக்குகளின் செயலில் உள்ள சட்டகத்தை (களை) நீக்கவும்"
-
-
-msgctxt "Operator"
 msgid "Annotation Draw"
 msgstr "சிறுகுறிப்பு டிரா"
 
@@ -58229,6 +58007,11 @@ msgid "Wait for first click instead of painting immediately"
 msgstr "உடனடியாக ஓவியம் வரைவதற்கு பதிலாக முதல் சொடுக்கு செய்ய காத்திருங்கள்"
 
 
+msgctxt "Operator"
+msgid "Delete Active Frame"
+msgstr "செயலில் உள்ள சட்டகத்தை நீக்கு"
+
+
 msgid "Delete the active frame for the active Annotation Layer"
 msgstr "செயலில் சிறுகுறிப்பு அடுக்குக்கான செயலில் உள்ள சட்டத்தை நீக்கவும்"
 
@@ -58243,819 +58026,12 @@ msgstr "புதிய சிறுகுறிப்பு தரவு-தட
 
 
 msgctxt "Operator"
-msgid "Bake Object Transform to Grease Pencil"
-msgstr "பசை எழுதுகோலுக்கு பொருள் மாற்றத்தை சுட்டுக்கொள்ளுங்கள்"
-
-
-msgid "Bake grease pencil object transform to grease pencil keyframes"
-msgstr "பசை எழுதுகோல் பொருள் மாற்றத்தை பசை எழுதுகோல் கீஃப்ரேம்களுக்கு சுட்டுக்கொள்ளுங்கள்"
-
-
-msgid "The end frame of animation"
-msgstr "அனிமேசனின் இறுதி சட்டகம்"
-
-
-msgid "The start frame"
-msgstr "தொடக்க சட்டகம்"
-
-
-msgid "Target Frame"
-msgstr "இலக்கு சட்டகம்"
-
-
-msgid "Destination frame"
-msgstr "இலக்கு சட்டகம்"
-
-
-msgid "Only Selected Keyframes"
-msgstr "தேர்ந்தெடுக்கப்பட்ட கீஃப்ரேம்கள் மட்டுமே"
-
-
-msgid "Convert only selected keyframes"
-msgstr "தேர்ந்தெடுக்கப்பட்ட கீஃப்ரேம்களை மட்டுமே மாற்றவும்"
-
-
-msgid "Projection Type"
-msgstr "திட்ட வகை"
-
-
-msgid "No Reproject"
-msgstr "இனிப்பான் இல்லை"
-
-
-msgid "Reproject the strokes using the X-Z plane"
-msgstr "எக்ச்-இசட் விமானத்தைப் பயன்படுத்தி வீச்சுகள்"
-
-
-msgid "Side"
-msgstr "பக்க"
-
-
-msgid "Reproject the strokes using the Y-Z plane"
-msgstr "y-z விமானத்தைப் பயன்படுத்தி வீச்சுகள்"
-
-
-msgid "Reproject the strokes using the X-Y plane"
-msgstr "எக்ச்-ஒய் விமானத்தைப் பயன்படுத்தி வீச்சுகள்"
-
-
-msgid "Reproject the strokes to end up on the same plane, as if drawn from the current viewpoint using 'Cursor' Stroke Placement"
-msgstr "'கர்சர்' வீச்சு பிளேச்மென்ட்டைப் பயன்படுத்தி தற்போதைய பார்வையில் இருந்து எடுக்கப்பட்டதைப் போல, அதே விமானத்தில் முடிவடைய வீச்சுகள் மீண்டும் செய்யவும்"
-
-
-msgid "Reproject the strokes using the orientation of 3D cursor"
-msgstr "3d கர்சரின் நோக்குநிலையைப் பயன்படுத்தி வீச்சுகள்"
-
-
-msgid "Step between generated frames"
-msgstr "உருவாக்கப்பட்ட பிரேம்களுக்கு இடையில் படி"
-
-
-msgctxt "Operator"
-msgid "Bake Mesh Animation to Grease Pencil"
-msgstr "பசை எழுதுகோலுக்கு கண்ணி அனிமேசனை சுட்டுக்கொள்ளுங்கள்"
-
-
-msgid "Bake mesh animation to grease pencil strokes"
-msgstr "பசை எழுதுகோல் வீச்சுகள் செய்ய கண்ணி அனிமேசன் சுட்டுக்கொள்ளுங்கள்"
-
-
-msgid "Threshold Angle"
-msgstr "வாசல் கோணம்"
-
-
-msgid "Threshold to determine ends of the strokes"
-msgstr "வீச்சுகள் முடிவுகளை தீர்மானிக்க வாசல்"
-
-
-msgid "Export Faces"
-msgstr "ஏற்றுமதி முகங்கள்"
-
-
-msgid "Export faces as filled strokes"
-msgstr "முகங்களை நிரப்பப்பட்ட வீச்சுகள் என ஏற்றுமதி"
-
-
-msgid "Stroke Offset"
-msgstr "வீச்சு ஆஃப்செட்"
-
-
-msgid "Offset strokes from fill"
-msgstr "நிரப்புதலில் இருந்து வீச்சுகள்"
-
-
-msgid "Only Seam Edges"
-msgstr "மடிப்பு விளிம்புகள் மட்டுமே"
-
-
-msgid "Convert only seam edges"
-msgstr "மடிப்பு விளிம்புகளை மட்டும் மாற்றவும்"
-
-
-msgid "Target grease pencil"
-msgstr "இலக்கு பசை எழுதுகோல்"
-
-
-msgid "New Object"
-msgstr "புதிய பொருள்"
-
-
-msgid "Selected Object"
-msgstr "தேர்ந்தெடுக்கப்பட்ட பொருள்"
-
-
-msgctxt "Operator"
-msgid "Insert Blank Frame"
-msgstr "வெற்று சட்டத்தை செருகவும்"
-
-
-msgid "Insert a blank frame on the current frame (all subsequently existing frames, if any, are shifted right by one frame)"
-msgstr "தற்போதைய சட்டகத்தில் ஒரு வெற்று சட்டத்தை செருகவும் (பின்னர் தற்போதுள்ள பிரேம்கள் ஏதேனும் இருந்தால், ஒரு சட்டகத்தால் சரியாக மாற்றப்படும்)"
-
-
-msgid "Create blank frame in all layers, not only active"
-msgstr "செயலில் மட்டுமல்லாமல், அனைத்து அடுக்குகளிலும் வெற்று சட்டத்தை உருவாக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Convert Grease Pencil"
-msgstr "பசை எழுதுகோலை மாற்றவும்"
-
-
-msgid "Convert the active Grease Pencil layer to a new Curve Object"
-msgstr "செயலில் உள்ள பசை எழுதுகோல் அடுக்கை புதிய வளைவு பொருளாக மாற்றவும்"
-
-
-msgid "Bevel resolution when depth is non-zero"
-msgstr "ஆழம் பூச்சியமற்றதாக இருக்கும்போது பெவல் தீர்மானம்"
-
-
-msgid "The end frame of the path control curve (if Realtime is not set)"
-msgstr "பாதை கட்டுப்பாட்டு வளைவின் இறுதி சட்டகம் (நிகழ்நேரம் அமைக்கப்படாவிட்டால்)"
-
-
-msgid "The duration of evaluation of the path control curve"
-msgstr "பாதை கட்டுப்பாட்டு வளைவின் மதிப்பீட்டின் காலம்"
-
-
-msgid "Gap Duration"
-msgstr "இடைவெளி காலம்"
-
-
-msgid "Custom Gap mode: (Average) length of gaps, in frames (Note: Realtime value, will be scaled if Realtime is not set)"
-msgstr "தனிப்பயன் இடைவெளி பயன்முறை: (சராசரி) இடைவெளிகளின் நீளம், பிரேம்களில் (குறிப்பு: நிகழ்நேர மதிப்பு, நிகழ்நேரம் அமைக்கப்படாவிட்டால் அளவிடப்படும்)"
-
-
-msgid "Gap Randomness"
-msgstr "இடைவெளி சீரற்ற தன்மை"
-
-
-msgid "Custom Gap mode: Number of frames that gap lengths can vary"
-msgstr "தனிப்பயன் இடைவெளி பயன்முறை: இடைவெளி நீளம் மாறுபடும் பிரேம்களின் எண்ணிக்கை"
-
-
-msgid "Radius Factor"
-msgstr "ஆரம் காரணி"
-
-
-msgid "Multiplier for the points' radii (set from stroke width)"
-msgstr "புள்ளிகள் ஆரம் (வீச்சு அகலத்திலிருந்து அமைக்கவும்) பெருக்கி"
-
-
-msgid "Custom Gap mode: Random generator seed"
-msgstr "தனிப்பயன் இடைவெளி பயன்முறை: சீரற்ற செனரேட்டர் விதை"
-
-
-msgid "The start frame of the path control curve"
-msgstr "பாதை கட்டுப்பாட்டு வளைவின் தொடக்க சட்டகம்"
-
-
-msgid "Timing Mode"
-msgstr "நேர முறை"
-
-
-msgid "How to use timing data stored in strokes"
-msgstr "வீச்சுகள் சேமிக்கப்பட்ட நேர தரவுகளை எவ்வாறு பயன்படுத்துவது"
-
-
-msgid "No Timing"
-msgstr "நேரம் இல்லை"
-
-
-msgid "Ignore timing"
-msgstr "நேரத்தை புறக்கணிக்கவும்"
-
-
-msgid "Simple linear timing"
-msgstr "எளிய நேரியல் நேரம்"
-
-
-msgid "Use the original timing, gaps included"
-msgstr "அசல் நேரத்தைப் பயன்படுத்தவும், இடைவெளிகள் சேர்க்கப்பட்டுள்ளன"
-
-
-msgid "Custom Gaps"
-msgstr "தனிப்பயன் இடைவெளிகள்"
-
-
-msgid "Use the original timing, but with custom gap lengths (in frames)"
-msgstr "அசல் நேரத்தைப் பயன்படுத்தவும், ஆனால் தனிப்பயன் இடைவெளி நீளங்களுடன் (பிரேம்களில்)"
-
-
-msgid "Which type of curve to convert to"
-msgstr "எந்த வகை வளைவுக்கு மாற்ற வேண்டும்"
-
-
-msgid "Animation path"
-msgstr "அனிமேசன் பாதை"
-
-
-msgid "Smooth Bézier curve"
-msgstr "மென்மையான பெசியர் வளைவு"
-
-
-msgid "Polygon Curve"
-msgstr "பலகோண வளைவு"
-
-
-msgid "Bézier curve with straight-line segments (vector handles)"
-msgstr "நேர்-வரி பிரிவுகளுடன் பெசியர் வளைவு (திசையன் கைப்பிடிகள்)"
-
-
-msgid "Link Strokes"
-msgstr "இணைப்பு வீச்சுகள்"
-
-
-msgid "Whether to link strokes with zero-radius sections of curves"
-msgstr "வளைவுகளின் சுழிய-ராடியச் பிரிவுகளுடன் வீச்சுகள் இணைக்க வேண்டுமா"
-
-
-msgid "Normalize Weight"
-msgstr "எடையை இயல்பாக்கு"
-
-
-msgid "Normalize weight (set from stroke width)"
-msgstr "எடையை இயல்பாக்கு (வீச்சு அகலத்திலிருந்து அமைக்கவும்)"
-
-
-msgid "Whether the path control curve reproduces the drawing in realtime, starting from Start Frame"
-msgstr "பாதை கட்டுப்பாட்டு வளைவு வரைபடத்தை நிகழ்நேரத்தில் இனப்பெருக்கம் செய்கிறதா, தொடக்க சட்டகத்திலிருந்து தொடங்குகிறது"
-
-
-msgid "Has Valid Timing"
-msgstr "செல்லுபடியாகும் நேரம் உள்ளது"
-
-
-msgid "Whether the converted Grease Pencil layer has valid timing data (internal use)"
-msgstr "மாற்றப்பட்ட பசை எழுதுகோல் அடுக்கில் செல்லுபடியாகும் நேர தரவு உள்ளதா (உள் பயன்பாடு)"
-
-
-msgid "Convert 2.7x grease pencil files to 2.80"
-msgstr "2.7x பசை எழுதுகோல் கோப்புகளை 2.80 ஆக மாற்றவும்"
-
-
-msgid "Convert to Annotations"
-msgstr "சிறுகுறிப்புகளுக்கு மாற்றவும்"
-
-
-msgctxt "Operator"
-msgid "Copy Strokes"
-msgstr "வீச்சுகள் நகல்"
-
-
-msgid "Copy selected Grease Pencil points and strokes"
-msgstr "தேர்ந்தெடுக்கப்பட்ட பசை எழுதுகோல் புள்ளிகள் மற்றும் வீச்சுகள் நகலெடுக்கவும்"
-
-
-msgctxt "Operator"
 msgid "Annotation Unlink"
 msgstr "சிறுகுறிப்பு இணைக்கப்படவில்லை"
 
 
 msgid "Unlink active Annotation data-block"
 msgstr "செயலில் சிறுகுறிப்பு தரவு-தொகுதியை அவிழ்த்து விடுங்கள்"
-
-
-msgid "Delete selected Grease Pencil strokes, vertices, or frames"
-msgstr "தேர்ந்தெடுக்கப்பட்ட பசை எழுதுகோல் வீச்சுகள், செங்குத்துகள் அல்லது பிரேம்களை நீக்கு"
-
-
-msgid "Method used for deleting Grease Pencil data"
-msgstr "பசை எழுதுகோல் தரவை நீக்க பயன்படுத்தப்படும் முறை"
-
-
-msgid "Delete selected points and split strokes into segments"
-msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகளை நீக்கி, வீச்சுகள் பிரிவுகளாக பிரிக்கவும்"
-
-
-msgid "Delete selected strokes"
-msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சுகள் நீக்கு"
-
-
-msgid "Delete active frame"
-msgstr "செயலில் உள்ள சட்டகத்தை நீக்கு"
-
-
-msgctxt "Operator"
-msgid "Dissolve"
-msgstr "கரைக்கவும்"
-
-
-msgid "Delete selected points without splitting strokes"
-msgstr "வீச்சுகள் பிரிக்காமல் தேர்ந்தெடுக்கப்பட்ட புள்ளிகளை நீக்கவும்"
-
-
-msgctxt "GPencil"
-msgid "Type"
-msgstr "தட்டச்சு செய்க"
-
-
-msgid "Method used for dissolving stroke points"
-msgstr "வீச்சு புள்ளிகளைக் கரைக்க பயன்படுத்தப்படும் முறை"
-
-
-msgid "Dissolve selected points"
-msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகளைக் கரைக்கவும்"
-
-
-msgid "Dissolve points between selected points"
-msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகளுக்கு இடையில் புள்ளிகளைக் கரைக்கவும்"
-
-
-msgid "Dissolve all unselected points"
-msgstr "தேர்வு செய்யப்படாத அனைத்து புள்ளிகளையும் கரைக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Grease Pencil Draw"
-msgstr "பசை எழுதுகோல் டிரா"
-
-
-msgid "Draw a new stroke in the active Grease Pencil object"
-msgstr "செயலில் உள்ள பசை எழுதுகோல் பொருளில் புதிய பக்கவாதத்தை வரையவும்"
-
-
-msgid "No Fill Areas"
-msgstr "நிரப்பு பகுதிகள் இல்லை"
-
-
-msgid "Disable fill to use stroke as fill boundary"
-msgstr "பக்கவாதத்தை நிரப்பு எல்லையாக பயன்படுத்த நிரப்பு முடக்கு"
-
-
-msgid "No Stabilizer"
-msgstr "நிலைப்படுத்தி இல்லை"
-
-
-msgid "No Straight lines"
-msgstr "நேர் கோடுகள் இல்லை"
-
-
-msgid "Disable key for straight lines"
-msgstr "நேர் கோடுகளுக்கு விசையை முடக்கு"
-
-
-msgid "Speed guide angle"
-msgstr "வேக வழிகாட்டி கோணம்"
-
-
-msgid "Erase Grease Pencil strokes"
-msgstr "பசை எழுதுகோல் வீச்சுகள் அழிக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Duplicate Strokes"
-msgstr "நகல் வீச்சுகள்"
-
-
-msgid "Duplicate the selected Grease Pencil strokes"
-msgstr "தேர்ந்தெடுக்கப்பட்ட பசை எழுதுகோல் வீச்சுகள் நகல்"
-
-
-msgid "Make copies of the selected Grease Pencil strokes and move them"
-msgstr "தேர்ந்தெடுக்கப்பட்ட பசை எழுதுகோல் பக்கங்களின் நகல்களை உருவாக்கி அவற்றை நகர்த்தவும்"
-
-
-msgid "Duplicate Strokes"
-msgstr "நகல் வீச்சுகள்"
-
-
-msgctxt "Operator"
-msgid "Strokes Edit Mode Toggle"
-msgstr "வீச்சுகள் திருத்து பயன்முறை மாற்று"
-
-
-msgid "Enter/Exit edit mode for Grease Pencil strokes"
-msgstr "பசை எழுதுகோல் வீச்சுகள் திருத்து பயன்முறையை உள்ளிடவும்/வெளியேறவும்"
-
-
-msgid "Return to Previous Mode"
-msgstr "முந்தைய பயன்முறைக்குத் திரும்பு"
-
-
-msgid "Return to previous mode"
-msgstr "முந்தைய பயன்முறைக்குத் திரும்பு"
-
-
-msgctxt "Operator"
-msgid "Extract Palette from Vertex Color"
-msgstr "வெர்டெக்ச் நிறத்திலிருந்து தட்டு பிரித்தெடுக்கவும்"
-
-
-msgid "Extract all colors used in Grease Pencil Vertex and create a Palette"
-msgstr "பசை எழுதுகோல் வெர்டெக்சில் பயன்படுத்தப்படும் அனைத்து வண்ணங்களையும் பிரித்தெடுத்து ஒரு தட்டு உருவாக்கவும்"
-
-
-msgid "Only Selected"
-msgstr "மட்டுமே தேர்ந்தெடுக்கப்பட்டது"
-
-
-msgid "Convert only selected strokes"
-msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சுகள் மட்டுமே மாற்றவும்"
-
-
-msgctxt "Operator"
-msgid "Extrude Stroke Points"
-msgstr "எக்ச்ட்ரூட் ச்ட்ரோக் புள்ளிகள்"
-
-
-msgid "Extrude the selected Grease Pencil points"
-msgstr "தேர்ந்தெடுக்கப்பட்ட பசை எழுதுகோல் புள்ளிகளை வெளியேற்றவும்"
-
-
-msgid "Extrude selected points and move them"
-msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகளை வெளியேற்றி அவற்றை நகர்த்தவும்"
-
-
-msgid "Extrude Stroke Points"
-msgstr "எக்ச்ட்ரூட் ச்ட்ரோக் புள்ளிகள்"
-
-
-msgctxt "Operator"
-msgid "Grease Pencil Fill"
-msgstr "பசை எழுதுகோல் நிரப்பு"
-
-
-msgid "Fill with color the shape formed by strokes"
-msgstr "வீச்சுகள் மூலம் உருவாகும் வடிவத்தை வண்ணத்துடன் நிரப்பவும்"
-
-
-msgid "Draw on Back"
-msgstr "பின்னால் வரையவும்"
-
-
-msgid "Send new stroke to back"
-msgstr "புதிய பக்கவாதத்தை பின்னால் அனுப்பவும்"
-
-
-msgctxt "Operator"
-msgid "Clean Duplicate Frames"
-msgstr "தூய்மை நகல் பிரேம்கள்"
-
-
-msgid "Remove duplicate keyframes"
-msgstr "நகல் கீஃப்ரேம்களை அகற்று"
-
-
-msgid "All Frames"
-msgstr "அனைத்து பிரேம்களும்"
-
-
-msgid "Selected Frames"
-msgstr "தேர்ந்தெடுக்கப்பட்ட பிரேம்கள்"
-
-
-msgctxt "Operator"
-msgid "Clean Fill Boundaries"
-msgstr "தூய்மையான நிரல்கள்"
-
-
-msgid "Remove 'no fill' boundary strokes"
-msgstr "'இல்லை நிரப்பு' எல்லைத் பக்கங்களை அகற்றவும்"
-
-
-msgid "Active Frame Only"
-msgstr "செயலில் உள்ள சட்டகம் மட்டுமே"
-
-
-msgid "Clean active frame only"
-msgstr "தூய்மையான செயலில் உள்ள சட்டகம் மட்டுமே"
-
-
-msgid "Clean all frames in all layers"
-msgstr "எல்லா அடுக்குகளிலும் அனைத்து பிரேம்களையும் தூய்மை செய்யுங்கள்"
-
-
-msgctxt "Operator"
-msgid "Clean Loose Points"
-msgstr "தளர்வான புள்ளிகளை சுத்தப்படுத்தவும்"
-
-
-msgid "Remove loose points"
-msgstr "தளர்வான புள்ளிகளை அகற்றவும்"
-
-
-msgid "Limit"
-msgstr "அளவு"
-
-
-msgid "Number of points to consider stroke as loose"
-msgstr "வீச்சு தளர்வானதாக கருத வேண்டிய புள்ளிகளின் எண்ணிக்கை"
-
-
-msgctxt "Operator"
-msgid "Duplicate Frame"
-msgstr "நகல் சட்டகம்"
-
-
-msgid "Make a copy of the active Grease Pencil Frame"
-msgstr "செயலில் உள்ள பசை எழுதுகோல் சட்டத்தின் நகலை உருவாக்கவும்"
-
-
-msgid "Duplicate frame in active layer only"
-msgstr "செயலில் உள்ள அடுக்கில் மட்டுமே நகல் சட்டகம்"
-
-
-msgid "Duplicate active frames in all layers"
-msgstr "அனைத்து அடுக்குகளிலும் செயலில் உள்ள பிரேம்களை நகல்"
-
-
-msgctxt "Operator"
-msgid "Generate Automatic Weights"
-msgstr "தானியங்கி எடைகளை உருவாக்குங்கள்"
-
-
-msgid "Generate automatic weights for armatures (requires armature modifier)"
-msgstr "ஆயுதங்களுக்கான தானியங்கி எடைகளை உருவாக்குங்கள் (ஆர்மேச்சர் மாற்றியமைப்பாளர் தேவை)"
-
-
-msgid "Armature to use"
-msgstr "பயன்படுத்த ஆர்மேச்சர்"
-
-
-msgid "Decay"
-msgstr "சிதைவு"
-
-
-msgid "Factor to reduce influence depending of distance to bone axis"
-msgstr "எலும்பு அச்சுக்கான தூரத்தைப் பொறுத்து செல்வாக்கைக் குறைக்க காரணி"
-
-
-msgid "Empty Groups"
-msgstr "வெற்று குழுக்கள்"
-
-
-msgid "Automatic Weights"
-msgstr "தானியங்கி எடைகள்"
-
-
-msgid "Ratio between bone length and influence radius"
-msgstr "எலும்பு நீளம் மற்றும் செல்வாக்கு ஆரம் இடையே விகிதம்"
-
-
-msgctxt "Operator"
-msgid "Rotate Guide Angle"
-msgstr "வழிகாட்டி கோணத்தை சுழற்றுங்கள்"
-
-
-msgid "Rotate guide angle"
-msgstr "வழிகாட்டி கோணத்தை சுழற்றுங்கள்"
-
-
-msgid "Guide angle"
-msgstr "வழிகாட்டி கோணம்"
-
-
-msgid "Increment angle"
-msgstr "அதிகரிப்பு கோணம்"
-
-
-msgctxt "Operator"
-msgid "Hide Layer(s)"
-msgstr "அடுக்கு (கள்) மறைக்க"
-
-
-msgid "Hide selected/unselected Grease Pencil layers"
-msgstr "தேர்ந்தெடுக்கப்பட்ட/தேர்வு செய்யப்படாத பசை எழுதுகோல் அடுக்குகளை மறைக்கவும்"
-
-
-msgid "Hide unselected rather than selected layers"
-msgstr "தேர்ந்தெடுக்கப்பட்ட அடுக்குகளை விட தேர்வு செய்யப்படாததை மறைக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Generate Grease Pencil Object using image as source"
-msgstr "படத்தை மூலமாகப் பயன்படுத்தி பசை எழுதுகோல் பொருளை உருவாக்குங்கள்"
-
-
-msgid "Generate a Grease Pencil Object using Image as source"
-msgstr "படத்தை மூலமாகப் பயன்படுத்தி பசை எழுதுகோல் பொருளை உருவாக்குங்கள்"
-
-
-msgid "Generate Mask"
-msgstr "முகமூடியை உருவாக்குங்கள்"
-
-
-msgid "Create an inverted image for masking using alpha channel"
-msgstr "ஆல்பா சேனலைப் பயன்படுத்தி மறைக்க தலைகீழ் படத்தை உருவாக்கவும்"
-
-
-msgid "Point Size"
-msgstr "புள்ளி அளவு"
-
-
-msgid "Size used for grease pencil points"
-msgstr "பசை எழுதுகோல் புள்ளிகளுக்கு பயன்படுத்தப்படும் அளவு"
-
-
-msgctxt "Operator"
-msgid "Grease Pencil Interpolation"
-msgstr "பசை எழுதுகோல் இடைக்கணிப்பு"
-
-
-msgid "Interpolate grease pencil strokes between frames"
-msgstr "பிரேம்களுக்கு இடையில் பசை எழுதுகோல் வீச்சுகள் இடைக்கணிப்பு"
-
-
-msgid "Exclude Breakdowns"
-msgstr "முறிவுகளை விலக்கவும்"
-
-
-msgid "Exclude existing Breakdowns keyframes as interpolation extremes"
-msgstr "ஏற்கனவே உள்ள முறிவுகளை கீஃப்ரேம்களை இடைக்கணிப்பு உச்சநிலைகளாக விலக்கவும்"
-
-
-msgid "Flip Mode"
-msgstr "திருப்பு பயன்முறை"
-
-
-msgid "Invert destination stroke to match start and end with source stroke"
-msgstr "தொடக்க மற்றும் முடிவுக்கு இலக்கு வீச்சு மூல வீச்சு மூலம் தலைகீழ் வீச்சு"
-
-
-msgid "No Flip"
-msgstr "ஃபிளிப் இல்லை"
-
-
-msgid "Interpolate only selected strokes"
-msgstr "இடைக்கணிப்பு தேர்ந்தெடுக்கப்பட்ட வீச்சுகள் மட்டுமே"
-
-
-msgid "Layers included in the interpolation"
-msgstr "இடைக்கணிப்பில் அடுக்குகள் சேர்க்கப்பட்டுள்ளன"
-
-
-msgid "Confirm on Release"
-msgstr "வெளியீட்டில் உறுதிப்படுத்தவும்"
-
-
-msgid "Bias factor for which frame has more influence on the interpolated strokes"
-msgstr "இடைக்கணிக்கப்பட்ட வீச்சுகள் மீது சட்டகம் அதிக செல்வாக்கு செலுத்தும் சார்பு காரணி"
-
-
-msgid "Amount of smoothing to apply to interpolated strokes, to reduce jitter/noise"
-msgstr "இடைக்கணிக்கப்பட்ட வீச்சுகள், நடுக்கம்/சத்தத்தை குறைக்க, இடைக்கணிக்கப்பட்ட வீச்சுகள்"
-
-
-msgctxt "Operator"
-msgid "Delete Breakdowns"
-msgstr "முறிவுகளை நீக்கு"
-
-
-msgid "Remove breakdown frames generated by interpolating between two Grease Pencil frames"
-msgstr "இரண்டு பசை எழுதுகோல் பிரேம்களுக்கு இடையில் இடைக்கணிப்பதன் மூலம் உருவாகும் முறிவு பிரேம்களை அகற்றவும்"
-
-
-msgctxt "Operator"
-msgid "Interpolate Sequence"
-msgstr "இடைக்கணிப்பு வரிசை"
-
-
-msgid "Generate 'in-betweens' to smoothly interpolate between Grease Pencil frames"
-msgstr "பசை எழுதுகோல் பிரேம்களுக்கு இடையில் சீராக இடைக்கணிக்க 'இன்-பெட்வீன்ச்' ஐ உருவாக்கவும்"
-
-
-msgctxt "GPencil"
-msgid "Easing"
-msgstr "எளிதாக்குதல்"
-
-
-msgid "Which ends of the segment between the preceding and following grease pencil frames easing interpolation is applied to"
-msgstr "முந்தைய மற்றும் பின்வரும் பசை எழுதுகோல் பிரேம்களுக்கு இடையிலான பிரிவின் முடிவுகள் இடைக்கணிப்பை எளிதாக்குகின்றன"
-
-
-msgctxt "GPencil"
-msgid "Automatic Easing"
-msgstr "தானியங்கி தளர்த்தல்"
-
-
-msgid "Easing type is chosen automatically based on what the type of interpolation used (e.g. 'Ease In' for transitional types, and 'Ease Out' for dynamic effects)"
-msgstr "இடைக்கணிப்பு வகை (எ.கா. இடைக்கால வகைகளுக்கு 'எளிதாக', மற்றும் மாறும் விளைவுகளுக்கு 'எளிதாக்குதல்' ஆகியவற்றின் அடிப்படையில் தளர்த்தல் வகை தானாகவே தேர்ந்தெடுக்கப்படுகிறது)"
-
-
-msgctxt "GPencil"
-msgid "Ease In"
-msgstr "எளிதாக"
-
-
-msgctxt "GPencil"
-msgid "Ease Out"
-msgstr "எளிதாக்குங்கள்"
-
-
-msgctxt "GPencil"
-msgid "Ease In and Out"
-msgstr "உள்ளேயும் வெளியேயும் எளிதாக்குங்கள்"
-
-
-msgid "Number of frames between generated interpolated frames"
-msgstr "உருவாக்கப்பட்ட இடைக்கணிப்பு பிரேம்களுக்கு இடையில் பிரேம்களின் எண்ணிக்கை"
-
-
-msgid "Interpolation method to use the next time 'Interpolate Sequence' is run"
-msgstr "இடைக்கணிப்பு முறை அடுத்த முறை 'இன்டர்போலேட் வரிசை' இயக்கப்படுகிறது"
-
-
-msgctxt "GPencil"
-msgid "Linear"
-msgstr "நேரியல்"
-
-
-msgctxt "GPencil"
-msgid "Custom"
-msgstr "தனிப்பயன்"
-
-
-msgid "Custom interpolation defined using a curve map"
-msgstr "வளைவு வரைபடத்தைப் பயன்படுத்தி தனிப்பயன் இடைக்கணிப்பு வரையறுக்கப்பட்டுள்ளது"
-
-
-msgctxt "GPencil"
-msgid "Sinusoidal"
-msgstr "சைனூசாய்டல்"
-
-
-msgctxt "GPencil"
-msgid "Quadratic"
-msgstr "இருபடி"
-
-
-msgctxt "GPencil"
-msgid "Cubic"
-msgstr "கன"
-
-
-msgctxt "GPencil"
-msgid "Quartic"
-msgstr "நான்கார்டிக்"
-
-
-msgctxt "GPencil"
-msgid "Quintic"
-msgstr "குயின்டிக்"
-
-
-msgctxt "GPencil"
-msgid "Exponential"
-msgstr "அதிவேக"
-
-
-msgctxt "GPencil"
-msgid "Circular"
-msgstr "வட்ட"
-
-
-msgctxt "GPencil"
-msgid "Back"
-msgstr "மீண்டும்"
-
-
-msgctxt "GPencil"
-msgid "Bounce"
-msgstr "பவுன்ச்"
-
-
-msgctxt "GPencil"
-msgid "Elastic"
-msgstr "மீள்"
-
-
-msgctxt "Operator"
-msgid "Active Layer"
-msgstr "செயலில் அடுக்கு"
-
-
-msgctxt "Operator"
-msgid "Add New Layer"
-msgstr "புதிய அடுக்கைச் சேர்க்கவும்"
-
-
-msgid "Add new layer or note for the active data-block"
-msgstr "செயலில் உள்ள தரவு-தொகுதிக்கு புதிய அடுக்கு அல்லது குறிப்பைச் சேர்க்கவும்"
-
-
-msgid "Name of the newly added layer"
-msgstr "புதிதாக சேர்க்கப்பட்ட அடுக்கின் பெயர்"
 
 
 msgctxt "Operator"
@@ -59083,1410 +58059,6 @@ msgstr "சிறுகுறிப்பு அடுக்கை அகற்�
 
 msgid "Remove active Annotation layer"
 msgstr "செயலில் சிறுகுறிப்பு அடுக்கை அகற்று"
-
-
-msgctxt "Operator"
-msgid "Change Layer"
-msgstr "அடுக்கை மாற்றவும்"
-
-
-msgid "Change active Grease Pencil layer"
-msgstr "செயலில் பசை எழுதுகோல் அடுக்கை மாற்றவும்"
-
-
-msgctxt "Operator"
-msgid "Duplicate Layer"
-msgstr "நகல் அடுக்கு"
-
-
-msgid "Make a copy of the active Grease Pencil layer"
-msgstr "செயலில் உள்ள பசை எழுதுகோல் அடுக்கின் நகலை உருவாக்கவும்"
-
-
-msgid "All Data"
-msgstr "அனைத்து தரவு"
-
-
-msgid "Empty Keyframes"
-msgstr "வெற்று கீஃப்ரேம்கள்"
-
-
-msgctxt "Operator"
-msgid "Duplicate Layer to New Object"
-msgstr "புதிய பொருளுக்கு நகல் அடுக்கு"
-
-
-msgid "Make a copy of the active Grease Pencil layer to selected object"
-msgstr "தேர்ந்தெடுக்கப்பட்ட பொருளுக்கு செயலில் உள்ள பசை எழுதுகோல் அடுக்கின் நகலை உருவாக்கவும்"
-
-
-msgctxt "GPencil"
-msgid "Only Active"
-msgstr "செயலில் மட்டுமே"
-
-
-msgid "Copy only active Layer, uncheck to append all layers"
-msgstr "செயலில் உள்ள அடுக்கை மட்டுமே நகலெடுக்கவும், அனைத்து அடுக்குகளையும் சேர்க்க தேர்வு செய்யவும்"
-
-
-msgctxt "Operator"
-msgid "Isolate Layer"
-msgstr "தனிமைப்படுத்தப்பட்ட அடுக்கு"
-
-
-msgid "Toggle whether the active layer is the only one that can be edited and/or visible"
-msgstr "செயலில் உள்ள அடுக்கு மட்டும் திருத்தப்படக்கூடிய மற்றும்/அல்லது புலப்படும் என்பதை மாற்றவும்"
-
-
-msgid "Affect Visibility"
-msgstr "தெரிவுநிலையை பாதிக்கும்"
-
-
-msgid "In addition to toggling the editability, also affect the visibility"
-msgstr "திருத்தக்கூடிய தன்மையை மாற்றுவதோடு மட்டுமல்லாமல், தெரிவுநிலையையும் பாதிக்கிறது"
-
-
-msgctxt "Operator"
-msgid "Add New Mask Layer"
-msgstr "புதிய முகமூடி அடுக்கைச் சேர்க்கவும்"
-
-
-msgid "Add new layer as masking"
-msgstr "முகமூடி என புதிய அடுக்கைச் சேர்க்கவும்"
-
-
-msgid "Name of the layer"
-msgstr "அடுக்கின் பெயர்"
-
-
-msgctxt "Operator"
-msgid "Move Grease Pencil Layer Mask"
-msgstr "பசை எழுதுகோல் அடுக்கு முகமூடியை நகர்த்தவும்"
-
-
-msgid "Move the active Grease Pencil mask layer up/down in the list"
-msgstr "செயலில் உள்ள பசை எழுதுகோல் மாச்க் அடுக்கை பட்டியலில் மேலே/கீழ் நகர்த்தவும்"
-
-
-msgctxt "Operator"
-msgid "Remove Mask Layer"
-msgstr "முகமூடி அடுக்கை அகற்று"
-
-
-msgid "Remove Layer Mask"
-msgstr "அடுக்கு முகமூடியை அகற்று"
-
-
-msgctxt "Operator"
-msgid "Merge Down"
-msgstr "ஒன்றிணைக்கவும்"
-
-
-msgid "Combine Layers"
-msgstr "அடுக்குகளை இணைக்கவும்"
-
-
-msgid "Combine active layer into the layer below"
-msgstr "செயலில் உள்ள அடுக்கை கீழே உள்ள அடுக்கில் இணைக்கவும்"
-
-
-msgid "Combine all layers into the active layer"
-msgstr "அனைத்து அடுக்குகளையும் செயலில் அடுக்கில் இணைக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Move Grease Pencil Layer"
-msgstr "பசை எழுதுகோல் அடுக்கை நகர்த்தவும்"
-
-
-msgid "Move the active Grease Pencil layer up/down in the list"
-msgstr "செயலில் உள்ள பசை எழுதுகோல் அடுக்கை பட்டியலில் மேலே/கீழ் நகர்த்தவும்"
-
-
-msgctxt "Operator"
-msgid "Remove Layer"
-msgstr "அடுக்கை அகற்று"
-
-
-msgid "Remove active Grease Pencil layer"
-msgstr "செயலில் பசை எழுதுகோல் அடுக்கை அகற்று"
-
-
-msgctxt "Operator"
-msgid "Lock All Layers"
-msgstr "எல்லா அடுக்குகளையும் பூட்டவும்"
-
-
-msgid "Lock all Grease Pencil layers to prevent them from being accidentally modified"
-msgstr "தற்செயலாக மாற்றியமைக்கப்படுவதைத் தடுக்க அனைத்து பசை எழுதுகோல் அடுக்குகளையும் பூட்டவும்"
-
-
-msgctxt "Operator"
-msgid "Disable Unused Layer Colors"
-msgstr "பயன்படுத்தப்படாத அடுக்கு வண்ணங்களை முடக்கு"
-
-
-msgid "Lock and hide any color not used in any layer"
-msgstr "எந்த அடுக்கிலும் பயன்படுத்தப்படாத எந்த நிறத்தையும் பூட்டி மறைக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Hide Material(s)"
-msgstr "மூலப்பொருள்(களை) மறைக்க"
-
-
-msgid "Hide selected/unselected Grease Pencil materials"
-msgstr "தேர்ந்தெடுக்கப்பட்ட/தேர்வு செய்யப்படாத பசை எழுதுகோல் மூலப்பொருட்களை மறைக்கவும்"
-
-
-msgid "Hide unselected rather than selected colors"
-msgstr "தேர்ந்தெடுக்கப்பட்ட வண்ணங்களை விட தேர்வு செய்யப்படாததை மறைக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Isolate Material"
-msgstr "தனிமைப்படுத்தப்பட்ட மூலப்பொருள்"
-
-
-msgid "Toggle whether the active material is the only one that is editable and/or visible"
-msgstr "செயலில் உள்ள மூலப்பொருள் மட்டுமே திருத்தக்கூடிய மற்றும்/அல்லது தெரியும் என்பதை மாற்றவும்"
-
-
-msgctxt "Operator"
-msgid "Lock All Materials"
-msgstr "அனைத்து மூலப்பொருட்களையும் பூட்டவும்"
-
-
-msgid "Lock all Grease Pencil materials to prevent them from being accidentally modified"
-msgstr "தற்செயலாக மாற்றியமைக்கப்படுவதைத் தடுக்க அனைத்து பசை எழுதுகோல் மூலப்பொருட்களையும் பூட்டவும்"
-
-
-msgctxt "Operator"
-msgid "Lock Unused Materials"
-msgstr "பயன்படுத்தப்படாத மூலப்பொருட்களை பூட்டவும்"
-
-
-msgid "Lock any material not used in any selected stroke"
-msgstr "தேர்ந்தெடுக்கப்பட்ட எந்த பக்கவாதத்திலும் பயன்படுத்தப்படாத எந்தவொரு மூலப்பொருளையும் பூட்டவும்"
-
-
-msgctxt "Operator"
-msgid "Show All Materials"
-msgstr "அனைத்து மூலப்பொருட்களையும் காட்டு"
-
-
-msgid "Unhide all hidden Grease Pencil materials"
-msgstr "மறைக்கப்பட்ட அனைத்து பசை எழுதுகோல் மூலப்பொருட்களையும் மறைக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Select Material"
-msgstr "மூலப்பொருள் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Select/Deselect all Grease Pencil strokes using current material"
-msgstr "தற்போதைய மூலப்பொருளைப் பயன்படுத்தி அனைத்து பசை எழுதுகோல் பக்கவாதங்களையும் தேர்ந்தெடுக்கவும்/தேர்வு செய்யவும்"
-
-
-msgid "Unselect strokes"
-msgstr "தேர்ந்தெடுக்கப்படாத வீச்சுகள்"
-
-
-msgctxt "Operator"
-msgid "Set Material"
-msgstr "மூலப்பொருள் அமைக்கவும்"
-
-
-msgid "Set active material"
-msgstr "செயலில் உள்ள மூலப்பொருளை அமைக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Convert Stroke Materials to Vertex Color"
-msgstr "வீச்சு மூலப்பொருட்களை வெர்டெக்ச் வண்ணமாக மாற்றவும்"
-
-
-msgid "Replace materials in strokes with Vertex Color"
-msgstr "ச்ட்ரோக்சில் உள்ள மூலப்பொருட்களை வெர்டெக்ச் நிறத்துடன் மாற்றவும்"
-
-
-msgid "Create Palette"
-msgstr "தட்டு உருவாக்கவும்"
-
-
-msgid "Create a new palette with colors"
-msgstr "வண்ணங்களுடன் புதிய தட்டு உருவாக்கவும்"
-
-
-msgid "Remove Unused Materials"
-msgstr "பயன்படுத்தப்படாத மூலப்பொருட்களை அகற்றவும்"
-
-
-msgid "Remove any unused material after the conversion"
-msgstr "மாற்றத்திற்குப் பிறகு பயன்படுத்தப்படாத எந்தவொரு மூலப்பொருளையும் அகற்றவும்"
-
-
-msgctxt "Operator"
-msgid "Unlock All Materials"
-msgstr "அனைத்து மூலப்பொருட்களையும் திறக்கவும்"
-
-
-msgid "Unlock all Grease Pencil materials so that they can be edited"
-msgstr "அனைத்து பசை எழுதுகோல் மூலப்பொருட்களையும் திருத்தவும், அவற்றைத் திருத்தவும்"
-
-
-msgctxt "Operator"
-msgid "Copy Materials to Selected Object"
-msgstr "தேர்ந்தெடுக்கப்பட்ட பொருளுக்கு மூலப்பொருட்களை நகலெடுக்கவும்"
-
-
-msgid "Append Materials of the active Grease Pencil to other object"
-msgstr "செயலில் உள்ள பசை எழுதுகோலின் மூலப்பொருட்களை மற்ற பொருளுடன் சேர்க்கவும்"
-
-
-msgid "Append only active material, uncheck to append all materials"
-msgstr "செயலில் உள்ள மூலப்பொருளை மட்டுமே சேர்க்கவும், எல்லா மூலப்பொருட்களையும் சேர்க்க தேர்வு செய்யவும்"
-
-
-msgctxt "Operator"
-msgid "Move Strokes to Layer"
-msgstr "வீச்சுகள் அடுக்குக்கு நகர்த்தவும்"
-
-
-msgid "Move selected strokes to another layer"
-msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சுகள் மற்றொரு அடுக்குக்கு நகர்த்தவும்"
-
-
-msgctxt "Operator"
-msgid "Strokes Paint Mode Toggle"
-msgstr "வீச்சுகள் பெயிண்ட் பயன்முறை மாறுகிறது"
-
-
-msgid "Enter/Exit paint mode for Grease Pencil strokes"
-msgstr "பசை எழுதுகோல் வீச்சுகள் வண்ணப்பூச்சு பயன்முறையை உள்ளிடவும்/வெளியேறவும்"
-
-
-msgctxt "Operator"
-msgid "Paste Strokes"
-msgstr "வீச்சுகள் ஒட்டவும்"
-
-
-msgid "Paste previously copied strokes to active layer or to original layer"
-msgstr "முன்னர் நகலெடுக்கப்பட்ட வீச்சுகள் செயலில் உள்ள அடுக்குக்கு அல்லது அசல் அடுக்குக்கு ஒட்டவும்"
-
-
-msgid "Paste on Back"
-msgstr "பின்னால் ஒட்டவும்"
-
-
-msgid "Add pasted strokes behind all strokes"
-msgstr "அனைத்து பக்கவாதங்களுக்கும் பின்னால் ஒட்டப்பட்ட வீச்சுகள் சேர்க்கவும்"
-
-
-msgid "Paste to Active"
-msgstr "செயலில் ஒட்டவும்"
-
-
-msgid "Paste by Layer"
-msgstr "அடுக்கு மூலம் ஒட்டவும்"
-
-
-msgctxt "Operator"
-msgid "Grease Pencil Box Shape"
-msgstr "பசை எழுதுகோல் பெட்டி வடிவம்"
-
-
-msgid "Create predefined grease pencil stroke box shapes"
-msgstr "முன் வரையறுக்கப்பட்ட பசை எழுதுகோல் ச்ட்ரோக் பெட்டி வடிவங்களை உருவாக்கவும்"
-
-
-msgid "Number of points per segment"
-msgstr "ஒரு பிரிவுக்கு புள்ளிகளின் எண்ணிக்கை"
-
-
-msgid "Number of subdivisions per segment"
-msgstr "ஒரு பிரிவுக்கு துணைப்பிரிவுகளின் எண்ணிக்கை"
-
-
-msgid "Type of shape"
-msgstr "வடிவம் வகை"
-
-
-msgid "Polyline"
-msgstr "பாலிலைன்"
-
-
-msgctxt "Operator"
-msgid "Grease Pencil Circle Shape"
-msgstr "பசை எழுதுகோல் வட்டம் வடிவம்"
-
-
-msgid "Create predefined grease pencil stroke circle shapes"
-msgstr "முன் வரையறுக்கப்பட்ட பசை எழுதுகோல் ச்ட்ரோக் வட்ட வடிவங்களை உருவாக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Grease Pencil Curve Shape"
-msgstr "பசை எழுதுகோல் வளைவு வடிவம்"
-
-
-msgid "Create predefined grease pencil stroke curve shapes"
-msgstr "முன் வரையறுக்கப்பட்ட பசை எழுதுகோல் ச்ட்ரோக் வளைவு வடிவங்களை உருவாக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Grease Pencil Line Shape"
-msgstr "பசை எழுதுகோல் வரி வடிவம்"
-
-
-msgid "Create predefined grease pencil stroke lines"
-msgstr "முன் வரையறுக்கப்பட்ட பசை எழுதுகோல் ச்ட்ரோக் கோடுகளை உருவாக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Grease Pencil Polyline Shape"
-msgstr "பசை எழுதுகோல் பாலிலைன் வடிவம்"
-
-
-msgid "Create predefined grease pencil stroke polylines"
-msgstr "முன் வரையறுக்கப்பட்ட பசை எழுதுகோல் ச்ட்ரோக் பாலிலைன்களை உருவாக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Recalculate internal geometry"
-msgstr "உள் வடிவவியலை மீண்டும் கணக்கிடுங்கள்"
-
-
-msgid "Update all internal geometry data"
-msgstr "அனைத்து உள் வடிவியல் தரவையும் புதுப்பிக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Reproject Strokes"
-msgstr "இனப்பெருக்கம்"
-
-
-msgid "Reproject the selected strokes from the current viewpoint as if they had been newly drawn (e.g. to fix problems from accidental 3D cursor movement or accidental viewport changes, or for matching deforming geometry)"
-msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சுகள் தற்போதைய பார்வையில் இருந்து புதிதாக வரையப்பட்டதைப் போல (எ.கா. தற்செயலான 3 டி கர்சர் இயக்கம் அல்லது தற்செயலான காட்சியகங்கள் மாற்றங்களிலிருந்து சிக்கல்களை சரிசெய்ய அல்லது சிதைக்கும் வடிவவியலுடன் பொருந்துவதற்கு) இனப்பெருக்கம் செய்யுங்கள்)"
-
-
-msgid "Keep original strokes and create a copy before reprojecting"
-msgstr "அசல் வீச்சுகள் வைத்து, ரெிப்போயிங் செய்வதற்கு முன் ஒரு நகலை உருவாக்கவும்"
-
-
-msgid "Reproject the strokes on to the scene geometry, as if drawn using 'Surface' placement"
-msgstr "'மேற்பரப்பு' வேலைவாய்ப்பைப் பயன்படுத்தி வரையப்பட்டதைப் போல, காட்சி வடிவவியலுக்கு பக்கவாதங்களை இனப்பெருக்கம் செய்யுங்கள்"
-
-
-msgctxt "Operator"
-msgid "Reset Fill Transformations"
-msgstr "மாற்றங்களை நிரப்பு மீட்டமை"
-
-
-msgid "Reset any UV transformation and back to default values"
-msgstr "எந்தவொரு புறஊதா மாற்றத்தையும் மீட்டமைத்து இயல்புநிலை மதிப்புகளுக்குத் திரும்புக"
-
-
-msgctxt "Operator"
-msgid "All"
-msgstr "அனைத்தும்"
-
-
-msgctxt "Operator"
-msgid "Rotate"
-msgstr "சுழற்றுங்கள்"
-
-
-msgctxt "Operator"
-msgid "Scale"
-msgstr "அளவு"
-
-
-msgctxt "Operator"
-msgid "Show All Layers"
-msgstr "அனைத்து அடுக்குகளையும் காட்டு"
-
-
-msgid "Show all Grease Pencil layers"
-msgstr "அனைத்து பசை எழுதுகோல் அடுக்குகளையும் காட்டு"
-
-
-msgctxt "Operator"
-msgid "Stroke Sculpt"
-msgstr "வீச்சு சிற்பம்"
-
-
-msgid "Apply tweaks to strokes by painting over the strokes"
-msgstr "வீச்சுகள் மீது ஓவியம் வரைவதன் மூலம் வீச்சுகள் மாற்றங்களை பயன்படுத்துங்கள்"
-
-
-msgid "Enter a mini 'sculpt-mode' if enabled, otherwise, exit after drawing a single stroke"
-msgstr "இயக்கப்பட்டால் ஒரு மினி 'சிற்ப-பயன்முறையை' உள்ளிடவும், இல்லையெனில், ஒரு பக்கவாதத்தை வரைந்த பிறகு வெளியேறவும்"
-
-
-msgctxt "Operator"
-msgid "Strokes Sculpt Mode Toggle"
-msgstr "வீச்சுகள் சிற்பம் முறை மாறுகிறது"
-
-
-msgid "Enter/Exit sculpt mode for Grease Pencil strokes"
-msgstr "பசை எழுதுகோல் வீச்சுகள் சிற்பம் பயன்முறையை உள்ளிடவும்/வெளியேறவும்"
-
-
-msgid "Select Grease Pencil strokes and/or stroke points"
-msgstr "பசை எழுதுகோல் வீச்சுகள் மற்றும்/அல்லது வீச்சு புள்ளிகளைத் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Entire Strokes"
-msgstr "முழு வீச்சுகள்"
-
-
-msgid "Select entire strokes instead of just the nearest stroke vertex"
-msgstr "அருகிலுள்ள வீச்சுகள் வெர்டெக்சுக்கு பதிலாக முழு பக்கவாதங்களையும் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Mouse location"
-msgstr "சுட்டி இடம்"
-
-
-msgctxt "Operator"
-msgid "(De)select All Strokes"
-msgstr "(டி) அனைத்து பக்கவாதங்களையும் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Change selection of all Grease Pencil strokes currently visible"
-msgstr "தற்போது காணக்கூடிய அனைத்து பசை எழுதுகோல் பக்கவாதங்களின் தேர்வை மாற்றவும்"
-
-
-msgctxt "Operator"
-msgid "Alternated"
-msgstr "மாற்று"
-
-
-msgid "Select alternative points in same strokes as already selected points"
-msgstr "ஏற்கனவே தேர்ந்தெடுக்கப்பட்ட புள்ளிகளைப் போலவே மாற்று புள்ளிகளையும் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Unselect Ends"
-msgstr "தேர்ந்தெடுக்கப்படாத முடிவுகள்"
-
-
-msgid "Do not select the first and last point of the stroke"
-msgstr "பக்கவாதத்தின் முதல் மற்றும் கடைசி புள்ளியைத் தேர்ந்தெடுக்க வேண்டாம்"
-
-
-msgid "Select Grease Pencil strokes within a rectangular region"
-msgstr "ஒரு செவ்வக பகுதிக்குள் பசை எழுதுகோல் வீச்சுகள் என்பதைத் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Invert existing selection"
-msgstr "ஏற்கனவே உள்ள தேர்வைத் தலைகீழாக மாற்றவும்"
-
-
-msgid "Intersect existing selection"
-msgstr "இருக்கும் தேர்வை வெட்டுகிறது"
-
-
-msgid "Select Grease Pencil strokes using brush selection"
-msgstr "தூரிகை தேர்வைப் பயன்படுத்தி பசை எழுதுகோல் வீச்சுகள் என்பதைத் தேர்ந்தெடுக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Select First"
-msgstr "முதலில் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Select first point in Grease Pencil strokes"
-msgstr "பசை எழுதுகோல் வீச்சுகள் முதல் புள்ளியைத் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Extend selection instead of deselecting all other selected points"
-msgstr "தேர்ந்தெடுக்கப்பட்ட மற்ற எல்லா புள்ளிகளையும் தேர்வு செய்வதற்கு பதிலாக தேர்வை நீட்டிக்கவும்"
-
-
-msgid "Selected Strokes Only"
-msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சுகள் மட்டுமே"
-
-
-msgid "Only select the first point of strokes that already have points selected"
-msgstr "ஏற்கனவே தேர்ந்தெடுக்கப்பட்ட புள்ளிகளைக் கொண்ட வீச்சுகள் முதல் புள்ளியை மட்டுமே தேர்ந்தெடுக்கவும்"
-
-
-msgid "Select all strokes with similar characteristics"
-msgstr "ஒத்த குணாதிசயங்களுடன் அனைத்து பக்கவாதங்களையும் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Shared layers"
-msgstr "பகிரப்பட்ட அடுக்குகள்"
-
-
-msgid "Shared materials"
-msgstr "பகிரப்பட்ட மூலப்பொருட்கள்"
-
-
-msgctxt "Operator"
-msgid "Lasso Select Strokes"
-msgstr "லாசோ தேர்ந்தெடுக்கப்பட்ட வீச்சுகள்"
-
-
-msgid "Select Grease Pencil strokes using lasso selection"
-msgstr "லாசோ தேர்வைப் பயன்படுத்தி பசை எழுதுகோல் வீச்சுகள் என்பதைத் தேர்ந்தெடுக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Select Last"
-msgstr "கடைசியாக தேர்ந்தெடுக்கவும்"
-
-
-msgid "Select last point in Grease Pencil strokes"
-msgstr "பசை எழுதுகோல் வீச்சுகள் கடைசி புள்ளியைத் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Only select the last point of strokes that already have points selected"
-msgstr "ஏற்கனவே தேர்ந்தெடுக்கப்பட்ட புள்ளிகளைக் கொண்ட வீச்சுகள் கடைசி புள்ளியை மட்டுமே தேர்ந்தெடுக்கவும்"
-
-
-msgid "Shrink sets of selected Grease Pencil points"
-msgstr "தேர்ந்தெடுக்கப்பட்ட பசை எழுதுகோல் புள்ளிகளின் சுருக்கங்கள்"
-
-
-msgid "Select all points in same strokes as already selected points"
-msgstr "ஏற்கனவே தேர்ந்தெடுக்கப்பட்ட புள்ளிகளைப் போலவே அனைத்து புள்ளிகளையும் ஒரே பக்கங்களில் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Grow sets of selected Grease Pencil points"
-msgstr "தேர்ந்தெடுக்கப்பட்ட பசை எழுதுகோல் புள்ளிகளின் தொகுப்புகளை வளர்க்கவும்"
-
-
-msgctxt "Operator"
-msgid "Random"
-msgstr "சீரற்ற"
-
-
-msgid "Select random points for non selected strokes"
-msgstr "தேர்ந்தெடுக்கப்படாத வீச்சுகள் சீரற்ற புள்ளிகளைத் தேர்ந்தெடுக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Select Vertex Color"
-msgstr "வெர்டெக்ச் வண்ணத்தைத் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Select all points with similar vertex color of current selected"
-msgstr "தேர்ந்தெடுக்கப்பட்ட மின்னோட்டத்தின் ஒத்த வெர்டெக்ச் வண்ணத்துடன் எல்லா புள்ளிகளையும் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Tolerance of the selection. Higher values select a wider range of similar colors"
-msgstr "தேர்வின் சகிப்புத்தன்மை. உயர் மதிப்புகள் ஒத்த வண்ணங்களின் பரந்த வரம்பைத் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Hide/Unhide selected points for Grease Pencil strokes setting alpha factor"
-msgstr "பசை எழுதுகோல் வீச்சுகள் ஆல்பா காரணி அமைக்கும் தேர்ந்தெடுக்கப்பட்ட புள்ளிகளை மறைக்க/உணரவும்"
-
-
-msgctxt "Operator"
-msgid "Select Mode Toggle"
-msgstr "பயன்முறை மாற்று என்பதைத் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Set selection mode for Grease Pencil strokes"
-msgstr "பசை எழுதுகோல் வீச்சுகள் தேர்வு பயன்முறையை அமைக்கவும்"
-
-
-msgid "Select Mode"
-msgstr "பயன்முறையைத் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Select mode"
-msgstr "பயன்முறையைத் தேர்ந்தெடுக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Set active material"
-msgstr "செயலில் உள்ள மூலப்பொருளை அமைக்கவும்"
-
-
-msgid "Set the selected stroke material as the active material"
-msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சு மூலப்பொருளை செயலில் உள்ள மூலப்பொருளாக அமைக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Snap Cursor to Selected Points"
-msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகளுக்கு கர்சரை ச்னாப் செய்யுங்கள்"
-
-
-msgid "Snap cursor to center of selected points"
-msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகளின் மையத்திற்கு கர்சரை ச்னாப் செய்யுங்கள்"
-
-
-msgctxt "Operator"
-msgid "Snap Selection to Cursor"
-msgstr "கர்சருக்கு தேர்வு"
-
-
-msgid "Snap selected points/strokes to the cursor"
-msgstr "கர்சருக்கு தேர்ந்தெடுக்கப்பட்ட புள்ளிகள்/வீச்சுகள்"
-
-
-msgid "With Offset"
-msgstr "ஆஃப்செட்டுடன்"
-
-
-msgid "Offset the entire stroke instead of selected points only"
-msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகளுக்கு பதிலாக முழு பக்கவாதத்தையும் ஈடுசெய்யவும்"
-
-
-msgctxt "Operator"
-msgid "Snap Selection to Grid"
-msgstr "கட்டத்திற்கு தேர்வு"
-
-
-msgid "Snap selected points to the nearest grid points"
-msgstr "snap தேர்ந்தெடுக்கப்பட்ட புள்ளிகள் அருகிலுள்ள கட்டம் புள்ளிகளுக்கு"
-
-
-msgctxt "Operator"
-msgid "Apply Stroke Thickness"
-msgstr "வீச்சு தடிமன் பயன்படுத்துங்கள்"
-
-
-msgid "Apply the thickness change of the layer to its strokes"
-msgstr "அடுக்கின் தடிமன் மாற்றத்தை அதன் வீச்சுகள் பயன்படுத்தவும்"
-
-
-msgctxt "Operator"
-msgid "Arrange Stroke"
-msgstr "வீச்சு ஏற்பாடு"
-
-
-msgid "Arrange selected strokes up/down in the display order of the active layer"
-msgstr "செயலில் உள்ள அடுக்கின் காட்சி வரிசையில் தேர்ந்தெடுக்கப்பட்ட வீச்சுகள் மேல்/கீழ் ஏற்பாடு செய்யுங்கள்"
-
-
-msgid "Bring to Front"
-msgstr "முன்னால் கொண்டு வாருங்கள்"
-
-
-msgid "Bring Forward"
-msgstr "முன்னோக்கி கொண்டு வாருங்கள்"
-
-
-msgid "Send Backward"
-msgstr "பின்தங்கியதை அனுப்புங்கள்"
-
-
-msgid "Send to Back"
-msgstr "திரும்பவும்"
-
-
-msgctxt "Operator"
-msgid "Set Caps Mode"
-msgstr "caps பயன்முறையை அமைக்கவும்"
-
-
-msgid "Change stroke caps mode (rounded or flat)"
-msgstr "வீச்சு தொப்பிகளை மாற்றவும் (வட்டமான அல்லது தட்டையானது)"
-
-
-msgid "Both"
-msgstr "இரண்டும்"
-
-
-msgid "Set as default rounded"
-msgstr "இயல்புநிலை வட்டமானதாக அமைக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Change Stroke Color"
-msgstr "வீச்சு நிறத்தை மாற்றவும்"
-
-
-msgid "Move selected strokes to active material"
-msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சுகள் செயலில் உள்ள மூலப்பொருளுக்கு நகர்த்தவும்"
-
-
-msgid "Name of the material"
-msgstr "மூலப்பொருளின் பெயர்"
-
-
-msgctxt "Operator"
-msgid "Stroke Cutter"
-msgstr "வீச்சு கட்டர்"
-
-
-msgid "Select section and cut"
-msgstr "பிரிவு தேர்ந்தெடுத்து வெட்டு"
-
-
-msgid "Flat Caps"
-msgstr "தட்டையான தொப்பிகள்"
-
-
-msgctxt "Operator"
-msgid "Set Cyclical State"
-msgstr "சுழற்சி நிலையை அமைக்கவும்"
-
-
-msgid "Close or open the selected stroke adding a segment from last to first point"
-msgstr "கடைசியாக முதல் முதல் புள்ளி வரை ஒரு பகுதியைச் சேர்த்து தேர்ந்தெடுக்கப்பட்ட பக்கவாதத்தை மூடு அல்லது திறக்கவும்"
-
-
-msgid "Create Geometry"
-msgstr "வடிவவியலை உருவாக்கவும்"
-
-
-msgid "Create new geometry for closing stroke"
-msgstr "பக்கவாதத்தை மூடுவதற்கு புதிய வடிவவியலை உருவாக்கவும்"
-
-
-msgid "Close All"
-msgstr "அனைத்தையும் மூடு"
-
-
-msgid "Open All"
-msgstr "அனைத்தையும் திறக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Set handle type"
-msgstr "கைப்பிடி வகையை அமைக்கவும்"
-
-
-msgid "Set the type of an edit curve handle"
-msgstr "திருத்து வளைவு கைப்பிடியின் வகையை அமைக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Enter curve edit mode"
-msgstr "வளைவு திருத்து பயன்முறையை உள்ளிடவும்"
-
-
-msgid "Called to transform a stroke into a curve"
-msgstr "ஒரு பக்கவாதத்தை வளைவாக மாற்ற அழைக்கப்பட்டார்"
-
-
-msgid "Error Threshold"
-msgstr "பிழை வாசல்"
-
-
-msgid "Threshold on the maximum deviation from the actual stroke"
-msgstr "உண்மையான பக்கவாதத்திலிருந்து அதிகபட்ச விலகல் குறித்த வாசல்"
-
-
-msgctxt "Operator"
-msgid "Flip Stroke"
-msgstr "ஃபிளிப் ச்ட்ரோக்"
-
-
-msgid "Change direction of the points of the selected strokes"
-msgstr "தேர்ந்தெடுக்கப்பட்ட பக்கங்களின் புள்ளிகளின் திசையை மாற்றவும்"
-
-
-msgctxt "Operator"
-msgid "Join Strokes"
-msgstr "வீச்சுகள் சேரவும்"
-
-
-msgid "Join selected strokes (optionally as new stroke)"
-msgstr "தேர்ந்தெடுக்கப்பட்ட பக்கங்களில் சேரவும் (விருப்பமாக புதிய வீச்சுகள்)"
-
-
-msgid "Leave Gaps"
-msgstr "இடைவெளிகளை விட்டு விடுங்கள்"
-
-
-msgid "Leave gaps between joined strokes instead of linking them"
-msgstr "இணைந்த வீச்சுகள் அவற்றுடன் இணைப்பதற்கு பதிலாக இடைவெளிகளை விட்டு விடுங்கள்"
-
-
-msgid "Join"
-msgstr "சேர"
-
-
-msgid "Join and Copy"
-msgstr "சேரவும் நகலெடுக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Merge Strokes"
-msgstr "வீச்சுகள் ஒன்றிணைக்கவும்"
-
-
-msgid "Create a new stroke with the selected stroke points"
-msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சு புள்ளிகளுடன் புதிய பக்கவாதத்தை உருவாக்கவும்"
-
-
-msgid "Additive Drawing"
-msgstr "சேர்க்கை வரைதல்"
-
-
-msgid "Add to previous drawing"
-msgstr "முந்தைய வரைபடத்தில் சேர்க்கவும்"
-
-
-msgid "Draw new stroke below all previous strokes"
-msgstr "முந்தைய அனைத்து பக்கவாதங்களுக்கும் கீழே புதிய பக்கவாதத்தை வரையவும்"
-
-
-msgid "Dissolve Points"
-msgstr "புள்ளிகளைக் கரைக்கவும்"
-
-
-msgid "Dissolve old selected points"
-msgstr "தேர்ந்தெடுக்கப்பட்ட பழைய புள்ளிகளைக் கரைக்கவும்"
-
-
-msgid "Delete Strokes"
-msgstr "வீச்சுகள் நீக்கு"
-
-
-msgid "Delete old selected strokes"
-msgstr "பழைய தேர்ந்தெடுக்கப்பட்ட வீச்சுகள் நீக்கு"
-
-
-msgid "Close new stroke"
-msgstr "புதிய வீச்சு மூடு"
-
-
-msgctxt "Operator"
-msgid "Merge by Distance"
-msgstr "தூரத்தில் ஒன்றிணைக்கவும்"
-
-
-msgid "Merge points by distance"
-msgstr "புள்ளிகளை தூரத்தால் ஒன்றிணைக்கவும்"
-
-
-msgid "Use whole stroke, not only selected points"
-msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகள் மட்டுமல்லாமல், முழு பக்கவாதத்தையும் பயன்படுத்தவும்"
-
-
-msgctxt "Operator"
-msgid "Merge Grease Pencil Materials"
-msgstr "பசை எழுதுகோல் மூலப்பொருட்களை ஒன்றிணைக்கவும்"
-
-
-msgid "Replace materials in strokes merging similar"
-msgstr "ச்ட்ரோக்சில் உள்ள மூலப்பொருட்களை மாற்றவும்"
-
-
-msgid "Hue Threshold"
-msgstr "சாயல் வாசல்"
-
-
-msgid "Saturation Threshold"
-msgstr "செறிவு வாசல்"
-
-
-msgid "Value Threshold"
-msgstr "மதிப்பு வாசல்"
-
-
-msgctxt "Operator"
-msgid "Normalize Stroke"
-msgstr "பக்கவாதத்தை இயல்பாக்குங்கள்"
-
-
-msgid "Normalize stroke attributes"
-msgstr "வீச்சு பண்புகளை இயல்பாக்குங்கள்"
-
-
-msgid "Attribute to be normalized"
-msgstr "இயல்பாக்கப்பட வேண்டிய பண்புக்கூறு"
-
-
-msgid "Normalizes the stroke thickness by making all points use the same thickness value"
-msgstr "எல்லா புள்ளிகளையும் ஒரே தடிமன் மதிப்பைப் பயன்படுத்துவதன் மூலம் வீச்சு தடிமன் இயல்பாக்குகிறது"
-
-
-msgid "Normalizes the stroke opacity by making all points use the same opacity value"
-msgstr "எல்லா புள்ளிகளையும் ஒரே ஒளிபுகா மதிப்பைப் பயன்படுத்துவதன் மூலம் வீச்சு ஒளிபுகாநிலையை இயல்பாக்குகிறது"
-
-
-msgctxt "Operator"
-msgid "Convert Stroke to Outline"
-msgstr "பக்கவாதத்தை அவுட்லைன் மாற்றவும்"
-
-
-msgid "Try to keep global shape when the stroke thickness change"
-msgstr "வீச்சு தடிமன் மாறும்போது உலகளாவிய வடிவத்தை வைக்க முயற்சிக்கவும்"
-
-
-msgid "Keep Material"
-msgstr "மூலப்பொருள் வைத்திருங்கள்"
-
-
-msgid "Keep current stroke material"
-msgstr "தற்போதைய வீச்சு மூலப்பொருளை வைத்திருங்கள்"
-
-
-msgid "New Material"
-msgstr "புதிய மூலப்பொருள்"
-
-
-msgid "Thickness of the stroke perimeter"
-msgstr "வீச்சு சுற்றளவு தடிமன்"
-
-
-msgctxt "View3D"
-msgid "View"
-msgstr "பார்வை"
-
-
-msgctxt "View3D"
-msgid "Front"
-msgstr "முன்"
-
-
-msgctxt "View3D"
-msgid "Side"
-msgstr "பக்க"
-
-
-msgctxt "View3D"
-msgid "Top"
-msgstr "மேலே"
-
-
-msgctxt "View3D"
-msgid "Camera"
-msgstr "புகைப்பட கருவி"
-
-
-msgctxt "Operator"
-msgid "Reset Vertex Color"
-msgstr "வெர்டெக்ச் வண்ணத்தை மீட்டமைக்கவும்"
-
-
-msgid "Reset vertex color for all or selected strokes"
-msgstr "அனைத்து அல்லது தேர்ந்தெடுக்கப்பட்ட பக்கவாதங்களுக்கும் வெர்டெக்ச் வண்ணத்தை மீட்டமைக்கவும்"
-
-
-msgid "Reset Vertex Color to Stroke only"
-msgstr "வெர்டெக்ச் வண்ணத்தை பக்கவாதத்திற்கு மட்டுமே மீட்டமைக்கவும்"
-
-
-msgid "Reset Vertex Color to Fill only"
-msgstr "நிரப்ப மட்டுமே வெர்டெக்ச் வண்ணத்தை மீட்டமைக்கவும்"
-
-
-msgid "Reset Vertex Color to Stroke and Fill"
-msgstr "வெர்டெக்ச் வண்ணத்தை வீச்சு மற்றும் நிரப்ப மீட்டமைக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Sample Stroke"
-msgstr "மாதிரி வீச்சு"
-
-
-msgid "Sample stroke points to predefined segment length"
-msgstr "மாதிரி வீச்சு முன் வரையறுக்கப்பட்ட பிரிவு நீளத்திற்கு புள்ளிகள்"
-
-
-msgctxt "Operator"
-msgid "Separate Strokes"
-msgstr "தனி வீச்சுகள்"
-
-
-msgid "Separate the selected strokes or layer in a new grease pencil object"
-msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சுகள் அல்லது அடுக்கை புதிய பசை எழுதுகோல் பொருளில் பிரிக்கவும்"
-
-
-msgid "Selected Points"
-msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகள்"
-
-
-msgid "Separate the selected points"
-msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகளைப் பிரிக்கவும்"
-
-
-msgid "Selected Strokes"
-msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சுகள்"
-
-
-msgid "Separate the selected strokes"
-msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சுகள் பிரிக்கவும்"
-
-
-msgid "Separate the strokes of the current layer"
-msgstr "தற்போதைய அடுக்கின் வீச்சுகள் பிரிக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Simplify Stroke"
-msgstr "பக்கவாதத்தை எளிதாக்குங்கள்"
-
-
-msgid "Simplify selected strokes, reducing number of points"
-msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சுகள் எளிமைப்படுத்துங்கள், புள்ளிகளின் எண்ணிக்கையைக் குறைத்தல்"
-
-
-msgctxt "Operator"
-msgid "Simplify Fixed Stroke"
-msgstr "நிலையான பக்கவாதத்தை எளிதாக்குங்கள்"
-
-
-msgid "Simplify selected strokes, reducing number of points using fixed algorithm"
-msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சுகள் எளிமைப்படுத்துங்கள், நிலையான வழிமுறையைப் பயன்படுத்தி புள்ளிகளின் எண்ணிக்கையைக் குறைத்தல்"
-
-
-msgid "Number of simplify steps"
-msgstr "எளிமைப்படுத்தும் படிகளின் எண்ணிக்கை"
-
-
-msgctxt "Operator"
-msgid "Smooth Stroke"
-msgstr "மென்மையான வீச்சு"
-
-
-msgid "Smooth selected strokes"
-msgstr "மென்மையான தேர்ந்தெடுக்கப்பட்ட வீச்சுகள்"
-
-
-msgid "Smooth only selected points in the stroke"
-msgstr "பக்கவாதத்தில் தேர்ந்தெடுக்கப்பட்ட புள்ளிகள் மட்டுமே மென்மையானது"
-
-
-msgctxt "Operator"
-msgid "Split Strokes"
-msgstr "பிளவு பக்கங்கள்"
-
-
-msgid "Split selected points as new stroke on same frame"
-msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகளை அதே சட்டகத்தில் புதிய பக்கவாதமாக பிரிக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Set Start Point"
-msgstr "தொடக்க புள்ளியை அமைக்கவும்"
-
-
-msgid "Set start point for cyclic strokes"
-msgstr "சுழற்சி வீச்சுகள் ஆகியவற்றிற்கான தொடக்க புள்ளியை அமைக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Subdivide Stroke"
-msgstr "துணைப்பிரிவு வீச்சு"
-
-
-msgid "Subdivide between continuous selected points of the stroke adding a point half way between them"
-msgstr "பக்கவாதத்தின் தொடர்ச்சியான தேர்ந்தெடுக்கப்பட்ட புள்ளிகளுக்கு இடையில் உட்பட்டது அவர்களுக்கு இடையே ஒரு புள்ளியைச் சேர்க்கிறது"
-
-
-msgctxt "Operator"
-msgid "Trim Stroke"
-msgstr "வீச்சு"
-
-
-msgid "Trim selected stroke to first loop or intersection"
-msgstr "தேர்ந்தெடுக்கப்பட்ட பக்கவாதத்தை முதல் வளையத்திற்கு அல்லது குறுக்குவெட்டுக்கு ஒழுங்கமைக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Trace Image to Grease Pencil"
-msgstr "பென்சிலுக்கு கிரீச் செய்ய படத்தைக் கண்டறியவும்"
-
-
-msgid "Extract Grease Pencil strokes from image"
-msgstr "படத்திலிருந்து பசை எழுதுகோல் வீச்சுகள் பிரித்தெடுக்கவும்"
-
-
-msgid "Trace Frame"
-msgstr "சுவடு சட்டகம்"
-
-
-msgid "Used to trace only one frame of the image sequence, set to zero to trace all"
-msgstr "பட வரிசையின் ஒரு சட்டகத்தை மட்டுமே கண்டுபிடிக்கப் பயன்படுகிறது, அனைத்தையும் கண்டுபிடிக்க பூச்சியமாக அமைக்கவும்"
-
-
-msgid "Determines if trace simple image or full sequence"
-msgstr "எளிய படம் அல்லது முழு வரிசையை நிலைநிறுத்தினால் தீர்மானிக்கிறது"
-
-
-msgid "Trace the current frame of the image"
-msgstr "படத்தின் தற்போதைய சட்டகத்தைக் கண்டறியவும்"
-
-
-msgid "Trace full sequence"
-msgstr "முழு வரிசையையும் கண்டுபிடி"
-
-
-msgid "Resolution of the generated curves"
-msgstr "உருவாக்கப்பட்ட வளைவுகளின் தீர்மானம்"
-
-
-msgid "Distance to sample points, zero to disable"
-msgstr "மாதிரி புள்ளிகளுக்கான தூரம், முடக்க பூச்சியம்"
-
-
-msgid "Scale of the final stroke"
-msgstr "இறுதி பக்கவாதத்தின் அளவு"
-
-
-msgid "Color Threshold"
-msgstr "வண்ண வாசல்"
-
-
-msgid "Determine the lightness threshold above which strokes are generated"
-msgstr "எந்த வீச்சுகள் உருவாக்கப்படுகிறது என்பதை மேலே லேசான வாசலைத் தீர்மானிக்கவும்"
-
-
-msgid "Turn Policy"
-msgstr "கொள்கையை திருப்புங்கள்"
-
-
-msgid "Determines how to resolve ambiguities during decomposition of bitmaps into paths"
-msgstr "பிட்மேப்ச் பாதைகளில் சிதைவின் போது தெளிவற்ற தன்மைகளை எவ்வாறு தீர்ப்பது என்பதை தீர்மானிக்கிறது"
-
-
-msgid "Prefers to connect black (foreground) components"
-msgstr "கருப்பு (முன்புறம்) கூறுகளை இணைக்க விரும்புகிறது"
-
-
-msgid "Prefers to connect white (background) components"
-msgstr "வெள்ளை (பின்னணி) கூறுகளை இணைக்க விரும்புகிறது"
-
-
-msgid "Always take a left turn"
-msgstr "எப்போதும் இடது திருப்பத்தை எடுத்துக் கொள்ளுங்கள்"
-
-
-msgid "Always take a right turn"
-msgstr "எப்போதும் சரியான திருப்பத்தை எடுத்துக் கொள்ளுங்கள்"
-
-
-msgid "Minority"
-msgstr "சிறுபான்மை"
-
-
-msgid "Prefers to connect the color (black or white) that occurs least frequently in the local neighborhood of the current position"
-msgstr "தற்போதைய நிலையின் உள்ளக சுற்றுப்புறத்தில் குறைந்தது அடிக்கடி நிகழும் வண்ணத்தை (கருப்பு அல்லது வெள்ளை) இணைக்க விரும்புகிறது"
-
-
-msgid "Majority"
-msgstr "பெரும்பான்மை"
-
-
-msgid "Prefers to connect the color (black or white) that occurs most frequently in the local neighborhood of the current position"
-msgstr "தற்போதைய நிலையின் உள்ளக சுற்றுப்புறத்தில் அடிக்கடி நிகழும் வண்ணத்தை (கருப்பு அல்லது வெள்ளை) இணைக்க விரும்புகிறது"
-
-
-msgid "Choose pseudo-randomly"
-msgstr "போலி-சீரற்றதாகத் தேர்வுசெய்க"
-
-
-msgid "Start At Current Frame"
-msgstr "தற்போதைய சட்டத்தில் தொடங்கவும்"
-
-
-msgid "Trace Image starting in current image frame"
-msgstr "தற்போதைய பட சட்டத்தில் தொடங்கும் படத்தைக் கண்டறியவும்"
-
-
-msgctxt "Operator"
-msgid "Transform Stroke Fill"
-msgstr "வீச்சு நிரப்புதல்"
-
-
-msgid "Transform grease pencil stroke fill"
-msgstr "பசை எழுதுகோல் ச்ட்ரோக் நிரப்புதல்"
-
-
-msgctxt "Operator"
-msgid "Unlock All Layers"
-msgstr "அனைத்து அடுக்குகளையும் திறக்கவும்"
-
-
-msgid "Unlock all Grease Pencil layers so that they can be edited"
-msgstr "அனைத்து பசை எழுதுகோல் அடுக்குகளையும் திறக்கவும், இதனால் அவை திருத்தப்படலாம்"
-
-
-msgctxt "Operator"
-msgid "Vertex Paint Brightness/Contrast"
-msgstr "வெர்டெக்ச் வண்ணப்பூச்சு பிரகாசம்/மாறுபாடு"
-
-
-msgid "Adjust vertex color brightness/contrast"
-msgstr "வெர்டெக்ச் வண்ண பிரகாசம்/மாறுபாட்டை சரிசெய்யவும்"
-
-
-msgctxt "Operator"
-msgid "Vertex Paint Hue/Saturation/Value"
-msgstr "வெர்டெக்ச் பெயிண்ட் சாயல்/செறிவு/மதிப்பு"
-
-
-msgid "Adjust vertex color HSV values"
-msgstr "வெர்டெக்ச் வண்ண hsv மதிப்புகளை சரிசெய்யவும்"
-
-
-msgctxt "Operator"
-msgid "Vertex Paint Invert"
-msgstr "வெர்டெக்ச் பெயிண்ட் தலைகீழ்"
-
-
-msgid "Invert RGB values"
-msgstr "rgb மதிப்புகளைத் தலைகீழ்"
-
-
-msgctxt "Operator"
-msgid "Vertex Paint Levels"
-msgstr "வெர்டெக்ச் பெயிண்ட் நிலைகள்"
-
-
-msgid "Adjust levels of vertex colors"
-msgstr "வெர்டெக்ச் வண்ணங்களின் அளவை சரிசெய்யவும்"
-
-
-msgid "Value to multiply colors by"
-msgstr "வண்ணங்களை பெருக்க மதிப்பு"
-
-
-msgid "Value to add to colors"
-msgstr "வண்ணங்களில் சேர்க்க மதிப்பு"
-
-
-msgctxt "Operator"
-msgid "Vertex Paint Set Color"
-msgstr "வெர்டெக்ச் பெயிண்ட் செட் நிறம்"
-
-
-msgid "Set active color to all selected vertex"
-msgstr "தேர்ந்தெடுக்கப்பட்ட அனைத்து வெர்டெக்சுக்கும் செயலில் வண்ணத்தை அமைக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Assign to Vertex Group"
-msgstr "வெர்டெக்ச் குழுவிற்கு ஒதுக்கவும்"
-
-
-msgid "Assign the selected vertices to the active vertex group"
-msgstr "தேர்ந்தெடுக்கப்பட்ட செங்குத்துகளை செயலில் உள்ள வெர்டெக்ச் குழுவிற்கு ஒதுக்குங்கள்"
-
-
-msgctxt "Operator"
-msgid "Deselect Vertex Group"
-msgstr "வெர்டெக்ச் குழுவை டெலிக் செய்யுங்கள்"
-
-
-msgid "Deselect all selected vertices assigned to the active vertex group"
-msgstr "செயலில் உள்ள வெர்டெக்ச் குழுவிற்கு ஒதுக்கப்பட்ட அனைத்து தேர்ந்தெடுக்கப்பட்ட செங்குத்துகளையும் தேர்வு செய்யவும்"
-
-
-msgctxt "Operator"
-msgid "Invert Vertex Group"
-msgstr "தலைகீழ் வெர்டெக்ச் குழு"
-
-
-msgid "Invert weights to the active vertex group"
-msgstr "செயலில் உள்ள வெர்டெக்ச் குழுவிற்கு எடைகளைத் தலைகீழாக மாற்றவும்"
-
-
-msgctxt "Operator"
-msgid "Normalize Vertex Group"
-msgstr "வெர்டெக்ச் குழுவை இயல்பாக்குங்கள்"
-
-
-msgid "Normalize weights to the active vertex group"
-msgstr "செயலில் உள்ள வெர்டெக்ச் குழுவிற்கு எடைகளை இயல்பாக்குங்கள்"
-
-
-msgctxt "Operator"
-msgid "Normalize All Vertex Group"
-msgstr "அனைத்து வெர்டெக்ச் குழுவையும் இயல்பாக்குங்கள்"
-
-
-msgid "Normalize all weights of all vertex groups, so that for each vertex, the sum of all weights is 1.0"
-msgstr "அனைத்து வெர்டெக்ச் குழுக்களின் அனைத்து எடைகளையும் இயல்பாக்குங்கள், இதனால் ஒவ்வொரு வெர்டெக்சிற்கும், அனைத்து எடைகளின் கூட்டுத்தொகை 1.0 ஆகும்"
-
-
-msgid "Lock Active"
-msgstr "பூட்டு செயலில்"
-
-
-msgid "Keep the values of the active group while normalizing others"
-msgstr "மற்றவர்களை இயல்பாக்கும்போது செயலில் உள்ள குழுவின் மதிப்புகளை வைத்திருங்கள்"
-
-
-msgctxt "Operator"
-msgid "Remove from Vertex Group"
-msgstr "வெர்டெக்ச் குழுவிலிருந்து அகற்று"
-
-
-msgid "Remove the selected vertices from active or all vertex group(s)"
-msgstr "செயலில் அல்லது அனைத்து வெர்டெக்ச் குழுவிலிருந்து (கள்) தேர்ந்தெடுக்கப்பட்ட செங்குத்துகளை அகற்றவும்"
-
-
-msgctxt "Operator"
-msgid "Select Vertex Group"
-msgstr "வெர்டெக்ச் குழுவைத் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Select all the vertices assigned to the active vertex group"
-msgstr "செயலில் உள்ள வெர்டெக்ச் குழுவிற்கு ஒதுக்கப்பட்ட அனைத்து செங்குத்துகளையும் தேர்ந்தெடுக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Smooth Vertex Group"
-msgstr "மென்மையான வெர்டெக்ச் குழு"
-
-
-msgid "Smooth weights to the active vertex group"
-msgstr "செயலில் உள்ள வெர்டெக்ச் குழுவிற்கு மென்மையான எடைகள்"
-
-
-msgctxt "Operator"
-msgid "Stroke Vertex Paint"
-msgstr "வீச்சு வெர்டெக்ச் பெயிண்ட்"
-
-
-msgid "Paint stroke points with a color"
-msgstr "வண்ணத்துடன் பக்கவாட்டு புள்ளிகள்"
-
-
-msgctxt "Operator"
-msgid "Strokes Vertex Mode Toggle"
-msgstr "ச்ட்ரோக்ச் வெர்டெக்ச் பயன்முறை மாறுகிறது"
-
-
-msgid "Enter/Exit vertex paint mode for Grease Pencil strokes"
-msgstr "பசை எழுதுகோல் வீச்சுகள் வெர்டெக்ச் பெயிண்ட் பயன்முறையை உள்ளிடவும்/வெளியேறவும்"
-
-
-msgctxt "Operator"
-msgid "Stroke Weight Paint"
-msgstr "வீச்சு எடை வண்ணப்பூச்சு"
-
-
-msgid "Draw weight on stroke points"
-msgstr "வீச்சு புள்ளிகளில் எடை வரையவும்"
-
-
-msgctxt "Operator"
-msgid "Weight Paint Sample Weight"
-msgstr "எடை வண்ணப்பூச்சு மாதிரி எடை"
-
-
-msgid "Use the mouse to sample a weight in the 3D view"
-msgstr "3d பார்வையில் ஒரு எடையை மாதிரி செய்ய சுட்டியைப் பயன்படுத்தவும்"
-
-
-msgctxt "Operator"
-msgid "Weight Paint Toggle Direction"
-msgstr "எடை வண்ணப்பூச்சு திசையை மாற்றவும்"
-
-
-msgid "Toggle Add/Subtract for the weight paint draw tool"
-msgstr "எடை வண்ணப்பூச்சு டிரா கருவியைச் சேர்/கழித்தல் மாற்று"
-
-
-msgctxt "Operator"
-msgid "Strokes Weight Mode Toggle"
-msgstr "எடை பயன்முறை மாற்றுகிறது"
-
-
-msgid "Enter/Exit weight paint mode for Grease Pencil strokes"
-msgstr "பசை எழுதுகோல் வீச்சுகள் எடை வண்ணப்பூச்சு பயன்முறையை உள்ளிடவும்/வெளியேறவும்"
 
 
 msgctxt "Operator"
@@ -60646,10 +58218,6 @@ msgid "Remove"
 msgstr "அகற்று"
 
 
-msgid "The ratio of remaining keyframes after the operation"
-msgstr "செயல்பாட்டிற்குப் பிறகு மீதமுள்ள கீஃப்ரேம்களின் விகிதம்"
-
-
 msgid "Which mode to use for decimation"
 msgstr "அழிவுக்கு எந்த பயன்முறையைப் பயன்படுத்த வேண்டும்"
 
@@ -60747,6 +58315,10 @@ msgid "Length to make selected keyframes' Bézier handles"
 msgstr "தேர்ந்தெடுக்கப்பட்ட கீஃப்ரேம்களின் பெசியர் கைப்பிடிகளை உருவாக்க நீளம்"
 
 
+msgid "Side"
+msgstr "பக்க"
+
+
 msgid "Side of the keyframes' Bézier handles to affect"
 msgstr "கீஃப்ரேம்களின் பெசியர் கையாளுதலின் பக்கம் பாதிக்க"
 
@@ -60757,6 +58329,10 @@ msgstr "தேர்ந்தெடுக்கப்பட்ட கீஃப�
 
 msgid "Equalize selected keyframes' right handles"
 msgstr "தேர்ந்தெடுக்கப்பட்ட கீஃப்ரேம்களின் வலது கைப்பிடிகளை சமப்படுத்தவும்"
+
+
+msgid "Both"
+msgstr "இரண்டும்"
 
 
 msgid "Equalize both of a keyframe's handles"
@@ -61269,6 +58845,76 @@ msgid "Reset viewable area to show selected keyframe range"
 msgstr "தேர்ந்தெடுக்கப்பட்ட கீஃப்ரேம் வரம்பைக் காட்ட பார்க்கக்கூடிய பரப்பை மீட்டமைக்கவும்"
 
 
+msgctxt "Operator"
+msgid "Bake Object Transform to Grease Pencil"
+msgstr "பசை எழுதுகோலுக்கு பொருள் மாற்றத்தை சுட்டுக்கொள்ளுங்கள்"
+
+
+msgid "The end frame of animation"
+msgstr "அனிமேசனின் இறுதி சட்டகம்"
+
+
+msgid "The start frame"
+msgstr "தொடக்க சட்டகம்"
+
+
+msgid "Target Frame"
+msgstr "இலக்கு சட்டகம்"
+
+
+msgid "Destination frame"
+msgstr "இலக்கு சட்டகம்"
+
+
+msgid "Only Selected Keyframes"
+msgstr "தேர்ந்தெடுக்கப்பட்ட கீஃப்ரேம்கள் மட்டுமே"
+
+
+msgid "Convert only selected keyframes"
+msgstr "தேர்ந்தெடுக்கப்பட்ட கீஃப்ரேம்களை மட்டுமே மாற்றவும்"
+
+
+msgid "Projection Type"
+msgstr "திட்ட வகை"
+
+
+msgid "No Reproject"
+msgstr "இனிப்பான் இல்லை"
+
+
+msgid "Reproject the strokes using the X-Z plane"
+msgstr "எக்ச்-இசட் விமானத்தைப் பயன்படுத்தி வீச்சுகள்"
+
+
+msgid "Reproject the strokes using the Y-Z plane"
+msgstr "y-z விமானத்தைப் பயன்படுத்தி வீச்சுகள்"
+
+
+msgid "Reproject the strokes using the X-Y plane"
+msgstr "எக்ச்-ஒய் விமானத்தைப் பயன்படுத்தி வீச்சுகள்"
+
+
+msgid "Reproject the strokes to end up on the same plane, as if drawn from the current viewpoint using 'Cursor' Stroke Placement"
+msgstr "'கர்சர்' வீச்சு பிளேச்மென்ட்டைப் பயன்படுத்தி தற்போதைய பார்வையில் இருந்து எடுக்கப்பட்டதைப் போல, அதே விமானத்தில் முடிவடைய வீச்சுகள் மீண்டும் செய்யவும்"
+
+
+msgid "Reproject the strokes using the orientation of 3D cursor"
+msgstr "3d கர்சரின் நோக்குநிலையைப் பயன்படுத்தி வீச்சுகள்"
+
+
+msgid "Step between generated frames"
+msgstr "உருவாக்கப்பட்ட பிரேம்களுக்கு இடையில் படி"
+
+
+msgctxt "Operator"
+msgid "Grease Pencil Draw"
+msgstr "பசை எழுதுகோல் டிரா"
+
+
+msgid "Draw a new stroke in the active Grease Pencil object"
+msgstr "செயலில் உள்ள பசை எழுதுகோல் பொருளில் புதிய பக்கவாதத்தை வரையவும்"
+
+
 msgid "Stroke Mode"
 msgstr "வீச்சு முறை"
 
@@ -61302,6 +58948,10 @@ msgid "Rounded"
 msgstr "வட்டமான"
 
 
+msgid "Set as default rounded"
+msgstr "இயல்புநிலை வட்டமானதாக அமைக்கவும்"
+
+
 msgid "Flat"
 msgstr "தட்டையானது"
 
@@ -61312,6 +58962,45 @@ msgstr "தொடக்கத்தைத் தொடங்குங்கள�
 
 msgid "Toggle End"
 msgstr "முடிவு"
+
+
+msgctxt "Operator"
+msgid "Clean Loose Points"
+msgstr "தளர்வான புள்ளிகளை சுத்தப்படுத்தவும்"
+
+
+msgid "Remove loose points"
+msgstr "தளர்வான புள்ளிகளை அகற்றவும்"
+
+
+msgid "Limit"
+msgstr "அளவு"
+
+
+msgid "Number of points to consider stroke as loose"
+msgstr "வீச்சு தளர்வானதாக கருத வேண்டிய புள்ளிகளின் எண்ணிக்கை"
+
+
+msgctxt "Operator"
+msgid "Copy Strokes"
+msgstr "வீச்சுகள் நகல்"
+
+
+msgctxt "Operator"
+msgid "Set Cyclical State"
+msgstr "சுழற்சி நிலையை அமைக்கவும்"
+
+
+msgid "Close or open the selected stroke adding a segment from last to first point"
+msgstr "கடைசியாக முதல் முதல் புள்ளி வரை ஒரு பகுதியைச் சேர்த்து தேர்ந்தெடுக்கப்பட்ட பக்கவாதத்தை மூடு அல்லது திறக்கவும்"
+
+
+msgid "Close All"
+msgstr "அனைத்தையும் மூடு"
+
+
+msgid "Open All"
+msgstr "அனைத்தையும் திறக்கவும்"
 
 
 msgid "Delete selected strokes or points"
@@ -61343,13 +59032,79 @@ msgid "Delete active frames for all layers"
 msgstr "அனைத்து அடுக்குகளுக்கும் செயலில் உள்ள பிரேம்களை நீக்கு"
 
 
+msgctxt "Operator"
+msgid "Dissolve"
+msgstr "கரைக்கவும்"
+
+
+msgid "Delete selected points without splitting strokes"
+msgstr "வீச்சுகள் பிரிக்காமல் தேர்ந்தெடுக்கப்பட்ட புள்ளிகளை நீக்கவும்"
+
+
+msgctxt "GPencil"
+msgid "Type"
+msgstr "தட்டச்சு செய்க"
+
+
+msgid "Method used for dissolving stroke points"
+msgstr "வீச்சு புள்ளிகளைக் கரைக்க பயன்படுத்தப்படும் முறை"
+
+
+msgid "Dissolve selected points"
+msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகளைக் கரைக்கவும்"
+
+
+msgid "Dissolve points between selected points"
+msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகளுக்கு இடையில் புள்ளிகளைக் கரைக்கவும்"
+
+
+msgid "Dissolve all unselected points"
+msgstr "தேர்வு செய்யப்படாத அனைத்து புள்ளிகளையும் கரைக்கவும்"
+
+
 msgid "Duplicate the selected points"
 msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகளை நகலெடுக்கவும்"
 
 
 msgctxt "Operator"
+msgid "Duplicate Strokes"
+msgstr "நகல் வீச்சுகள்"
+
+
+msgid "Make copies of the selected Grease Pencil strokes and move them"
+msgstr "தேர்ந்தெடுக்கப்பட்ட பசை எழுதுகோல் பக்கங்களின் நகல்களை உருவாக்கி அவற்றை நகர்த்தவும்"
+
+
+msgctxt "Operator"
+msgid "Extrude Stroke Points"
+msgstr "எக்ச்ட்ரூட் ச்ட்ரோக் புள்ளிகள்"
+
+
+msgid "Extrude selected points and move them"
+msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகளை வெளியேற்றி அவற்றை நகர்த்தவும்"
+
+
+msgid "Extrude Stroke Points"
+msgstr "எக்ச்ட்ரூட் ச்ட்ரோக் புள்ளிகள்"
+
+
+msgctxt "Operator"
+msgid "Grease Pencil Fill"
+msgstr "பசை எழுதுகோல் நிரப்பு"
+
+
+msgid "Fill with color the shape formed by strokes"
+msgstr "வீச்சுகள் மூலம் உருவாகும் வடிவத்தை வண்ணத்துடன் நிரப்பவும்"
+
+
+msgctxt "Operator"
 msgid "Delete Duplicate Frames"
 msgstr "நகல் பிரேம்களை நீக்கு"
+
+
+msgctxt "Operator"
+msgid "Insert Blank Frame"
+msgstr "வெற்று சட்டத்தை செருகவும்"
 
 
 msgid "Insert a blank frame on the current scene frame"
@@ -61361,6 +59116,157 @@ msgstr "அனைத்து திருத்தக்கூடிய அட�
 
 
 msgctxt "Operator"
+msgid "Grease Pencil Interpolation"
+msgstr "பசை எழுதுகோல் இடைக்கணிப்பு"
+
+
+msgid "Exclude Breakdowns"
+msgstr "முறிவுகளை விலக்கவும்"
+
+
+msgid "Exclude existing Breakdowns keyframes as interpolation extremes"
+msgstr "ஏற்கனவே உள்ள முறிவுகளை கீஃப்ரேம்களை இடைக்கணிப்பு உச்சநிலைகளாக விலக்கவும்"
+
+
+msgid "Flip Mode"
+msgstr "திருப்பு பயன்முறை"
+
+
+msgid "Invert destination stroke to match start and end with source stroke"
+msgstr "தொடக்க மற்றும் முடிவுக்கு இலக்கு வீச்சு மூல வீச்சு மூலம் தலைகீழ் வீச்சு"
+
+
+msgid "No Flip"
+msgstr "ஃபிளிப் இல்லை"
+
+
+msgid "Layers included in the interpolation"
+msgstr "இடைக்கணிப்பில் அடுக்குகள் சேர்க்கப்பட்டுள்ளன"
+
+
+msgid "Bias factor for which frame has more influence on the interpolated strokes"
+msgstr "இடைக்கணிக்கப்பட்ட வீச்சுகள் மீது சட்டகம் அதிக செல்வாக்கு செலுத்தும் சார்பு காரணி"
+
+
+msgid "Amount of smoothing to apply to interpolated strokes, to reduce jitter/noise"
+msgstr "இடைக்கணிக்கப்பட்ட வீச்சுகள், நடுக்கம்/சத்தத்தை குறைக்க, இடைக்கணிக்கப்பட்ட வீச்சுகள்"
+
+
+msgctxt "Operator"
+msgid "Interpolate Sequence"
+msgstr "இடைக்கணிப்பு வரிசை"
+
+
+msgid "Generate 'in-betweens' to smoothly interpolate between Grease Pencil frames"
+msgstr "பசை எழுதுகோல் பிரேம்களுக்கு இடையில் சீராக இடைக்கணிக்க 'இன்-பெட்வீன்ச்' ஐ உருவாக்கவும்"
+
+
+msgctxt "GPencil"
+msgid "Easing"
+msgstr "எளிதாக்குதல்"
+
+
+msgctxt "GPencil"
+msgid "Automatic Easing"
+msgstr "தானியங்கி தளர்த்தல்"
+
+
+msgctxt "GPencil"
+msgid "Ease In"
+msgstr "எளிதாக"
+
+
+msgctxt "GPencil"
+msgid "Ease Out"
+msgstr "எளிதாக்குங்கள்"
+
+
+msgctxt "GPencil"
+msgid "Ease In and Out"
+msgstr "உள்ளேயும் வெளியேயும் எளிதாக்குங்கள்"
+
+
+msgid "Number of frames between generated interpolated frames"
+msgstr "உருவாக்கப்பட்ட இடைக்கணிப்பு பிரேம்களுக்கு இடையில் பிரேம்களின் எண்ணிக்கை"
+
+
+msgid "Interpolation method to use the next time 'Interpolate Sequence' is run"
+msgstr "இடைக்கணிப்பு முறை அடுத்த முறை 'இன்டர்போலேட் வரிசை' இயக்கப்படுகிறது"
+
+
+msgctxt "GPencil"
+msgid "Linear"
+msgstr "நேரியல்"
+
+
+msgctxt "GPencil"
+msgid "Custom"
+msgstr "தனிப்பயன்"
+
+
+msgid "Custom interpolation defined using a curve map"
+msgstr "வளைவு வரைபடத்தைப் பயன்படுத்தி தனிப்பயன் இடைக்கணிப்பு வரையறுக்கப்பட்டுள்ளது"
+
+
+msgctxt "GPencil"
+msgid "Sinusoidal"
+msgstr "சைனூசாய்டல்"
+
+
+msgctxt "GPencil"
+msgid "Quadratic"
+msgstr "இருபடி"
+
+
+msgctxt "GPencil"
+msgid "Cubic"
+msgstr "கன"
+
+
+msgctxt "GPencil"
+msgid "Quartic"
+msgstr "நான்கார்டிக்"
+
+
+msgctxt "GPencil"
+msgid "Quintic"
+msgstr "குயின்டிக்"
+
+
+msgctxt "GPencil"
+msgid "Exponential"
+msgstr "அதிவேக"
+
+
+msgctxt "GPencil"
+msgid "Circular"
+msgstr "வட்ட"
+
+
+msgctxt "GPencil"
+msgid "Back"
+msgstr "மீண்டும்"
+
+
+msgctxt "GPencil"
+msgid "Bounce"
+msgstr "பவுன்ச்"
+
+
+msgctxt "GPencil"
+msgid "Elastic"
+msgstr "மீள்"
+
+
+msgid "Join and Copy"
+msgstr "சேரவும் நகலெடுக்கவும்"
+
+
+msgid "Join"
+msgstr "சேர"
+
+
+msgctxt "Operator"
 msgid "Set Active Layer"
 msgstr "செயலில் அடுக்கை அமைக்கவும்"
 
@@ -61369,12 +59275,47 @@ msgid "Set the active Grease Pencil layer"
 msgstr "செயலில் பசை எழுதுகோல் அடுக்கை அமைக்கவும்"
 
 
+msgctxt "Operator"
+msgid "Add New Layer"
+msgstr "புதிய அடுக்கைச் சேர்க்கவும்"
+
+
 msgid "Add a new Grease Pencil layer in the active object"
 msgstr "செயலில் உள்ள பொருளில் புதிய பசை எழுதுகோல் அடுக்கைச் சேர்க்கவும்"
 
 
 msgid "Name of the new layer"
 msgstr "புதிய அடுக்கின் பெயர்"
+
+
+msgctxt "Operator"
+msgid "Duplicate Layer"
+msgstr "நகல் அடுக்கு"
+
+
+msgid "Make a copy of the active Grease Pencil layer"
+msgstr "செயலில் உள்ள பசை எழுதுகோல் அடுக்கின் நகலை உருவாக்கவும்"
+
+
+msgid "Empty Keyframes"
+msgstr "வெற்று கீஃப்ரேம்கள்"
+
+
+msgctxt "Operator"
+msgid "Duplicate Layer to New Object"
+msgstr "புதிய பொருளுக்கு நகல் அடுக்கு"
+
+
+msgid "Make a copy of the active Grease Pencil layer to selected object"
+msgstr "தேர்ந்தெடுக்கப்பட்ட பொருளுக்கு செயலில் உள்ள பசை எழுதுகோல் அடுக்கின் நகலை உருவாக்கவும்"
+
+
+msgid "All Frames"
+msgstr "அனைத்து பிரேம்களும்"
+
+
+msgid "Copy only active Layer, uncheck to append all layers"
+msgstr "செயலில் உள்ள அடுக்கை மட்டுமே நகலெடுக்கவும், அனைத்து அடுக்குகளையும் சேர்க்க தேர்வு செய்யவும்"
 
 
 msgctxt "Operator"
@@ -61391,6 +59332,19 @@ msgstr "புதிய அடுக்கு குழுவின் பெய
 
 
 msgctxt "Operator"
+msgid "Hide Layer(s)"
+msgstr "அடுக்கு (கள்) மறைக்க"
+
+
+msgid "Hide selected/unselected Grease Pencil layers"
+msgstr "தேர்ந்தெடுக்கப்பட்ட/தேர்வு செய்யப்படாத பசை எழுதுகோல் அடுக்குகளை மறைக்கவும்"
+
+
+msgid "Hide unselected rather than selected layers"
+msgstr "தேர்ந்தெடுக்கப்பட்ட அடுக்குகளை விட தேர்வு செய்யப்படாததை மறைக்கவும்"
+
+
+msgctxt "Operator"
 msgid "Isolate Layers"
 msgstr "அடுக்குகளை தனிமைப்படுத்தவும்"
 
@@ -61399,17 +59353,62 @@ msgid "Make only active layer visible/editable"
 msgstr "செயலில் உள்ள அடுக்கு மட்டுமே தெரியும்/திருத்தக்கூடியதாக இருக்கும்"
 
 
+msgid "Affect Visibility"
+msgstr "தெரிவுநிலையை பாதிக்கும்"
+
+
 msgid "Also affect the visibility"
 msgstr "தெரிவுநிலையையும் பாதிக்கிறது"
 
 
-msgid "Remove the active Grease Pencil layer"
-msgstr "செயலில் உள்ள பசை எழுதுகோல் அடுக்கை அகற்றவும்"
+msgctxt "Operator"
+msgid "Lock All Layers"
+msgstr "எல்லா அடுக்குகளையும் பூட்டவும்"
+
+
+msgid "Lock all Grease Pencil layers to prevent them from being accidentally modified"
+msgstr "தற்செயலாக மாற்றியமைக்கப்படுவதைத் தடுக்க அனைத்து பசை எழுதுகோல் அடுக்குகளையும் பூட்டவும்"
+
+
+msgctxt "Operator"
+msgid "Add New Mask Layer"
+msgstr "புதிய முகமூடி அடுக்கைச் சேர்க்கவும்"
+
+
+msgid "Add new layer as masking"
+msgstr "முகமூடி என புதிய அடுக்கைச் சேர்க்கவும்"
+
+
+msgid "Name of the layer"
+msgstr "அடுக்கின் பெயர்"
+
+
+msgctxt "Operator"
+msgid "Remove Mask Layer"
+msgstr "முகமூடி அடுக்கை அகற்று"
+
+
+msgid "Remove Layer Mask"
+msgstr "அடுக்கு முகமூடியை அகற்று"
+
+
+msgctxt "Operator"
+msgid "Merge"
+msgstr "ஒன்றிணைக்கவும்"
 
 
 msgctxt "Operator"
 msgid "Reorder Layer"
 msgstr "லேயரை மறுவரிசைப்படுத்தவும்"
+
+
+msgctxt "Operator"
+msgid "Remove Layer"
+msgstr "அடுக்கை அகற்று"
+
+
+msgid "Remove the active Grease Pencil layer"
+msgstr "செயலில் உள்ள பசை எழுதுகோல் அடுக்கை அகற்றவும்"
 
 
 msgid "Reorder the active Grease Pencil layer"
@@ -61433,6 +59432,28 @@ msgstr "இலக்கு அடுக்கின் பெயர்"
 
 
 msgctxt "Operator"
+msgid "Show All Layers"
+msgstr "அனைத்து அடுக்குகளையும் காட்டு"
+
+
+msgid "Show all Grease Pencil layers"
+msgstr "அனைத்து பசை எழுதுகோல் அடுக்குகளையும் காட்டு"
+
+
+msgctxt "Operator"
+msgid "Copy Materials to Selected Object"
+msgstr "தேர்ந்தெடுக்கப்பட்ட பொருளுக்கு மூலப்பொருட்களை நகலெடுக்கவும்"
+
+
+msgid "Append Materials of the active Grease Pencil to other object"
+msgstr "செயலில் உள்ள பசை எழுதுகோலின் மூலப்பொருட்களை மற்ற பொருளுடன் சேர்க்கவும்"
+
+
+msgid "Append only active material, uncheck to append all materials"
+msgstr "செயலில் உள்ள மூலப்பொருளை மட்டுமே சேர்க்கவும், எல்லா மூலப்பொருட்களையும் சேர்க்க தேர்வு செய்யவும்"
+
+
+msgctxt "Operator"
 msgid "Hide Materials"
 msgstr "மூலப்பொருட்களை மறைக்க"
 
@@ -61446,8 +59467,39 @@ msgstr "செயலில் உள்ள ஒன்றுக்கு பதி
 
 
 msgctxt "Operator"
+msgid "Isolate Material"
+msgstr "தனிமைப்படுத்தப்பட்ட மூலப்பொருள்"
+
+
+msgid "Toggle whether the active material is the only one that is editable and/or visible"
+msgstr "செயலில் உள்ள மூலப்பொருள் மட்டுமே திருத்தக்கூடிய மற்றும்/அல்லது தெரியும் என்பதை மாற்றவும்"
+
+
+msgid "In addition to toggling the editability, also affect the visibility"
+msgstr "திருத்தக்கூடிய தன்மையை மாற்றுவதோடு மட்டுமல்லாமல், தெரிவுநிலையையும் பாதிக்கிறது"
+
+
+msgctxt "Operator"
+msgid "Lock All Materials"
+msgstr "அனைத்து மூலப்பொருட்களையும் பூட்டவும்"
+
+
+msgid "Lock all Grease Pencil materials to prevent them from being accidentally modified"
+msgstr "தற்செயலாக மாற்றியமைக்கப்படுவதைத் தடுக்க அனைத்து பசை எழுதுகோல் மூலப்பொருட்களையும் பூட்டவும்"
+
+
+msgctxt "Operator"
 msgid "Lock Unselected Materials"
 msgstr "தேர்வு செய்யப்படாத மூலப்பொருட்களை பூட்டு"
+
+
+msgid "Lock any material not used in any selected stroke"
+msgstr "தேர்ந்தெடுக்கப்பட்ட எந்த பக்கவாதத்திலும் பயன்படுத்தப்படாத எந்தவொரு மூலப்பொருளையும் பூட்டவும்"
+
+
+msgctxt "Operator"
+msgid "Lock Unused Materials"
+msgstr "பயன்படுத்தப்படாத மூலப்பொருட்களை பூட்டவும்"
 
 
 msgid "Lock and hide any material not used"
@@ -61455,8 +59507,43 @@ msgstr "பயன்படுத்தப்படாத எந்தவொர�
 
 
 msgctxt "Operator"
+msgid "Show All Materials"
+msgstr "அனைத்து மூலப்பொருட்களையும் காட்டு"
+
+
+msgid "Unhide all hidden Grease Pencil materials"
+msgstr "மறைக்கப்பட்ட அனைத்து பசை எழுதுகோல் மூலப்பொருட்களையும் மறைக்கவும்"
+
+
+msgctxt "Operator"
+msgid "Select Material"
+msgstr "மூலப்பொருள் தேர்ந்தெடுக்கவும்"
+
+
+msgid "Select/Deselect all Grease Pencil strokes using current material"
+msgstr "தற்போதைய மூலப்பொருளைப் பயன்படுத்தி அனைத்து பசை எழுதுகோல் பக்கவாதங்களையும் தேர்ந்தெடுக்கவும்/தேர்வு செய்யவும்"
+
+
+msgid "Unselect strokes"
+msgstr "தேர்ந்தெடுக்கப்படாத வீச்சுகள்"
+
+
+msgctxt "Operator"
+msgid "Unlock All Materials"
+msgstr "அனைத்து மூலப்பொருட்களையும் திறக்கவும்"
+
+
+msgid "Unlock all Grease Pencil materials so that they can be edited"
+msgstr "அனைத்து பசை எழுதுகோல் மூலப்பொருட்களையும் திருத்தவும், அவற்றைத் திருத்தவும்"
+
+
+msgctxt "Operator"
 msgid "Move to Layer"
 msgstr "அடுக்குக்கு நகர்த்தவும்"
+
+
+msgid "Move selected strokes to another layer"
+msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சுகள் மற்றொரு அடுக்குக்கு நகர்த்தவும்"
 
 
 msgid "New Layer"
@@ -61472,12 +59559,126 @@ msgstr "இலக்கு கிரீச் பென்சில் அடு
 
 
 msgctxt "Operator"
+msgid "Strokes Paint Mode Toggle"
+msgstr "வீச்சுகள் பெயிண்ட் பயன்முறை மாறுகிறது"
+
+
+msgid "Enter/Exit paint mode for Grease Pencil strokes"
+msgstr "பசை எழுதுகோல் வீச்சுகள் வண்ணப்பூச்சு பயன்முறையை உள்ளிடவும்/வெளியேறவும்"
+
+
+msgid "Return to Previous Mode"
+msgstr "முந்தைய பயன்முறைக்குத் திரும்பு"
+
+
+msgid "Return to previous mode"
+msgstr "முந்தைய பயன்முறைக்குத் திரும்பு"
+
+
+msgctxt "Operator"
+msgid "Paste Strokes"
+msgstr "வீச்சுகள் ஒட்டவும்"
+
+
+msgid "Paste on Back"
+msgstr "பின்னால் ஒட்டவும்"
+
+
+msgid "Add pasted strokes behind all strokes"
+msgstr "அனைத்து பக்கவாதங்களுக்கும் பின்னால் ஒட்டப்பட்ட வீச்சுகள் சேர்க்கவும்"
+
+
+msgid "Number of subdivisions per segment"
+msgstr "ஒரு பிரிவுக்கு துணைப்பிரிவுகளின் எண்ணிக்கை"
+
+
+msgid "Type of shape"
+msgstr "வடிவம் வகை"
+
+
+msgid "Polyline"
+msgstr "பாலிலைன்"
+
+
+msgctxt "Operator"
+msgid "Grease Pencil Box Shape"
+msgstr "பசை எழுதுகோல் பெட்டி வடிவம்"
+
+
+msgctxt "Operator"
+msgid "Grease Pencil Circle Shape"
+msgstr "பசை எழுதுகோல் வட்டம் வடிவம்"
+
+
+msgctxt "Operator"
+msgid "Grease Pencil Curve Shape"
+msgstr "பசை எழுதுகோல் வளைவு வடிவம்"
+
+
+msgctxt "Operator"
+msgid "Grease Pencil Line Shape"
+msgstr "பசை எழுதுகோல் வரி வடிவம்"
+
+
+msgctxt "Operator"
+msgid "Grease Pencil Polyline Shape"
+msgstr "பசை எழுதுகோல் பாலிலைன் வடிவம்"
+
+
+msgctxt "Operator"
 msgid "Reorder"
 msgstr "மறுவரிசை"
 
 
 msgid "Change the display order of the selected strokes"
 msgstr "தேர்ந்தெடுக்கப்பட்ட பக்கவாதம் காட்சி வரிசையை மாற்றவும்"
+
+
+msgid "Bring to Front"
+msgstr "முன்னால் கொண்டு வாருங்கள்"
+
+
+msgid "Bring Forward"
+msgstr "முன்னோக்கி கொண்டு வாருங்கள்"
+
+
+msgid "Send Backward"
+msgstr "பின்தங்கியதை அனுப்புங்கள்"
+
+
+msgid "Send to Back"
+msgstr "திரும்பவும்"
+
+
+msgctxt "Operator"
+msgid "Reproject Strokes"
+msgstr "இனப்பெருக்கம்"
+
+
+msgid "Reproject the selected strokes from the current viewpoint as if they had been newly drawn (e.g. to fix problems from accidental 3D cursor movement or accidental viewport changes, or for matching deforming geometry)"
+msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சுகள் தற்போதைய பார்வையில் இருந்து புதிதாக வரையப்பட்டதைப் போல (எ.கா. தற்செயலான 3 டி கர்சர் இயக்கம் அல்லது தற்செயலான காட்சியகங்கள் மாற்றங்களிலிருந்து சிக்கல்களை சரிசெய்ய அல்லது சிதைக்கும் வடிவவியலுடன் பொருந்துவதற்கு) இனப்பெருக்கம் செய்யுங்கள்)"
+
+
+msgid "Keep original strokes and create a copy before reprojecting"
+msgstr "அசல் வீச்சுகள் வைத்து, ரெிப்போயிங் செய்வதற்கு முன் ஒரு நகலை உருவாக்கவும்"
+
+
+msgid "Reproject the strokes on to the scene geometry, as if drawn using 'Surface' placement"
+msgstr "'மேற்பரப்பு' வேலைவாய்ப்பைப் பயன்படுத்தி வரையப்பட்டதைப் போல, காட்சி வடிவவியலுக்கு பக்கவாதங்களை இனப்பெருக்கம் செய்யுங்கள்"
+
+
+msgctxt "Operator"
+msgid "Strokes Sculpt Mode Toggle"
+msgstr "வீச்சுகள் சிற்பம் முறை மாறுகிறது"
+
+
+msgid "Enter/Exit sculpt mode for Grease Pencil strokes"
+msgstr "பசை எழுதுகோல் வீச்சுகள் சிற்பம் பயன்முறையை உள்ளிடவும்/வெளியேறவும்"
+
+
+msgctxt "Operator"
+msgid "(De)select All Strokes"
+msgstr "(டி) அனைத்து பக்கவாதங்களையும் தேர்ந்தெடுக்கவும்"
 
 
 msgid "(De)select all visible strokes"
@@ -61525,8 +59726,8 @@ msgid "Selects random points from the current strokes selection"
 msgstr "தற்போதைய வீச்சுகள் தேர்விலிருந்து சீரற்ற புள்ளிகளைத் தேர்ந்தெடுக்கிறது"
 
 
-msgid "Separate the selected geometry into a new grease pencil object"
-msgstr "தேர்ந்தெடுக்கப்பட்ட வடிவவியலை புதிய கிரீச் பென்சில் பொருளாக பிரிக்கவும்"
+msgid "Select all strokes with similar characteristics"
+msgstr "ஒத்த குணாதிசயங்களுடன் அனைத்து பக்கவாதங்களையும் தேர்ந்தெடுக்கவும்"
 
 
 msgid "Separate selected geometry"
@@ -61551,6 +59752,14 @@ msgstr "அடுக்கு மூலம் பிரிக்கவும்"
 
 msgctxt "Operator"
 msgid "Set Active Material"
+msgstr "செயலில் உள்ள மூலப்பொருளை அமைக்கவும்"
+
+
+msgid "Set the selected stroke material as the active material"
+msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சு மூலப்பொருளை செயலில் உள்ள மூலப்பொருளாக அமைக்கவும்"
+
+
+msgid "Set active material"
 msgstr "செயலில் உள்ள மூலப்பொருளை அமைக்கவும்"
 
 
@@ -61594,6 +59803,41 @@ msgstr "அனைத்து வீச்சு புள்ளிகளைய�
 
 
 msgctxt "Operator"
+msgid "Snap Cursor to Selected Points"
+msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகளுக்கு கர்சரை ச்னாப் செய்யுங்கள்"
+
+
+msgid "Snap cursor to center of selected points"
+msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகளின் மையத்திற்கு கர்சரை ச்னாப் செய்யுங்கள்"
+
+
+msgctxt "Operator"
+msgid "Snap Selection to Cursor"
+msgstr "கர்சருக்கு தேர்வு"
+
+
+msgid "Snap selected points/strokes to the cursor"
+msgstr "கர்சருக்கு தேர்ந்தெடுக்கப்பட்ட புள்ளிகள்/வீச்சுகள்"
+
+
+msgid "With Offset"
+msgstr "ஆஃப்செட்டுடன்"
+
+
+msgid "Offset the entire stroke instead of selected points only"
+msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகளுக்கு பதிலாக முழு பக்கவாதத்தையும் ஈடுசெய்யவும்"
+
+
+msgctxt "Operator"
+msgid "Snap Selection to Grid"
+msgstr "கட்டத்திற்கு தேர்வு"
+
+
+msgid "Snap selected points to the nearest grid points"
+msgstr "snap தேர்ந்தெடுக்கப்பட்ட புள்ளிகள் அருகிலுள்ள கட்டம் புள்ளிகளுக்கு"
+
+
+msgctxt "Operator"
 msgid "Assign Material"
 msgstr "மூலப்பொருள் ஒதுக்க"
 
@@ -61602,12 +59846,69 @@ msgid "Assign the active material slot to the selected strokes"
 msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சுகள் செயலில் உள்ள மூலப்பொருள் ச்லாட்டை ஒதுக்கவும்"
 
 
+msgid "Name of the material"
+msgstr "மூலப்பொருளின் பெயர்"
+
+
+msgctxt "Operator"
+msgid "Merge by Distance"
+msgstr "தூரத்தில் ஒன்றிணைக்கவும்"
+
+
+msgid "Merge points by distance"
+msgstr "புள்ளிகளை தூரத்தால் ஒன்றிணைக்கவும்"
+
+
+msgid "Use whole stroke, not only selected points"
+msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகள் மட்டுமல்லாமல், முழு பக்கவாதத்தையும் பயன்படுத்தவும்"
+
+
+msgctxt "Operator"
+msgid "Reset Vertex Color"
+msgstr "வெர்டெக்ச் வண்ணத்தை மீட்டமைக்கவும்"
+
+
+msgid "Reset vertex color for all or selected strokes"
+msgstr "அனைத்து அல்லது தேர்ந்தெடுக்கப்பட்ட பக்கவாதங்களுக்கும் வெர்டெக்ச் வண்ணத்தை மீட்டமைக்கவும்"
+
+
+msgctxt "Operator"
+msgid "Simplify Stroke"
+msgstr "பக்கவாதத்தை எளிதாக்குங்கள்"
+
+
 msgid "Simplify selected strokes"
 msgstr "தேர்ந்தெடுக்கப்பட்ட வீச்சுகள் எளிமைப்படுத்தவும்"
 
 
+msgctxt "Operator"
+msgid "Smooth Stroke"
+msgstr "மென்மையான வீச்சு"
+
+
+msgid "Smooth selected strokes"
+msgstr "மென்மையான தேர்ந்தெடுக்கப்பட்ட வீச்சுகள்"
+
+
 msgid "Smooth Endpoints"
 msgstr "மென்மையான இறுதிப் புள்ளிகள்"
+
+
+msgctxt "Operator"
+msgid "Subdivide Stroke"
+msgstr "துணைப்பிரிவு வீச்சு"
+
+
+msgid "Subdivide between continuous selected points of the stroke adding a point half way between them"
+msgstr "பக்கவாதத்தின் தொடர்ச்சியான தேர்ந்தெடுக்கப்பட்ட புள்ளிகளுக்கு இடையில் உட்பட்டது அவர்களுக்கு இடையே ஒரு புள்ளியைச் சேர்க்கிறது"
+
+
+msgid "Selected Points"
+msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகள்"
+
+
+msgid "Smooth only selected points in the stroke"
+msgstr "பக்கவாதத்தில் தேர்ந்தெடுக்கப்பட்ட புள்ளிகள் மட்டுமே மென்மையானது"
 
 
 msgctxt "Operator"
@@ -61623,9 +59924,217 @@ msgid "Subdivide Stroke"
 msgstr "துணைப்பிரிவு வீச்சு"
 
 
+msgid "Change direction of the points of the selected strokes"
+msgstr "தேர்ந்தெடுக்கப்பட்ட பக்கங்களின் புள்ளிகளின் திசையை மாற்றவும்"
+
+
+msgid "Mouse cursor style to use during the modal operator"
+msgstr "மோடல் ஆபரேட்டரின் போது பயன்படுத்த மவுச் கர்சர் பாணி"
+
+
+msgid "X End"
+msgstr "ஃச் முடிவு"
+
+
+msgid "X Start"
+msgstr "ஃச் தொடக்க"
+
+
+msgid "Y End"
+msgstr "ஒய் முடிவு"
+
+
+msgid "Y Start"
+msgstr "ஒய் தொடக்க"
+
+
+msgctxt "Operator"
+msgid "Trace Image to Grease Pencil"
+msgstr "பென்சிலுக்கு கிரீச் செய்ய படத்தைக் கண்டறியவும்"
+
+
+msgid "Extract Grease Pencil strokes from image"
+msgstr "படத்திலிருந்து பசை எழுதுகோல் வீச்சுகள் பிரித்தெடுக்கவும்"
+
+
+msgid "Trace Frame"
+msgstr "சுவடு சட்டகம்"
+
+
+msgid "Used to trace only one frame of the image sequence, set to zero to trace all"
+msgstr "பட வரிசையின் ஒரு சட்டகத்தை மட்டுமே கண்டுபிடிக்கப் பயன்படுகிறது, அனைத்தையும் கண்டுபிடிக்க பூச்சியமாக அமைக்கவும்"
+
+
+msgid "Determines if trace simple image or full sequence"
+msgstr "எளிய படம் அல்லது முழு வரிசையை நிலைநிறுத்தினால் தீர்மானிக்கிறது"
+
+
+msgid "Trace the current frame of the image"
+msgstr "படத்தின் தற்போதைய சட்டகத்தைக் கண்டறியவும்"
+
+
+msgid "Trace full sequence"
+msgstr "முழு வரிசையையும் கண்டுபிடி"
+
+
+msgid "New Object"
+msgstr "புதிய பொருள்"
+
+
+msgid "Selected Object"
+msgstr "தேர்ந்தெடுக்கப்பட்ட பொருள்"
+
+
+msgid "Color Threshold"
+msgstr "வண்ண வாசல்"
+
+
+msgid "Determine the lightness threshold above which strokes are generated"
+msgstr "எந்த வீச்சுகள் உருவாக்கப்படுகிறது என்பதை மேலே லேசான வாசலைத் தீர்மானிக்கவும்"
+
+
+msgid "Turn Policy"
+msgstr "கொள்கையை திருப்புங்கள்"
+
+
+msgid "Determines how to resolve ambiguities during decomposition of bitmaps into paths"
+msgstr "பிட்மேப்ச் பாதைகளில் சிதைவின் போது தெளிவற்ற தன்மைகளை எவ்வாறு தீர்ப்பது என்பதை தீர்மானிக்கிறது"
+
+
+msgid "Always take a left turn"
+msgstr "எப்போதும் இடது திருப்பத்தை எடுத்துக் கொள்ளுங்கள்"
+
+
+msgid "Always take a right turn"
+msgstr "எப்போதும் சரியான திருப்பத்தை எடுத்துக் கொள்ளுங்கள்"
+
+
+msgid "Minority"
+msgstr "சிறுபான்மை"
+
+
+msgid "Majority"
+msgstr "பெரும்பான்மை"
+
+
+msgid "Choose pseudo-randomly"
+msgstr "போலி-சீரற்றதாகத் தேர்வுசெய்க"
+
+
+msgid "Start At Current Frame"
+msgstr "தற்போதைய சட்டத்தில் தொடங்கவும்"
+
+
+msgid "Trace Image starting in current image frame"
+msgstr "தற்போதைய பட சட்டத்தில் தொடங்கும் படத்தைக் கண்டறியவும்"
+
+
+msgctxt "Operator"
+msgid "Vertex Paint Brightness/Contrast"
+msgstr "வெர்டெக்ச் வண்ணப்பூச்சு பிரகாசம்/மாறுபாடு"
+
+
+msgid "Adjust vertex color brightness/contrast"
+msgstr "வெர்டெக்ச் வண்ண பிரகாசம்/மாறுபாட்டை சரிசெய்யவும்"
+
+
+msgctxt "Operator"
+msgid "Vertex Paint Hue/Saturation/Value"
+msgstr "வெர்டெக்ச் பெயிண்ட் சாயல்/செறிவு/மதிப்பு"
+
+
+msgid "Adjust vertex color HSV values"
+msgstr "வெர்டெக்ச் வண்ண hsv மதிப்புகளை சரிசெய்யவும்"
+
+
+msgctxt "Operator"
+msgid "Vertex Paint Invert"
+msgstr "வெர்டெக்ச் பெயிண்ட் தலைகீழ்"
+
+
+msgid "Invert RGB values"
+msgstr "rgb மதிப்புகளைத் தலைகீழ்"
+
+
+msgctxt "Operator"
+msgid "Vertex Paint Levels"
+msgstr "வெர்டெக்ச் பெயிண்ட் நிலைகள்"
+
+
+msgid "Adjust levels of vertex colors"
+msgstr "வெர்டெக்ச் வண்ணங்களின் அளவை சரிசெய்யவும்"
+
+
+msgid "Value to multiply colors by"
+msgstr "வண்ணங்களை பெருக்க மதிப்பு"
+
+
+msgid "Value to add to colors"
+msgstr "வண்ணங்களில் சேர்க்க மதிப்பு"
+
+
+msgctxt "Operator"
+msgid "Vertex Paint Set Color"
+msgstr "வெர்டெக்ச் பெயிண்ட் செட் நிறம்"
+
+
+msgid "Set active color to all selected vertex"
+msgstr "தேர்ந்தெடுக்கப்பட்ட அனைத்து வெர்டெக்சுக்கும் செயலில் வண்ணத்தை அமைக்கவும்"
+
+
+msgctxt "Operator"
+msgid "Normalize Vertex Group"
+msgstr "வெர்டெக்ச் குழுவை இயல்பாக்குங்கள்"
+
+
 msgctxt "Operator"
 msgid "Normalize All Vertex Groups"
 msgstr "அனைத்து வெர்டெக்ச் குழுக்களையும் இயல்பாக்குங்கள்"
+
+
+msgid "Lock Active"
+msgstr "பூட்டு செயலில்"
+
+
+msgid "Keep the values of the active group while normalizing others"
+msgstr "மற்றவர்களை இயல்பாக்கும்போது செயலில் உள்ள குழுவின் மதிப்புகளை வைத்திருங்கள்"
+
+
+msgctxt "Operator"
+msgid "Smooth Vertex Group"
+msgstr "மென்மையான வெர்டெக்ச் குழு"
+
+
+msgctxt "Operator"
+msgid "Strokes Vertex Mode Toggle"
+msgstr "ச்ட்ரோக்ச் வெர்டெக்ச் பயன்முறை மாறுகிறது"
+
+
+msgid "Enter/Exit vertex paint mode for Grease Pencil strokes"
+msgstr "பசை எழுதுகோல் வீச்சுகள் வெர்டெக்ச் பெயிண்ட் பயன்முறையை உள்ளிடவும்/வெளியேறவும்"
+
+
+msgctxt "Operator"
+msgid "Weight Paint Sample Weight"
+msgstr "எடை வண்ணப்பூச்சு மாதிரி எடை"
+
+
+msgctxt "Operator"
+msgid "Weight Paint Toggle Direction"
+msgstr "எடை வண்ணப்பூச்சு திசையை மாற்றவும்"
+
+
+msgid "Toggle Add/Subtract for the weight paint draw tool"
+msgstr "எடை வண்ணப்பூச்சு டிரா கருவியைச் சேர்/கழித்தல் மாற்று"
+
+
+msgctxt "Operator"
+msgid "Strokes Weight Mode Toggle"
+msgstr "எடை பயன்முறை மாற்றுகிறது"
+
+
+msgid "Enter/Exit weight paint mode for Grease Pencil strokes"
+msgstr "பசை எழுதுகோல் வீச்சுகள் எடை வண்ணப்பூச்சு பயன்முறையை உள்ளிடவும்/வெளியேறவும்"
 
 
 msgctxt "Operator"
@@ -61977,26 +60486,6 @@ msgstr "மாதிரி வரி"
 
 msgid "Sample a line and show it in Scope panels"
 msgstr "ஒரு வரியை மாதிரி செய்து ச்கோப் பேனல்களில் காட்டுங்கள்"
-
-
-msgid "Mouse cursor style to use during the modal operator"
-msgstr "மோடல் ஆபரேட்டரின் போது பயன்படுத்த மவுச் கர்சர் பாணி"
-
-
-msgid "X End"
-msgstr "ஃச் முடிவு"
-
-
-msgid "X Start"
-msgstr "ஃச் தொடக்க"
-
-
-msgid "Y End"
-msgstr "ஒய் முடிவு"
-
-
-msgid "Y Start"
-msgstr "ஒய் தொடக்க"
 
 
 msgctxt "Operator"
@@ -62427,10 +60916,6 @@ msgstr "வலை அமைப்புகளை இறக்குமதி ச
 
 msgid "If a texture exists in WebP format, loads the WebP texture instead of the fallback PNG/JPEG one"
 msgstr "வெப் வடிவத்தில் ஒரு அமைப்பு இருந்தால், குறைவடையும் png/jpeg ஒன்றுக்கு பதிலாக வலை அமைப்பை ஏற்றும்"
-
-
-msgid "Log Level"
-msgstr "பதிவு நிலை"
 
 
 msgid "The glTF format requires discontinuous normals, UVs, and other vertex attributes to be stored as separate vertices, as required for rendering on typical graphics hardware. This option attempts to combine co-located vertices where possible. Currently cannot combine verts with different normals"
@@ -63113,6 +61598,10 @@ msgstr "பெவலின் அளவை தீர்மானிப்பத�
 
 msgid "Controls profile shape (0.5 = round)"
 msgstr "சுயவிவர வடிவத்தை கட்டுப்படுத்துகிறது (0.5 = சுற்று)"
+
+
+msgid "Confirm on Release"
+msgstr "வெளியீட்டில் உறுதிப்படுத்தவும்"
 
 
 msgid "Segments for curved edge"
@@ -64170,6 +62659,10 @@ msgid "The angle snap increment used when in constrained angle mode"
 msgstr "கட்டுப்படுத்தப்பட்ட கோண பயன்முறையில் பயன்படுத்தப்படும் கோண ச்னாப் அதிகரிப்பு"
 
 
+msgid "Only Selected"
+msgstr "மட்டுமே தேர்ந்தெடுக்கப்பட்டது"
+
+
 msgid "Only cut selected geometry"
 msgstr "தேர்ந்தெடுக்கப்பட்ட வடிவவியலை மட்டுமே வெட்டுங்கள்"
 
@@ -64326,11 +62819,6 @@ msgstr "(ஐ.நா) தேர்ந்தெடுக்கப்பட்ட �
 
 msgid "Consider vertices instead of edges to select which edges to (un)tag as sharp"
 msgstr "எந்த விளிம்புகளை (அன்) குறிச்சொல்லுக்கு கூர்மையாகத் தேர்ந்தெடுக்க விளிம்புகளுக்கு பதிலாக செங்குத்துகளைக் கவனியுங்கள்"
-
-
-msgctxt "Operator"
-msgid "Merge"
-msgstr "ஒன்றிணைக்கவும்"
 
 
 msgid "Merge selected vertices"
@@ -65973,10 +64461,6 @@ msgid "Clear Constraints"
 msgstr "தெளிவான தடைகள்"
 
 
-msgid "Remove all constraints from keyed object/bones, and do 'visual' keying"
-msgstr "கீட் பொருள்/எலும்புகளிலிருந்து அனைத்து தடைகளையும் அகற்றி, 'காட்சி' கீயிங் செய்யுங்கள்"
-
-
 msgid "Clear Parents"
 msgstr "பெற்றோர் தெளிவான"
 
@@ -66322,6 +64806,18 @@ msgid "Add a file node to the current node editor"
 msgstr "தற்போதைய முனை திருத்தியில் கோப்பு முனையைச் சேர்க்கவும்"
 
 
+msgid "Offset of nodes from the cursor when added"
+msgstr "சேர்க்கும்போது கர்சரிலிருந்து முனைகளின் ஆஃப்செட்"
+
+
+msgid "Settings to be applied on the newly created node"
+msgstr "புதிதாக உருவாக்கப்பட்ட முனையில் பயன்படுத்தப்பட வேண்டிய அமைப்புகள்"
+
+
+msgid "Start transform operator after inserting the node"
+msgstr "முனையை செருகிய பின் உருமாற்ற ஆபரேட்டரைத் தொடங்குங்கள்"
+
+
 msgctxt "Operator"
 msgid "Add Node Group"
 msgstr "முனை குழுவைச் சேர்க்கவும்"
@@ -66362,20 +64858,12 @@ msgid "Add a material node to the current node editor"
 msgstr "தற்போதைய முனை திருத்தியில் மூலப்பொருள் முனையைச் சேர்க்கவும்"
 
 
-msgid "Settings to be applied on the newly created node"
-msgstr "புதிதாக உருவாக்கப்பட்ட முனையில் பயன்படுத்தப்பட வேண்டிய அமைப்புகள்"
-
-
 msgid "Node Type"
 msgstr "முனை வகை"
 
 
 msgid "Node type"
 msgstr "முனை வகை"
-
-
-msgid "Start transform operator after inserting the node"
-msgstr "முனையை செருகிய பின் உருமாற்ற ஆபரேட்டரைத் தொடங்குங்கள்"
 
 
 msgctxt "Operator"
@@ -66385,10 +64873,6 @@ msgstr "முனை பொருளைச் சேர்க்கவும்"
 
 msgid "Add an object info node to the current node editor"
 msgstr "தற்போதைய முனை திருத்தியில் ஒரு பொருள் செய்தி முனையைச் சேர்க்கவும்"
-
-
-msgid "Offset of nodes from the cursor when added"
-msgstr "சேர்க்கும்போது கர்சரிலிருந்து முனைகளின் ஆஃப்செட்"
 
 
 msgctxt "Operator"
@@ -66443,21 +64927,6 @@ msgstr "பின்னணி பட பெரிதாக்குதல்"
 
 msgid "Zoom in/out the background image"
 msgstr "பின்னணி படத்தை பெரிதாக்கவும்/அவுட் செய்யவும்"
-
-
-msgctxt "Operator"
-msgid "Add Bake Item"
-msgstr "சுட்டுக்கொள்ளும் உருப்படியைச் சேர்க்கவும்"
-
-
-msgctxt "Operator"
-msgid "Move Bake Item"
-msgstr "சுட்டுக்கொள்ள உருப்படியை நகர்த்தவும்"
-
-
-msgctxt "Operator"
-msgid "Remove Bake Item"
-msgstr "சுட்டுக்கொள்ளும் உருப்படியை அகற்று"
 
 
 msgctxt "Operator"
@@ -66971,6 +65440,10 @@ msgid "Deactivate geometry nodes viewer when clicking in empty space"
 msgstr "வெற்று இடத்தில் சொடுக்கு செய்யும் போது வடிவியல் முனைகள் பார்வையாளரை செயலிழக்கச் செய்யுங்கள்"
 
 
+msgid "Mouse location"
+msgstr "சுட்டி இடம்"
+
+
 msgid "Socket Select"
 msgstr "சாக்கெட் தேர்ந்தெடுக்கவும்"
 
@@ -67371,6 +65844,22 @@ msgid "Convert selected objects to another type"
 msgstr "தேர்ந்தெடுக்கப்பட்ட பொருட்களை மற்றொரு வகைக்கு மாற்றவும்"
 
 
+msgid "Threshold Angle"
+msgstr "வாசல் கோணம்"
+
+
+msgid "Threshold to determine ends of the strokes"
+msgstr "வீச்சுகள் முடிவுகளை தீர்மானிக்க வாசல்"
+
+
+msgid "Export Faces"
+msgstr "ஏற்றுமதி முகங்கள்"
+
+
+msgid "Export faces as filled strokes"
+msgstr "முகங்களை நிரப்பப்பட்ட வீச்சுகள் என ஏற்றுமதி"
+
+
 msgctxt "Object"
 msgid "Keep Original"
 msgstr "அசல் வைத்திருங்கள்"
@@ -67386,6 +65875,22 @@ msgstr "uv களை ஒன்றிணைக்கவும்"
 
 msgid "Merge UV coordinates that share a vertex to account for imprecision in some modifiers"
 msgstr "சில மாற்றியமைப்பாளர்களில் துல்லியமற்றதைக் கணக்கிட ஒரு வெர்டெக்சைப் பகிர்ந்து கொள்ளும் புறஊதா ஆயங்களை ஒன்றிணைக்கவும்"
+
+
+msgid "Stroke Offset"
+msgstr "வீச்சு ஆஃப்செட்"
+
+
+msgid "Offset strokes from fill"
+msgstr "நிரப்புதலில் இருந்து வீச்சுகள்"
+
+
+msgid "Only Seam Edges"
+msgstr "மடிப்பு விளிம்புகள் மட்டுமே"
+
+
+msgid "Convert only seam edges"
+msgstr "மடிப்பு விளிம்புகளை மட்டும் மாற்றவும்"
 
 
 msgid "Type of object to convert to"
@@ -67717,10 +66222,6 @@ msgid "Add a Grease Pencil object to the scene"
 msgstr "காட்சிக்கு பசை எழுதுகோல் பொருளைச் சேர்க்கவும்"
 
 
-msgid "Create an empty grease pencil object"
-msgstr "வெற்று பசை எழுதுகோல் பொருளை உருவாக்கவும்"
-
-
 msgctxt "Operator"
 msgid "Stroke"
 msgstr "வீச்சு"
@@ -67735,16 +66236,8 @@ msgid "Monkey"
 msgstr "குரங்கு"
 
 
-msgid "Construct a Suzanne grease pencil object"
-msgstr "சுசேன் பசை எழுதுகோல் பொருளை உருவாக்குங்கள்"
-
-
 msgid "Show In Front"
 msgstr "முன்னால் காட்டு"
-
-
-msgid "Use lights for this grease pencil object"
-msgstr "இந்த பசை எழுதுகோல் பொருளுக்கு விளக்குகளைப் பயன்படுத்தவும்"
 
 
 msgctxt "Operator"
@@ -69455,10 +67948,6 @@ msgid "Remove Grease Pencil Effect"
 msgstr "பசை எழுதுகோல் விளைவை அகற்று"
 
 
-msgid "Remove a effect from the active grease pencil object"
-msgstr "செயலில் உள்ள பசை எழுதுகோல் பொருளிலிருந்து ஒரு விளைவை அகற்று"
-
-
 msgctxt "Operator"
 msgid "Add Shape Key"
 msgstr "வடிவ விசையைச் சேர்க்கவும்"
@@ -69852,6 +68341,15 @@ msgstr "செயலில் உள்ள பொருளில் புதி
 
 
 msgctxt "Operator"
+msgid "Assign to Vertex Group"
+msgstr "வெர்டெக்ச் குழுவிற்கு ஒதுக்கவும்"
+
+
+msgid "Assign the selected vertices to the active vertex group"
+msgstr "தேர்ந்தெடுக்கப்பட்ட செங்குத்துகளை செயலில் உள்ள வெர்டெக்ச் குழுவிற்கு ஒதுக்குங்கள்"
+
+
+msgctxt "Operator"
 msgid "Assign to New Group"
 msgstr "புதிய குழுவிற்கு ஒதுக்குங்கள்"
 
@@ -69901,6 +68399,20 @@ msgstr "தேர்ந்தெடுக்கப்பட்ட வெர்�
 
 msgid "Replace vertex groups of selected objects by vertex groups of active object"
 msgstr "தேர்ந்தெடுக்கப்பட்ட பொருள்களின் வெர்டெக்ச் குழுக்களை செயலில் உள்ள பொருளின் வெர்டெக்ச் குழுக்களால் மாற்றவும்"
+
+
+msgctxt "Operator"
+msgid "Deselect Vertex Group"
+msgstr "வெர்டெக்ச் குழுவை டெலிக் செய்யுங்கள்"
+
+
+msgid "Deselect all selected vertices assigned to the active vertex group"
+msgstr "செயலில் உள்ள வெர்டெக்ச் குழுவிற்கு ஒதுக்கப்பட்ட அனைத்து தேர்ந்தெடுக்கப்பட்ட செங்குத்துகளையும் தேர்வு செய்யவும்"
+
+
+msgctxt "Operator"
+msgid "Invert Vertex Group"
+msgstr "தலைகீழ் வெர்டெக்ச் குழு"
 
 
 msgid "Invert active vertex group's weights"
@@ -70048,6 +68560,10 @@ msgid "Normalize weights of the active vertex group, so that the highest ones ar
 msgstr "செயலில் உள்ள வெர்டெக்ச் குழுவின் எடைகளை இயல்பாக்குங்கள், இதனால் மிக உயர்ந்தவை இப்போது 1.0 ஆக இருக்கும்"
 
 
+msgid "Normalize all weights of all vertex groups, so that for each vertex, the sum of all weights is 1.0"
+msgstr "அனைத்து வெர்டெக்ச் குழுக்களின் அனைத்து எடைகளையும் இயல்பாக்குங்கள், இதனால் ஒவ்வொரு வெர்டெக்சிற்கும், அனைத்து எடைகளின் கூட்டுத்தொகை 1.0 ஆகும்"
+
+
 msgctxt "Operator"
 msgid "Quantize Vertex Weights"
 msgstr "வெர்டெக்ச் எடையை அளவிடுங்கள்"
@@ -70082,6 +68598,15 @@ msgid "Remove all unlocked vertex groups"
 msgstr "திறக்கப்படாத அனைத்து வெர்டெக்ச் குழுக்களையும் அகற்றவும்"
 
 
+msgctxt "Operator"
+msgid "Remove from Vertex Group"
+msgstr "வெர்டெக்ச் குழுவிலிருந்து அகற்று"
+
+
+msgid "Remove the selected vertices from active or all vertex group(s)"
+msgstr "செயலில் அல்லது அனைத்து வெர்டெக்ச் குழுவிலிருந்து (கள்) தேர்ந்தெடுக்கப்பட்ட செங்குத்துகளை அகற்றவும்"
+
+
 msgid "Remove from all groups"
 msgstr "அனைத்து குழுக்களிலிருந்தும் அகற்று"
 
@@ -70092,6 +68617,15 @@ msgstr "அனைத்து செங்குத்துகளும்"
 
 msgid "Clear the active group"
 msgstr "செயலில் உள்ள குழுவை அழிக்கவும்"
+
+
+msgctxt "Operator"
+msgid "Select Vertex Group"
+msgstr "வெர்டெக்ச் குழுவைத் தேர்ந்தெடுக்கவும்"
+
+
+msgid "Select all the vertices assigned to the active vertex group"
+msgstr "செயலில் உள்ள வெர்டெக்ச் குழுவிற்கு ஒதுக்கப்பட்ட அனைத்து செங்குத்துகளையும் தேர்ந்தெடுக்கவும்"
 
 
 msgctxt "Operator"
@@ -71698,6 +70232,10 @@ msgid "Toggle weight paint mode in 3D view"
 msgstr "3d பார்வையில் எடை வண்ணப்பூச்சு பயன்முறையை மாற்றவும்"
 
 
+msgid "Use the mouse to sample a weight in the 3D view"
+msgstr "3d பார்வையில் ஒரு எடையை மாதிரி செய்ய சுட்டியைப் பயன்படுத்தவும்"
+
+
 msgctxt "Operator"
 msgid "Weight Paint Sample Group"
 msgstr "எடை வண்ணப்பூச்சு மாதிரி குழு"
@@ -72738,10 +71276,6 @@ msgstr "சேர்க்க வகையான களஞ்சியம்"
 
 msgid "Add Remote Repository"
 msgstr "தொலை களஞ்சியத்தைச் சேர்க்கவும்"
-
-
-msgid "Add a repository referencing an remote repository with support for listing and updating extensions"
-msgstr "நீட்டிப்புகளை பட்டியலிடுவதற்கும் புதுப்பிப்பதற்கும் ஆதரவுடன் தொலை களஞ்சியத்தைக் குறிக்கும் களஞ்சியத்தைச் சேர்க்கவும்"
 
 
 msgid "Add Local Repository"
@@ -74217,6 +72751,11 @@ msgid "Pulls the cloth to the cursor's start position"
 msgstr "கர்சரின் தொடக்க நிலைக்கு துணியை இழுக்கிறது"
 
 
+msgctxt "Operator"
+msgid "Scale"
+msgstr "அளவு"
+
+
 msgid "Scales the mesh as a soft body using the origin of the object as scale"
 msgstr "பொருளின் தோற்றத்தை அளவாக பயன்படுத்தி மெச் ஒரு மென்மையான உடலாக அளவிடுகிறது"
 
@@ -74703,19 +73242,6 @@ msgid "Decrease Contrast"
 msgstr "மாறுபாட்டைக் குறைக்கவும்"
 
 
-msgctxt "Operator"
-msgid "Mask From Cavity"
-msgstr "குழியிலிருந்து முகமூடி"
-
-
-msgid "Creates a mask based on the curvature of the surface"
-msgstr "மேற்பரப்பின் வளைவின் அடிப்படையில் ஒரு முகமூடியை உருவாக்குகிறது"
-
-
-msgid "Cavity (Inverted)"
-msgstr "குழி (தலைகீழ்)"
-
-
 msgid "Mix mode"
 msgstr "கலவை முறை"
 
@@ -74734,6 +73260,19 @@ msgstr "தூரிகையிலிருந்து அமைப்பு�
 
 msgid "Use settings from scene"
 msgstr "காட்சியில் இருந்து அமைப்புகளைப் பயன்படுத்தவும்"
+
+
+msgctxt "Operator"
+msgid "Mask From Cavity"
+msgstr "குழியிலிருந்து முகமூடி"
+
+
+msgid "Creates a mask based on the curvature of the surface"
+msgstr "மேற்பரப்பின் வளைவின் அடிப்படையில் ஒரு முகமூடியை உருவாக்குகிறது"
+
+
+msgid "Cavity (Inverted)"
+msgstr "குழி (தலைகீழ்)"
 
 
 msgid "Custom Curve"
@@ -74845,6 +73384,11 @@ msgstr "கோளம்"
 
 msgid "Morph into sphere"
 msgstr "கோளத்தில் உருவாக்குங்கள்"
+
+
+msgctxt "Operator"
+msgid "Random"
+msgstr "சீரற்ற"
 
 
 msgid "Randomize vertex positions"
@@ -75636,10 +74180,6 @@ msgstr "உள்ளீடுகளை மீண்டும் இணைக்�
 
 msgid "Reassign the inputs for the effect strip"
 msgstr "விளைவு துண்டுக்கான உள்ளீடுகளை மறுசீரமைக்கவும்"
-
-
-msgid "Rebuild all selected proxies and timecode indices using the job system"
-msgstr "வேலை முறையைப் பயன்படுத்தி தேர்ந்தெடுக்கப்பட்ட அனைத்து ப்ராக்சிகள் மற்றும் நேரக் குறியீடு குறியீடுகளை மீண்டும் உருவாக்குங்கள்"
 
 
 msgctxt "Operator"
@@ -77267,6 +75807,11 @@ msgstr "நகல் கீஃப்ரேம்கள்"
 
 msgid "Transform duplicated keyframes"
 msgstr "நகல் கீஃப்ரேம்களை மாற்றவும்"
+
+
+msgctxt "Operator"
+msgid "Rotate"
+msgstr "சுழற்றுங்கள்"
 
 
 msgid "Rotate selected items"
@@ -79330,6 +77875,14 @@ msgid "Select items using box selection"
 msgstr "பெட்டி தேர்வைப் பயன்படுத்தி உருப்படிகளைத் தேர்ந்தெடுக்கவும்"
 
 
+msgid "Invert existing selection"
+msgstr "ஏற்கனவே உள்ள தேர்வைத் தலைகீழாக மாற்றவும்"
+
+
+msgid "Intersect existing selection"
+msgstr "இருக்கும் தேர்வை வெட்டுகிறது"
+
+
 msgid "Select items using circle selection"
 msgstr "வட்ட தேர்வைப் பயன்படுத்தி உருப்படிகளைத் தேர்ந்தெடுக்கவும்"
 
@@ -79497,6 +78050,11 @@ msgstr "தற்போதைய நோக்குநிலையுடன் �
 
 
 msgctxt "View3D"
+msgid "View"
+msgstr "பார்வை"
+
+
+msgctxt "View3D"
 msgid "Left"
 msgstr "இடது"
 
@@ -79523,8 +78081,18 @@ msgid "View from the bottom"
 msgstr "கீழே இருந்து காண்க"
 
 
+msgctxt "View3D"
+msgid "Top"
+msgstr "மேலே"
+
+
 msgid "View from the top"
 msgstr "மேலே இருந்து காண்க"
+
+
+msgctxt "View3D"
+msgid "Front"
+msgstr "முன்"
 
 
 msgid "View from the front"
@@ -80611,10 +79179,6 @@ msgid "Export to PDF"
 msgstr "pdf க்கு ஏற்றுமதி"
 
 
-msgid "Export grease pencil to PDF"
-msgstr "பசை எழுதுகோல் pdf க்கு ஏற்றுமதி செய்யுங்கள்"
-
-
 msgid "Which frames to include in the export"
 msgstr "ஏற்றுமதியில் எந்த பிரேம்கள் சேர்க்க வேண்டும்"
 
@@ -80655,29 +79219,13 @@ msgid "Export strokes with fill enabled"
 msgstr "நிரப்பப்பட்ட வீச்சுகள்"
 
 
-msgid "Export strokes with constant thickness"
-msgstr "நிலையான தடிமன் கொண்ட வீச்சுகள்"
-
-
 msgctxt "Operator"
 msgid "Export to SVG"
 msgstr "எச்விசிக்கு ஏற்றுமதி"
 
 
-msgid "Export grease pencil to SVG"
-msgstr "எச்விசிக்கு பசை எழுதுகோல் ஏற்றுமதி செய்யுங்கள்"
-
-
 msgid "Clip Camera"
 msgstr "கிளிப் கேமரா"
-
-
-msgid "Clip drawings to camera size when export in camera view"
-msgstr "கேமரா பார்வையில் ஏற்றுமதி செய்யும் போது கேமரா அளவிற்கு வரைபடங்களை கிளிப் செய்யுங்கள்"
-
-
-msgid "Import SVG into grease pencil"
-msgstr "பசை எழுதுகோலில் எச்விசி"
 
 
 msgid "Resolution of the generated strokes"
@@ -81115,14 +79663,6 @@ msgstr "நம்பகமான கலப்பு கோப்புகள்"
 
 msgid "Enable Python evaluation for selected files"
 msgstr "தேர்ந்தெடுக்கப்பட்ட கோப்புகளுக்கான பைதான் மதிப்பீட்டை இயக்கவும்"
-
-
-msgid "Root path of all files listed in `files` collection"
-msgstr "`கோப்புகள்` சேகரிப்பில் பட்டியலிடப்பட்டுள்ள அனைத்து கோப்புகளின் வேர் பாதை"
-
-
-msgid "Collection of file paths with common `directory` root"
-msgstr "பொதுவான `அடைவு` மூலத்துடன் கோப்பு பாதைகளின் சேகரிப்பு"
 
 
 msgid "Show Blender files in the File Browser"
@@ -82065,10 +80605,6 @@ msgstr "யு.எச்.டி.இசட் காப்பகத்தில�
 
 msgid "Don't import textures"
 msgstr "அமைப்புகளை இறக்குமதி செய்ய வேண்டாம்"
-
-
-msgid "Packed"
-msgstr "நிரம்பியுள்ளது"
 
 
 msgid "Import textures as packed data"
@@ -83064,6 +81600,74 @@ msgid "Panel containing UI elements"
 msgstr "இடைமுகம் கூறுகளைக் கொண்ட குழு"
 
 
+msgid "Measurement"
+msgstr "அளவீட்டு"
+
+
+msgid "Curve Edit Mode"
+msgstr "வளைவு திருத்து பயன்முறை"
+
+
+msgid "Snapping"
+msgstr "ச்னாப்பிங்"
+
+
+msgid "Transform Orientations"
+msgstr "உருமாறும் நோக்குநிலைகள்"
+
+
+msgid "Stroke Placement"
+msgstr "வீச்சு வேலை வாய்ப்பு"
+
+
+msgid "Drawing Plane"
+msgstr "வரைதல் வானூர்தி"
+
+
+msgid "Guides"
+msgstr "வழிகாட்டிகள்"
+
+
+msgid "Quad View"
+msgstr "குவாட் பார்வை"
+
+
+msgid "Onion Skin"
+msgstr "வெங்காய தோல்"
+
+
+msgid "Stereoscopy"
+msgstr "ச்டீரியோச்கோபி"
+
+
+msgid "Multi Frame"
+msgstr "பல சட்டகம்"
+
+
+msgid "Auto-Masking"
+msgstr "ஆட்டோ-மாசிங்"
+
+
+msgid "Curves Sculpt Add Curve Options"
+msgstr "வளைவுகள் சிற்பம் வளைவு விருப்பங்களைச் சேர்க்கவும்"
+
+
+msgid "Curves Sculpt Parameter Falloff"
+msgstr "வளைவுகள் சிற்பம் அளவுரு வீழ்ச்சி"
+
+
+msgid "Curves Grow/Shrink Scaling"
+msgstr "வளைவுகள் வளரும்/சுருக்கவும்"
+
+
+msgid "Viewport Debug"
+msgstr "வியூபோர்ட் பிழைத்திருத்தம்"
+
+
+msgid "VR"
+msgstr "வி.ஆர்"
+
+
 msgid "Active Tool"
 msgstr "செயலில் உள்ள கருவி"
 
@@ -83100,10 +81704,6 @@ msgid "Overlays"
 msgstr "மேலடுக்குகள்"
 
 
-msgid "Guides"
-msgstr "வழிகாட்டிகள்"
-
-
 msgid "Viewer Node"
 msgstr "பார்வையாளர் முனை"
 
@@ -83114,78 +81714,6 @@ msgstr "இயக்க கண்காணிப்பு"
 
 msgid "Mesh Edit Mode"
 msgstr "கண்ணி திருத்து பயன்முறை"
-
-
-msgid "Measurement"
-msgstr "அளவீட்டு"
-
-
-msgid "Curve Edit Mode"
-msgstr "வளைவு திருத்து பயன்முறை"
-
-
-msgid "Snapping"
-msgstr "ச்னாப்பிங்"
-
-
-msgid "Transform Orientations"
-msgstr "உருமாறும் நோக்குநிலைகள்"
-
-
-msgid "Stroke Placement"
-msgstr "வீச்சு வேலை வாய்ப்பு"
-
-
-msgid "Drawing Plane"
-msgstr "வரைதல் வானூர்தி"
-
-
-msgid "Quad View"
-msgstr "குவாட் பார்வை"
-
-
-msgid "Onion Skin"
-msgstr "வெங்காய தோல்"
-
-
-msgid "Stereoscopy"
-msgstr "ச்டீரியோச்கோபி"
-
-
-msgid "Multi Frame"
-msgstr "பல சட்டகம்"
-
-
-msgid "Curve Editing"
-msgstr "வளைவு திருத்துதல்"
-
-
-msgid "Auto-masking"
-msgstr "ஆட்டோ-மாசிங்"
-
-
-msgid "Auto-Masking"
-msgstr "ஆட்டோ-மாசிங்"
-
-
-msgid "Curves Sculpt Add Curve Options"
-msgstr "வளைவுகள் சிற்பம் வளைவு விருப்பங்களைச் சேர்க்கவும்"
-
-
-msgid "Curves Sculpt Parameter Falloff"
-msgstr "வளைவுகள் சிற்பம் அளவுரு வீழ்ச்சி"
-
-
-msgid "Curves Grow/Shrink Scaling"
-msgstr "வளைவுகள் வளரும்/சுருக்கவும்"
-
-
-msgid "Viewport Debug"
-msgstr "வியூபோர்ட் பிழைத்திருத்தம்"
-
-
-msgid "VR"
-msgstr "வி.ஆர்"
 
 
 msgid "Chain Scaling"
@@ -83345,10 +81873,6 @@ msgid "Shadow Terminator"
 msgstr "நிழல் டெர்மினேட்டர்"
 
 
-msgid "Shadow Linking"
-msgstr "நிழல் இணைத்தல்"
-
-
 msgid "Ray Visibility"
 msgstr "கதிர் தெரிவுநிலை"
 
@@ -83435,14 +81959,6 @@ msgstr "மூடுபனி பாச்"
 
 msgid "Custom Distance"
 msgstr "தனிப்பயன் தூரம்"
-
-
-msgid "Cascaded Shadow Map"
-msgstr "அடுக்கு நிழல் வரைபடம்"
-
-
-msgid "Contact Shadows"
-msgstr "நிழல்களைத் தொடர்பு கொள்ளுங்கள்"
 
 
 msgid "Composition Guides"
@@ -83630,6 +82146,11 @@ msgid "Grab"
 msgstr "பிடுங்க"
 
 
+msgctxt "Operator"
+msgid "Mask"
+msgstr "முகமூடி"
+
+
 msgid "Tiling"
 msgstr "டைலிங்"
 
@@ -83693,6 +82214,10 @@ msgstr "டெல்டா உருமாற்றம்"
 
 msgid "Scale by Face Size"
 msgstr "முகத்தின் அளவு மூலம் அளவு"
+
+
+msgid "Shadow Linking"
+msgstr "நிழல் இணைத்தல்"
 
 
 msgid "Boid Brain"
@@ -83909,10 +82434,6 @@ msgid "White Balance"
 msgstr "வெள்ளை இருப்பு"
 
 
-msgid "Indirect Lighting"
-msgstr "மறைமுக விளக்குகள்"
-
-
 msgid "Denoising"
 msgstr "டெனோயிங்"
 
@@ -83931,22 +82452,6 @@ msgstr "நிழல்கள்"
 
 msgid "Screen Tracing"
 msgstr "திரை தடமறிதல்"
-
-
-msgid "Screen Space Reflections"
-msgstr "திரை விண்வெளி பிரதிபலிப்புகள்"
-
-
-msgid "Volumetrics"
-msgstr "வால்யூமெட்ரிக்ச்"
-
-
-msgid "Volumetric Lighting"
-msgstr "அளவீட்டு விளக்குகள்"
-
-
-msgid "Volumetric Shadows"
-msgstr "அளவீட்டு நிழல்கள்"
 
 
 msgid "Encoding"
@@ -84019,6 +82524,10 @@ msgstr "பதிலாள் அமைப்புகள்"
 
 msgid "Sequencer Overlays"
 msgstr "சீக்வென்சர் மேலடுக்குகள்"
+
+
+msgid "Strips"
+msgstr "கீற்றுகள்"
 
 
 msgid "Waveforms"
@@ -84454,6 +82963,11 @@ msgstr "இடைக்கணிப்பு"
 
 
 msgctxt "Operator"
+msgid "Gradient"
+msgstr "சாய்வு"
+
+
+msgctxt "Operator"
 msgid "Comb"
 msgstr "சீப்பு"
 
@@ -84562,11 +83076,6 @@ msgstr "வண்ண வடிகட்டி"
 
 
 msgctxt "Operator"
-msgid "Gradient"
-msgstr "சாய்வு"
-
-
-msgctxt "Operator"
 msgid "Sample Weight"
 msgstr "மாதிரி எடை"
 
@@ -84577,8 +83086,18 @@ msgstr "மாதிரி வெர்டெக்ச் குழு"
 
 
 msgctxt "Operator"
-msgid "Trim"
-msgstr "ஒழுங்கமைக்கவும்"
+msgid "Erase"
+msgstr "அழிக்கவும்"
+
+
+msgctxt "Operator"
+msgid "Box"
+msgstr "பெட்டி"
+
+
+msgctxt "Operator"
+msgid "Circle"
+msgstr "வட்டம்"
 
 
 msgctxt "Operator"
@@ -84602,27 +83121,8 @@ msgstr "வளைவு"
 
 
 msgctxt "Operator"
-msgid "Box"
-msgstr "பெட்டி"
-
-
-msgctxt "Operator"
-msgid "Circle"
-msgstr "வட்டம்"
-
-
-msgctxt "Operator"
-msgid "Cutter"
-msgstr "கட்டர்"
-
-
-msgid "Expand or contract the radius of the selected points"
-msgstr "தேர்ந்தெடுக்கப்பட்ட புள்ளிகளின் ஆரம் விரிவாக்கவும் அல்லது சுருக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Transform Fill"
-msgstr "நிரப்பு நிரப்பு"
+msgid "Trim"
+msgstr "ஒழுங்கமைக்கவும்"
 
 
 msgid "Clone from Paint Slot"
@@ -87492,6 +85992,10 @@ msgid "Use Vulkan backend"
 msgstr "வல்கன் பின்தளத்தில் பயன்படுத்தவும்"
 
 
+msgid "Device"
+msgstr "சாதனம்"
+
+
 msgid "Image Display Method"
 msgstr "பட காட்சி முறை"
 
@@ -89324,10 +87828,6 @@ msgstr "உயர் தகுதி"
 
 msgid "Denoise on GPU"
 msgstr "சி.பீ.யுவில் டெனோயிச்"
-
-
-msgid "Device"
-msgstr "சாதனம்"
 
 
 msgid "Device to use for rendering"
@@ -92506,18 +91006,6 @@ msgid "Method of anti-aliasing when rendering 3d viewport"
 msgstr "3 டி வியூபோர்ட்டை வழங்கும்போது ஆன்டிசிங் எதிர்ப்பு முறை"
 
 
-msgid "Knee"
-msgstr "முழங்கால்"
-
-
-msgid "Denoise Amount"
-msgstr "டெனோயிச் தொகை"
-
-
-msgid "Amount of flicker removal applied to bokeh highlights"
-msgstr "பொக்கே சிறப்பம்சங்களுக்கு பயன்படுத்தப்படும் ஃப்ளிக்கர் அகற்றுதலின் அளவு"
-
-
 msgid "Max Size"
 msgstr "அதிகபட்ச அளவு"
 
@@ -92552,14 +91040,6 @@ msgstr "புலத்தின் ச்பிரிட் பேச் ஆழ
 
 msgid "Trace Precision"
 msgstr "துல்லியத்தைக் கண்டறியவும்"
-
-
-msgid "Cubemap Display Size"
-msgstr "க்யூப்மேப் காட்சி அளவு"
-
-
-msgid "Size of the cubemap spheres to debug captured light"
-msgstr "கைப்பற்றப்பட்ட ஒளியை பிழைத்திருத்தத்திற்கு கியூபேப் கோளங்களின் அளவு"
 
 
 msgid "Cubemap Size"
@@ -92598,28 +91078,12 @@ msgid "Number of times the light is reinjected inside light grids, 0 disable ind
 msgstr "ஒளி கட்டங்களுக்குள் ஒளி மீண்டும் மீண்டும் செய்யப்படுகிறது, 0 மறைமுக பரவல் ஒளியை முடக்கு"
 
 
-msgid "Filter Quality"
-msgstr "வடிகட்டி தகுதி"
-
-
-msgid "Take more samples during cubemap filtering to remove artifacts"
-msgstr "கலைப்பொருட்களை அகற்ற கியூபேமேப் வடிகட்டலின் போது மேலும் மாதிரிகளை எடுத்துக் கொள்ளுங்கள்"
-
-
 msgid "Clamp Glossy"
 msgstr "கயிறு பளபளப்பானது"
 
 
 msgid "Clamp pixel intensity to reduce noise inside glossy reflections from reflection cubemaps (0 to disable)"
 msgstr "பிரதிபலிப்பு க்யூபேப்சிலிருந்து பளபளப்பான பிரதிபலிப்புகளுக்குள் சத்தத்தைக் குறைக்க படப்புள்ளி தீவிரம் (0 முடக்க)"
-
-
-msgid "Irradiance Display Size"
-msgstr "கதிர்வீச்சு காட்சி அளவு"
-
-
-msgid "Size of the irradiance sample spheres to debug captured light"
-msgstr "கைப்பற்றப்பட்ட ஒளியை பிழைத்திருத்தத்திற்கான கதிர்வீச்சு மாதிரி கோளங்களின் அளவு"
 
 
 msgid "Irradiance Pool Size"
@@ -92658,26 +91122,6 @@ msgid "1 GB"
 msgstr "1 சிபி"
 
 
-msgid "Irradiance Smoothing"
-msgstr "கதிர்வீச்சு மென்மையானது"
-
-
-msgid "Show Cubemap Cache"
-msgstr "க்யூப்மேப் கேச் காட்டு"
-
-
-msgid "Display captured cubemaps in the viewport"
-msgstr "காட்சியகத்தில் கைப்பற்றப்பட்ட கியூபேமாப்களைக் காண்பி"
-
-
-msgid "Show Irradiance Cache"
-msgstr "கதிர்வீச்சு தற்காலிக சேமிப்பைக் காட்டு"
-
-
-msgid "Display irradiance samples in the viewport"
-msgstr "காட்சியமைப்பில் கதிர்வீச்சு மாதிரிகளைக் காண்பி"
-
-
 msgid "Irradiance Visibility Size"
 msgstr "கதிர்வீச்சு தெரிவுநிலை அளவு"
 
@@ -92704,10 +91148,6 @@ msgstr "64 பக்ச்"
 
 msgid "Distance of object that contribute to the ambient occlusion effect"
 msgstr "சுற்றுப்புற மறுப்பு விளைவுக்கு பங்களிக்கும் பொருளின் தூரம்"
-
-
-msgid "Factor for ambient occlusion blending"
-msgstr "சுற்றுப்புற மறுப்பு கலப்புக்கான காரணி"
 
 
 msgid "Precision of the horizon search"
@@ -92766,14 +91206,6 @@ msgid "EEVEE settings for tracing reflections"
 msgstr "பிரதிபலிப்புகளைக் கண்டுபிடிப்பதற்கான அமைப்புகள்"
 
 
-msgid "Directional Shadows Resolution"
-msgstr "திசை நிழல்கள் தீர்மானம்"
-
-
-msgid "Cube Shadows Resolution"
-msgstr "கியூப் நிழல்கள் தீர்மானம்"
-
-
 msgid "Shadow Pool Size"
 msgstr "நிழல் பூல் அளவு"
 
@@ -92798,42 +91230,6 @@ msgid "Amount of shadow map sample per shadow ray"
 msgstr "நிழல் கதவுக்கு நிழல் வரைபட மாதிரியின் அளவு"
 
 
-msgid "Edge Fading"
-msgstr "எட்ச் மங்குவது"
-
-
-msgid "Screen percentage used to fade the SSR"
-msgstr "எச்.எச்.ஆரை மங்கச் செய்ய திரை விழுக்காடு"
-
-
-msgid "Clamp pixel intensity to remove noise (0 to disable)"
-msgstr "சத்தத்தை அகற்ற படப்புள்ளி தீவிரம் (முடக்க 0)"
-
-
-msgid "Max Roughness"
-msgstr "அதிகபட்ச கடினத்தன்மை"
-
-
-msgid "Do not raytrace reflections for roughness above this value"
-msgstr "இந்த மதிப்புக்கு மேலே கடினத்தன்மைக்கு ரேட்ரேச் பிரதிபலிப்புகள் வேண்டாம்"
-
-
-msgid "Pixel thickness used to detect intersection"
-msgstr "குறுக்குவெட்டைக் கண்டறிய படப்புள்ளி தடிமன் பயன்படுத்தப்படுகிறது"
-
-
-msgid "Jitter Threshold"
-msgstr "நடுக்கம் வாசல்"
-
-
-msgid "Rotate samples that are below this threshold"
-msgstr "இந்த வாசலுக்குக் கீழே உள்ள மாதிரிகளை சுழற்றுங்கள்"
-
-
-msgid "Number of samples to compute the scattering effect"
-msgstr "சிதறல் விளைவைக் கணக்கிட மாதிரிகளின் எண்ணிக்கை"
-
-
 msgid "Render Samples"
 msgstr "மாதிரிகள் வழங்கவும்"
 
@@ -92846,36 +91242,12 @@ msgid "Number of samples, unlimited if 0"
 msgstr "மாதிரிகளின் எண்ணிக்கை, 0 என்றால் வரம்பற்றது"
 
 
-msgid "High Quality Slight Defocus"
-msgstr "உயர் தரமான லேசான டிஃபோகச்"
-
-
-msgid "Sample all pixels in almost in-focus regions to eliminate noise"
-msgstr "சத்தத்தை அகற்ற கிட்டத்தட்ட அனைத்து பிக்சல்களையும் கிட்டத்தட்ட மையப்படுத்தும் மண்டலங்களில் மாதிரி"
-
-
 msgid "Jitter Camera"
 msgstr "நடுக்கம் கேமரா"
 
 
 msgid "Enable ambient occlusion to simulate medium scale indirect shadowing"
 msgstr "நடுத்தர அளவிலான மறைமுக நிழலை உருவகப்படுத்த சுற்றுப்புற மறைவை இயக்கவும்"
-
-
-msgid "Bent Normals"
-msgstr "வளைந்த இயல்பு"
-
-
-msgid "Compute main non occluded direction to sample the environment"
-msgstr "சுற்றுச்சூழலை மாதிரியாகக் கொள்ள முக்கியமற்ற மறைமுகமான திசையைக் கணக்கிடுங்கள்"
-
-
-msgid "Bounces Approximation"
-msgstr "தோராயமாக பவுன்ச்"
-
-
-msgid "An approximation to simulate light bounces giving less occlusion on brighter objects"
-msgstr "ஒளியை உருவகப்படுத்த ஒரு தோராயமானது பிரகாசமான பொருள்களுக்கு குறைவான மறைவைக் கொடுக்கும்"
 
 
 msgid "Internally render past the image border to avoid screen-space effects disappearing"
@@ -92890,44 +91262,8 @@ msgid "Enable the ray-tracing module"
 msgstr "கதிர்-தடமறியும் பகுதியை இயக்கவும்"
 
 
-msgid "High Bit Depth"
-msgstr "அதிக பிட் ஆழம்"
-
-
-msgid "Use 32-bit shadows"
-msgstr "32 பிட் நிழல்களைப் பயன்படுத்தவும்"
-
-
 msgid "Enable shadow casting from lights"
 msgstr "விளக்குகளிலிருந்து நிழல் வார்ப்பை இயக்கவும்"
-
-
-msgid "Soft Shadows"
-msgstr "மென்மையான நிழல்கள்"
-
-
-msgid "Randomize shadowmaps origin to create soft shadows"
-msgstr "மென்மையான நிழல்களை உருவாக்க நிழல் வரைபடங்களை சீரற்றதாக்குங்கள்"
-
-
-msgid "Enable screen space reflection"
-msgstr "திரை விண்வெளி பிரதிபலிப்பை இயக்கவும்"
-
-
-msgid "Half Res Trace"
-msgstr "அரை ரெச் சுவடு"
-
-
-msgid "Raytrace at a lower resolution"
-msgstr "குறைந்த தெளிவுத்திறனில் ரேட்ரேச்"
-
-
-msgid "Screen Space Refractions"
-msgstr "திரை விண்வெளி ஒளிவிலகல்கள்"
-
-
-msgid "Enable screen space Refractions"
-msgstr "திரை விண்வெளி ஒளிவிலகல்களை இயக்கவும்"
 
 
 msgid "Viewport Denoising"
@@ -92938,12 +91274,8 @@ msgid "Denoise image using temporal reprojection (can leave some ghosting)"
 msgstr "தற்காலிக மறுபிரவேசத்தைப் பயன்படுத்தி படம் (சில பேய்களை விட்டுவிடலாம்)"
 
 
-msgid "Enable scene light interactions with volumetrics"
-msgstr "வால்யூமெட்ரிக்சுடன் காட்சி ஒளி தொடர்புகளை இயக்கவும்"
-
-
-msgid "Generate shadows from volumetric material (Very expensive)"
-msgstr "வால்யூமெட்ரிக் மூலப்பொருட்களிலிருந்து நிழல்களை உருவாக்குங்கள் (மிகவும் விலை உயர்ந்தது)"
+msgid "Volumetric Shadows"
+msgstr "அளவீட்டு நிழல்கள்"
 
 
 msgid "End distance of the volumetric effect"
@@ -93615,18 +91947,6 @@ msgid "Align X"
 msgstr "ஃச் சீரமைக்கவும்"
 
 
-msgid "Align the text along the X axis, relative to the text bounds"
-msgstr "உரை வரம்புகளுடன் தொடர்புடைய உரையை ஃச் அச்சுடன் சீரமைக்கவும்"
-
-
-msgid "Align Y"
-msgstr "ஒய் ஐ சீரமைத்தல்"
-
-
-msgid "Align the text along the Y axis, relative to the text bounds"
-msgstr "உரை வரம்புகளுடன் தொடர்புடைய உரையை ஒய் அச்சுடன் சீரமைக்கவும்"
-
-
 msgid "Box Color"
 msgstr "பெட்டி நிறம்"
 
@@ -93657,6 +91977,10 @@ msgstr "அவுட்லைன் நிறம்"
 
 msgid "Outline Width"
 msgstr "அவுட்லைன் அகலம்"
+
+
+msgid "Shadow Color"
+msgstr "நிழல் நிறம்"
 
 
 msgid "Text that will be displayed"
@@ -94734,10 +93058,6 @@ msgstr "தொடக்க அல்லது முடிவைத் துண
 
 msgid "Collection of Sequences"
 msgstr "காட்சிகளின் தொகுப்பு"
-
-
-msgid "Effect affecting the grease pencil object"
-msgstr "பசை எழுதுகோல் பொருளை பாதிக்கும் விளைவு"
 
 
 msgid "Effect name"
@@ -96196,10 +94516,6 @@ msgid "Display Z-buffer associated with image (mapped from camera clip start to 
 msgstr "படத்துடன் தொடர்புடைய இசட்-பஃபரைக் காண்பி (கேமரா கிளிப்பிலிருந்து வரைபடமாக்கப்பட்டது தொடங்குகிறது)"
 
 
-msgid "Grease pencil data for this space"
-msgstr "இந்த இடத்திற்கான பசை எழுதுகோல் தரவு"
-
-
 msgid "View the image"
 msgstr "படத்தைக் காண்க"
 
@@ -96772,10 +95088,6 @@ msgstr "வெற்று பொருள்களைக் காட்டு"
 
 msgid "Show Grease Pencil"
 msgstr "பசை எழுதுகோல் காட்டு"
-
-
-msgid "Show grease pencil objects"
-msgstr "பசை எழுதுகோல் பொருள்களைக் காட்டு"
 
 
 msgid "Show Lights"
@@ -97603,10 +95915,6 @@ msgstr "காலியிடங்களைத் தேர்ந்தெட�
 
 msgid "Allow selection of text objects"
 msgstr "உரை பொருள்களைத் தேர்ந்தெடுப்பதை அனுமதிக்கவும்"
-
-
-msgid "Allow selection of grease pencil objects"
-msgstr "பசை எழுதுகோல் பொருள்களைத் தேர்வு செய்ய அனுமதிக்கவும்"
 
 
 msgid "Allow selection of lattices"
@@ -100080,10 +98388,6 @@ msgid "Editor Outline"
 msgstr "ஆசிரியர் அவுட்லைன்"
 
 
-msgid "Color of the outline of the editors and their round corners"
-msgstr "ஆசிரியர்களின் வெளிப்புறத்தின் நிறம் மற்றும் அவற்றின் சுற்று மூலைகள்"
-
-
 msgid "Gizmo A"
 msgstr "கிச்மோ அ"
 
@@ -100631,6 +98935,10 @@ msgstr "பசை எழுதுகோல் சிற்பம்"
 
 msgid "Settings for stroke sculpting tools and brushes"
 msgstr "வீச்சு சிற்பக் கருவிகள் மற்றும் தூரிகைகளுக்கான அமைப்புகள்"
+
+
+msgid "Select Mode"
+msgstr "பயன்முறையைத் தேர்ந்தெடுக்கவும்"
 
 
 msgid "Stroke Placement (3D View)"
@@ -102284,10 +100592,6 @@ msgid "Use Grid"
 msgstr "கட்டத்தைப் பயன்படுத்தவும்"
 
 
-msgid "Display a grid over grease pencil paper"
-msgstr "பசை எழுதுகோல் காகிதத்தின் மீது ஒரு கட்டத்தைக் காண்பி"
-
-
 msgid "Lines Only"
 msgstr "கோடுகள் மட்டுமே"
 
@@ -103310,6 +101614,10 @@ msgstr "இந்த கருவி ஓவிய கேன்வாசைப்
 
 msgid "Lighting for a World data-block"
 msgstr "உலக தரவு-தொகுதிக்கான விளக்குகள்"
+
+
+msgid "Factor for ambient occlusion blending"
+msgstr "சுற்றுப்புற மறுப்பு கலப்புக்கான காரணி"
 
 
 msgid "Length of rays, defines how far away other faces give occlusion effect"
@@ -105910,11 +104218,6 @@ msgstr "என்எல்ஏ செனரிக்"
 
 
 msgctxt "WindowManager"
-msgid "Timeline"
-msgstr "காலவரிசை"
-
-
-msgctxt "WindowManager"
 msgid "Image"
 msgstr "படம்"
 
@@ -106513,6 +104816,11 @@ msgstr "தீர்க்க ஒவ்வொரு சோடியிலும�
 
 
 msgctxt "Operator"
+msgid "All"
+msgstr "அனைத்தும்"
+
+
+msgctxt "Operator"
 msgid "None"
 msgstr "எதுவுமில்லை"
 
@@ -106623,10 +104931,6 @@ msgstr "கணக்கீட்டு திறன் %s உடன் என்
 
 msgid "and NVIDIA driver version %s or newer"
 msgstr "மற்றும் என்விடியா டிரைவர் பதிப்பு %s அல்லது புதியது"
-
-
-msgid "Requires AMD GPU with Vega or RDNA architecture"
-msgstr "வேகா அல்லது ஆர்.டி.என்.ஏ கட்டிடக்கலையுடன் amd gpu தேவைப்படுகிறது"
 
 
 msgid "and AMD Radeon Pro %s driver or newer"
@@ -107231,66 +105535,6 @@ msgstr "விருப்பதேர்வு:"
 msgctxt "Operator"
 msgid "Action"
 msgstr "செயல்"
-
-
-msgid "Save to PO File"
-msgstr "po கோப்பில் சேமிக்கவும்"
-
-
-msgid "Rebuild MO File"
-msgstr "mo கோப்பை மீண்டும் உருவாக்குங்கள்"
-
-
-msgid "Erase Local MO files"
-msgstr "உள்ளக mo கோப்புகளை அழிக்கவும்"
-
-
-msgid "invoke() needs to be called before execute()"
-msgstr "() செயல்படுத்துவதற்கு முன் அழைக்கப்பட வேண்டும் ()"
-
-
-msgid "    RNA Path: bpy.types."
-msgstr "    ஆர்என்ஏ பாதை: bpy.types."
-
-
-msgid "    RNA Context: "
-msgstr "    ஆர்என்ஏ சூழல்: "
-
-
-msgid "Labels:"
-msgstr "சிட்டைகள்:"
-
-
-msgid "Tool Tips:"
-msgstr "கருவி உதவிக்குறிப்புகள்:"
-
-
-msgid "Button Label:"
-msgstr "பொத்தான் சிட்டை:"
-
-
-msgid "RNA Label:"
-msgstr "ஆர்என்ஏ சிட்டை:"
-
-
-msgid "Enum Item Label:"
-msgstr "enum உருப்படி சிட்டை:"
-
-
-msgid "Button Tip:"
-msgstr "பொத்தான் உதவிக்குறிப்பு:"
-
-
-msgid "RNA Tip:"
-msgstr "ஆர்என்ஏ உதவிக்குறிப்பு:"
-
-
-msgid "Enum Item Tip:"
-msgstr "enum உருப்படி உதவிக்குறிப்பு:"
-
-
-msgid "Could not write to po file ({})"
-msgstr "po கோப்பிற்கு எழுத முடியவில்லை ({})"
 
 
 msgid "WARNING: preferences are lost when add-on is disabled, be sure to use \"Save Persistent\" if you want to keep your settings!"
@@ -108530,30 +106774,16 @@ msgid "Only Axis Aligned"
 msgstr "அச்சு மட்டுமே சீரமைக்கப்பட்டது"
 
 
-msgctxt "Operator"
-msgid "Lock All"
-msgstr "அனைத்தையும் பூட்டு"
-
-
-msgctxt "Operator"
-msgid "Unlock All"
-msgstr "அனைத்தையும் திறத்தல்"
+msgid "Stroke Thickness"
+msgstr "வீச்சு தடிமன்"
 
 
 msgid "Autolock Inactive Layers"
 msgstr "ஆட்டோலாக் செயலற்ற அடுக்குகள்"
 
 
-msgid "View in Render"
-msgstr "render இல் காண்க"
-
-
-msgid "Thickness Scale"
-msgstr "தடிமன் அளவுகோல்"
-
-
-msgid "Edit Line Color"
-msgstr "வரி வண்ணத்தைத் திருத்து"
+msgid "No layers to add"
+msgstr "சேர்க்க அடுக்குகள் இல்லை"
 
 
 msgctxt "Operator"
@@ -108564,6 +106794,21 @@ msgstr "வெறுமை கீஃப்ரேம்களை நகலெட�
 msgctxt "Operator"
 msgid "Hide Others"
 msgstr "மற்றவை மறை"
+
+
+msgctxt "Operator"
+msgid "Lock All"
+msgstr "அனைத்தையும் பூட்டு"
+
+
+msgctxt "Operator"
+msgid "Unlock All"
+msgstr "அனைத்தையும் திறத்தல்"
+
+
+msgctxt "Operator"
+msgid "Merge Down"
+msgstr "ஒன்றிணைக்கவும்"
 
 
 msgctxt "Operator"
@@ -108581,56 +106826,12 @@ msgid "Copy All Layers to Selected"
 msgstr "அனைத்து அடுக்குகளையும் தேர்ந்தெடுத்த நகலெடுக்கவும்"
 
 
-msgctxt "Operator"
-msgid "New Layer"
-msgstr "புதிய அடுக்கு"
-
-
-msgctxt "Operator"
-msgid "Assign to Active Group"
-msgstr "செயலில் உள்ள குழுவிற்கு ஒதுக்கு"
-
-
-msgctxt "Operator"
-msgid "Remove from Active Group"
-msgstr "செயலில் உள்ள குழுவிலிருந்து அகற்று"
-
-
-msgctxt "Operator"
-msgid "Select Points"
-msgstr "புள்ளிகளைத் தேர்ந்தெடுக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Deselect Points"
-msgstr "புள்ளிகளைத் தேர்வுநீக்கு"
-
-
 msgid "Keyframes Before"
 msgstr "கீஃப்ரேம்கள் முன்"
 
 
 msgid "Keyframes After"
 msgstr "கீஃப்ரேம்கள் பிறகு"
-
-
-msgctxt "Operator"
-msgid "Remove Active Group"
-msgstr "செயலில் உள்ள குழுவை அகற்று"
-
-
-msgctxt "Operator"
-msgid "Remove All Groups"
-msgstr "அனைத்து குழுக்களையும் அகற்று"
-
-
-msgid "No layers to add"
-msgstr "சேர்க்க அடுக்குகள் இல்லை"
-
-
-msgctxt "Operator"
-msgid "Add Group"
-msgstr "குழுவைச் சேர்"
 
 
 msgid "Interpolation U"
@@ -108822,6 +107023,15 @@ msgstr "வீச்சு வேலைவாய்ப்பு:"
 
 
 msgctxt "Operator"
+msgid "New Layer"
+msgstr "புதிய அடுக்கு"
+
+
+msgid "Show Only on Keyframed"
+msgstr "கீஃப்ரேமில் மட்டும் காட்டு"
+
+
+msgctxt "Operator"
 msgid "Selection to Grid"
 msgstr "கட்டத்திற்கு தேர்வு செய்தல்"
 
@@ -108842,40 +107052,24 @@ msgstr "கட்டத்திற்கு கர்சர்"
 
 
 msgctxt "Operator"
-msgid "Delete Active Keyframes (All Layers)"
-msgstr "செயலில் உள்ள கீஃப்ரேம்களை நீக்கு (அனைத்து அடுக்குகளும்)"
-
-
-msgctxt "Operator"
-msgid "Delete Loose Points"
-msgstr "தளர்வான புள்ளிகளை நீக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Recalculate Geometry"
-msgstr "வடிவவியலை மீண்டும் கணக்கிடுங்கள்"
-
-
-msgid "Stroke Thickness"
-msgstr "வீச்சு தடிமன்"
-
-
-msgid "Show Only on Keyframed"
-msgstr "கீஃப்ரேமில் மட்டும் காட்டு"
-
-
-msgctxt "Operator"
-msgid "Erase"
-msgstr "அழிக்கவும்"
-
-
-msgctxt "Operator"
 msgid "Poly"
 msgstr "பாலி"
 
 
 msgid "Display Cursor"
 msgstr "காட்சி கர்சர்"
+
+
+msgid "Data Source:"
+msgstr "தரவு மூலம்:"
+
+
+msgid "No annotation source"
+msgstr "சிறுகுறிப்பு சான்று இல்லை"
+
+
+msgid "Channel Colors are disabled in Animation preferences"
+msgstr "அனிமேசன் விருப்பங்களில் சேனல் வண்ணங்கள் முடக்கப்பட்டுள்ளன"
 
 
 msgctxt "Operator"
@@ -108894,25 +107088,8 @@ msgstr "செயலில் உள்ள கீஃப்ரேமை நீக
 
 
 msgctxt "Operator"
-msgid "Boundary Strokes"
-msgstr "பவுண்டரி ச்ட்ரோக்குகள்"
-
-
-msgctxt "Operator"
-msgid "Boundary Strokes all Frames"
-msgstr "பவுண்டரி ச்ட்ரோக்குகள் அனைத்து பிரேம்களும்"
-
-
-msgid "Data Source:"
-msgstr "தரவு மூலம்:"
-
-
-msgid "No annotation source"
-msgstr "சிறுகுறிப்பு சான்று இல்லை"
-
-
-msgid "Channel Colors are disabled in Animation preferences"
-msgstr "அனிமேசன் விருப்பங்களில் சேனல் வண்ணங்கள் முடக்கப்பட்டுள்ளன"
+msgid "Delete Active Keyframes (All Layers)"
+msgstr "செயலில் உள்ள கீஃப்ரேம்களை நீக்கு (அனைத்து அடுக்குகளும்)"
 
 
 msgid "Show Fill Color While Drawing"
@@ -109914,24 +108091,12 @@ msgid "Auto-Step"
 msgstr "ஆட்டோ-ச்டெப்"
 
 
-msgid "Light Clamping"
-msgstr "லைட் கிளாம்பிங்"
-
-
 msgid "Max Depth"
 msgstr "அதிகபட்ச ஆழம்"
 
 
-msgid "Refraction"
-msgstr "ஒளிவிலகல்"
-
-
 msgid "Rays"
 msgstr "கதிர்கள்"
-
-
-msgid "Cascade Size"
-msgstr "அடுக்கு அளவு"
 
 
 msgid "Tracing"
@@ -109944,14 +108109,6 @@ msgstr "தொகுதி நிழல்கள்"
 
 msgid "Temporal Reprojection"
 msgstr "தற்காலிக மறுசீரமைப்பு"
-
-
-msgid "Diffuse Occlusion"
-msgstr "பரவல் அடைப்பு"
-
-
-msgid "Irradiance Size"
-msgstr "கதிர்வீச்சு அளவு"
 
 
 msgid "Max Child Particles"
@@ -110078,10 +108235,6 @@ msgstr "அடைப்பு தூரம்"
 
 msgid "Conflicts with another render pass with the same name"
 msgstr "மற்றொரு render உடன் முரண்பாடுகள் அதே பெயரில் கடந்து செல்கின்றன"
-
-
-msgid "Accurate Mode"
-msgstr "துல்லியமான பயன்முறை"
 
 
 msgid "Unknown add-ons"
@@ -110906,11 +109059,6 @@ msgstr "என சேமிக்கவும்..."
 msgctxt "Operator"
 msgid "Extract Palette"
 msgstr "பிரித்தெடுக்கும் தட்டு"
-
-
-msgctxt "Operator"
-msgid "Generate Grease Pencil"
-msgstr "பசை எழுதுகோலை உருவாக்கவும்"
 
 
 msgctxt "Operator"
@@ -111843,11 +109991,6 @@ msgstr "காட்சியை மாற்று..."
 msgctxt "Operator"
 msgid "Clip"
 msgstr "கிளிப்"
-
-
-msgctxt "Operator"
-msgid "Mask"
-msgstr "முகமூடி"
 
 
 msgctxt "Operator"
@@ -112792,6 +110935,11 @@ msgid "Active Camera"
 msgstr "செயலில் உள்ள கேமரா"
 
 
+msgctxt "View3D"
+msgid "Camera"
+msgstr "புகைப்பட கருவி"
+
+
 msgctxt "Operator"
 msgid "Orbit Opposite"
 msgstr "எதிர்"
@@ -113095,11 +111243,6 @@ msgstr "கீயிங் தொகுப்பை மாற்றவும் 
 msgctxt "Operator"
 msgid "Bake Action..."
 msgstr "சுட்டுக்கொள்ள நடவடிக்கை ..."
-
-
-msgctxt "Operator"
-msgid "Bake Mesh to Grease Pencil..."
-msgstr "பசை எழுதுகோலுக்கு சுட்ட கண்ணி..."
 
 
 msgctxt "Operator"
@@ -113707,62 +111850,8 @@ msgstr "எலும்புகளை கரைக்கவும்"
 
 
 msgctxt "Operator"
-msgid "Fixed"
-msgstr "சரி"
-
-
-msgctxt "Operator"
-msgid "Adaptive"
-msgstr "தகவமைப்பு"
-
-
-msgctxt "Operator"
-msgid "Outline"
-msgstr "அவுட்லைன்"
-
-
-msgctxt "GPencil"
-msgid "Join"
-msgstr "சேர"
-
-
-msgctxt "Operator"
-msgid "Set as Active Material"
-msgstr "செயலில் உள்ள மூலப்பொருளாக அமைக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Arrange"
-msgstr "ஏற்பாடு செய்யுங்கள்"
-
-
-msgctxt "Operator"
-msgid "Close"
-msgstr "மூடு"
-
-
-msgctxt "Operator"
-msgid "Toggle Caps"
-msgstr "தொப்பிகளை மாற்றவும்"
-
-
-msgid "Scale Thickness"
-msgstr "அளவிலான தடிமன்"
-
-
-msgctxt "Operator"
-msgid "Reset Fill Transform"
-msgstr "உருமாற்றத்தை மீட்டமை"
-
-
-msgctxt "Operator"
 msgid "Insert Blank Keyframe (Active Layer)"
 msgstr "வெற்று கீஃப்ரேமை (செயலில் அடுக்கு) செருகவும்"
-
-
-msgctxt "Operator"
-msgid "Duplicate Active Keyframe (Active Layer)"
-msgstr "நகல் செயலில் கீஃப்ரேம் (செயலில் அடுக்கு)"
 
 
 msgctxt "Operator"
@@ -113771,8 +111860,17 @@ msgstr "எளிமைப்படுத்துங்கள்"
 
 
 msgctxt "Operator"
+msgid "Arrange"
+msgstr "ஏற்பாடு செய்யுங்கள்"
+
+
+msgctxt "Operator"
 msgid "Set Caps"
 msgstr "தொப்பிகளை அமைக்கவும்"
+
+
+msgid "Scale Thickness"
+msgstr "அளவிலான தடிமன்"
 
 
 msgctxt "Operator"
@@ -114416,38 +112514,13 @@ msgstr "ரோல் செட்"
 
 
 msgctxt "Operator"
-msgid "With Empty Groups"
-msgstr "வெற்று குழுக்களுடன்"
-
-
-msgctxt "Operator"
-msgid "With Automatic Weights"
-msgstr "தானியங்கி எடையுடன்"
-
-
-msgctxt "Operator"
-msgid "Paste by Layer"
-msgstr "அடுக்கு மூலம் ஒட்டவும்"
-
-
-msgctxt "Operator"
-msgid "Normalize Thickness"
-msgstr "தடிமன் இயல்பாக்குங்கள்"
-
-
-msgctxt "Operator"
-msgid "Normalize Opacity"
-msgstr "ஒளிபுகாநிலையை இயல்பாக்குங்கள்"
-
-
-msgctxt "Operator"
 msgid "Insert Blank Keyframe (All Layers)"
 msgstr "வெற்று கீஃப்ரேமை செருகவும் (அனைத்து அடுக்குகளும்)"
 
 
 msgctxt "Operator"
-msgid "Duplicate Active Keyframe (All Layers)"
-msgstr "நகல் செயலில் கீஃப்ரேம் (அனைத்து அடுக்குகளும்)"
+msgid "Duplicate Active Keyframe (Active Layer)"
+msgstr "நகல் செயலில் கீஃப்ரேம் (செயலில் அடுக்கு)"
 
 
 msgctxt "Operator"
@@ -114458,6 +112531,11 @@ msgstr "செயலில் அடுக்கை மறைக்கவும�
 msgctxt "Operator"
 msgid "Hide Inactive Layers"
 msgstr "செயலற்ற அடுக்குகளை மறைக்கவும்"
+
+
+msgctxt "Operator"
+msgid "Close"
+msgstr "மூடு"
 
 
 msgid "Toggle X-Ray"
@@ -114504,11 +112582,6 @@ msgid "Material Name"
 msgstr "மூலப்பொருள் பெயர்"
 
 
-msgctxt "Operator"
-msgid "Reproject"
-msgstr "இனப்பெருக்கம்"
-
-
 msgid "No Materials"
 msgstr "மூலப்பொருட்கள் இல்லை"
 
@@ -114516,6 +112589,15 @@ msgstr "மூலப்பொருட்கள் இல்லை"
 msgctxt "Operator"
 msgid "Smooth Points"
 msgstr "மென்மையான புள்ளிகள்"
+
+
+msgctxt "Operator"
+msgid "Set as Active Material"
+msgstr "செயலில் உள்ள மூலப்பொருளாக அமைக்கவும்"
+
+
+msgid "Multiframe"
+msgstr "மல்டிஃப்ரேம்"
 
 
 msgid "Curve Shape"
@@ -114527,10 +112609,6 @@ msgid "Mix"
 msgstr "கலக்க"
 
 
-msgid "Multiframe"
-msgstr "மல்டிஃப்ரேம்"
-
-
 msgctxt "Operator"
 msgid "Frame Selected (Quad View)"
 msgstr "பிரேம் தேர்ந்தெடுக்கப்பட்டது (குவாட் வியூ)"
@@ -114539,6 +112617,21 @@ msgstr "பிரேம் தேர்ந்தெடுக்கப்பட�
 msgctxt "Operator"
 msgid "Set Active Camera"
 msgstr "செயலில் உள்ள கேமராவை அமைக்கவும்"
+
+
+msgctxt "Operator"
+msgid "Assign to Active Group"
+msgstr "செயலில் உள்ள குழுவிற்கு ஒதுக்கு"
+
+
+msgctxt "Operator"
+msgid "Remove Active Group"
+msgstr "செயலில் உள்ள குழுவை அகற்று"
+
+
+msgctxt "Operator"
+msgid "Remove All Groups"
+msgstr "அனைத்து குழுக்களையும் அகற்று"
 
 
 msgctxt "Operator"
@@ -114645,16 +112738,6 @@ msgid "Custom Location"
 msgstr "தனிப்பயன் இடம்"
 
 
-msgctxt "Operator"
-msgid "Dissolve Between"
-msgstr "இடையில் கரைக்கவும்"
-
-
-msgctxt "Operator"
-msgid "Dissolve Unselected"
-msgstr "தேர்வு செய்யப்படாமல் கலைக்கவும்"
-
-
 msgid "Scaling"
 msgstr "அளவிடுதல்"
 
@@ -114682,6 +112765,11 @@ msgstr "வெளியேற்றத்தை சரிசெய்யவு�
 msgctxt "Operator"
 msgid "Adjust Offset"
 msgstr "ஆஃப்செட்டை சரிசெய்யவும்"
+
+
+msgctxt "Operator"
+msgid "Remove from Active Group"
+msgstr "செயலில் உள்ள குழுவிலிருந்து அகற்று"
 
 
 msgctxt "Operator"
@@ -114758,12 +112846,12 @@ msgid "Draw Grease Pencil"
 msgstr "பசை எழுதுகோல் வரையவும்"
 
 
-msgid "Sculpt Grease Pencil"
-msgstr "சிற்பம் பசை எழுதுகோல்"
-
-
 msgid "Weight Grease Pencil"
 msgstr "எடை பசை எழுதுகோல்"
+
+
+msgid "Sculpt Grease Pencil"
+msgstr "சிற்பம் பசை எழுதுகோல்"
 
 
 msgid "Vertex Grease Pencil"
@@ -114824,10 +112912,6 @@ msgstr "சூரிய ஒளி கோணத்தை சரிசெய்ய
 
 msgid "Distance Min"
 msgstr "தூரம் மணித்துளி"
-
-
-msgid "Layer:"
-msgstr "அடுக்கு:"
 
 
 msgid "Affect Only"
@@ -114935,6 +113019,10 @@ msgid "Ignore Transparent"
 msgstr "வெளிப்படையான புறக்கணிக்கவும்"
 
 
+msgid "Cannot change action, as it is still being edited in NLA"
+msgstr "செயலை மாற்ற முடியாது, ஏனெனில் இது இன்னும் என்எல்ஏ"
+
+
 msgid "<No ID pointer>"
 msgstr "<ஐடி சுட்டிக்காட்டி இல்லை>"
 
@@ -114993,14 +113081,6 @@ msgstr "பயனர் நூலகம்"
 
 msgid "No AnimData to set tmpact on"
 msgstr "tmpact ஐ அமைக்க அனிமடேட்டா இல்லை"
-
-
-msgid "No AnimData to set action on"
-msgstr "நடவடிக்கை அமைக்க அனிமடேட்டா இல்லை"
-
-
-msgid "Cannot change action, as it is still being edited in NLA"
-msgstr "செயலை மாற்ற முடியாது, ஏனெனில் இது இன்னும் என்எல்ஏ"
 
 
 msgid "Could not set action '%s' onto ID '%s', as it does not have suitably rooted paths for this purpose"
@@ -115115,8 +113195,8 @@ msgid "Lib Reload: Replacing all references to old data-block '%s' by reloaded o
 msgstr "lib மறுஏற்றம்: பழைய தரவு-தொகுதி '%s' க்கு அனைத்து குறிப்புகளையும் மாற்றுவதன் மூலம் தோல்வியுற்றது, பழையது (%d மீதமுள்ள பயனர்கள்) வைக்கப்பட வேண்டும், மேலும் '%s' என மறுபெயரிடப்பட்டது"
 
 
-msgid "Path '%s' not found"
-msgstr "பாதை '%s' காணப்படவில்லை"
+msgid "Total files %d | Changed %d | Failed %d"
+msgstr "மொத்த கோப்புகள் %d | மாற்றப்பட்ட %d | தோல்வியுற்ற %d"
 
 
 msgid "No missing files"
@@ -115133,10 +113213,6 @@ msgstr "'%s' இல் '%s' கண்டுபிடிக்க முடிய
 
 msgid "Path '%s' cannot be made absolute"
 msgstr "பாதை '%s' முழுமையானதாக மாற்ற முடியாது"
-
-
-msgid "Total files %d | Changed %d | Failed %d"
-msgstr "மொத்த கோப்புகள் %d | மாற்றப்பட்ட %d | தோல்வியுற்ற %d"
 
 
 msgid "Path '%s' cannot be made relative for %s '%s'"
@@ -116254,10 +114330,6 @@ msgid "Failed to read blend file '%s': %s"
 msgstr "கலப்பு கோப்பை ' %s' படிக்கத் தவறிவிட்டது: %s"
 
 
-msgid "Failed to read blend file '%s', not a blend file"
-msgstr "கலப்பு கோப்பை '%s' படிக்கத் தவறிவிட்டது, கலப்பு கோப்பு அல்ல"
-
-
 msgid "Unable to read '%s': %s"
 msgstr "' %s' ஐப் படிக்க முடியவில்லை: %s"
 
@@ -116500,6 +114572,10 @@ msgstr "எந்த நேரமும் இல்லாமல் செயல
 
 msgid "Can't edit this property from a linked data-block"
 msgstr "இணைக்கப்பட்ட தரவு-தடுப்பிலிருந்து இந்த சொத்தை திருத்த முடியாது"
+
+
+msgid "No active object"
+msgstr "செயலில் பொருள் இல்லை"
 
 
 msgid "No channels to operate on"
@@ -117449,11 +115525,23 @@ msgid "Active region not set"
 msgstr "செயலில் உள்ள மண்டலம் அமைக்கப்படவில்லை"
 
 
-msgid "Skin_Light"
+msgid "Cannot delete locked layers"
+msgstr "பூட்டிய அடுக்குகளை நீக்க முடியாது"
+
+
+msgid "No active frame to delete"
+msgstr "நீக்க செயலில் உள்ள சட்டகம் இல்லை"
+
+
+msgid "Grey"
+msgstr "சாம்பல்"
+
+
+msgid "Skin_light"
 msgstr "தோல்_ஒளி"
 
 
-msgid "Skin_Shadow"
+msgid "Skin_shadow"
 msgstr "தோல்_நிழல்"
 
 
@@ -117465,387 +115553,12 @@ msgid "Pupils"
 msgstr "மாணவர்கள்"
 
 
-msgid "Grey"
-msgstr "சாம்பல்"
-
-
-msgid "No Armature object in the view layer"
-msgstr "பார்வை அடுக்கில் ஆர்மேச்சர் பொருள் இல்லை"
-
-
-msgid "No Grease Pencil data to work on"
-msgstr "வேலை செய்ய பசை எழுதுகோல் தரவு இல்லை"
-
-
-msgid "Current Grease Pencil strokes have no valid timing data, most timing options will be hidden!"
-msgstr "தற்போதைய பசை எழுதுகோல் வீச்சுகள் சரியான நேர தரவு இல்லை, பெரும்பாலான நேர விருப்பங்கள் மறைக்கப்படும்!"
-
-
-msgid "Object created"
-msgstr "உருவாக்கப்பட்ட பொருள்"
-
-
-msgid "Nowhere for grease pencil data to go"
-msgstr "பசை எழுதுகோல் தரவு செல்ல எங்கும் இல்லை"
-
-
-msgid "Cannot delete locked layers"
-msgstr "பூட்டிய அடுக்குகளை நீக்க முடியாது"
-
-
-msgid "No active layer to isolate"
-msgstr "தனிமைப்படுத்த செயலில் அடுக்கு இல்லை"
-
-
-msgid "No layers to merge"
-msgstr "ஒன்றிணைக்க அடுக்குகள் இல்லை"
-
-
-msgid "No layers to flatten"
-msgstr "தட்டையான அடுக்குகள் இல்லை"
-
-
-msgid "Current Vertex Group is locked"
-msgstr "தற்போதைய வெர்டெக்ச் குழு பூட்டப்பட்டுள்ளது"
-
-
-msgid "Apply all rotations before join objects"
-msgstr "பொருள்களில் சேருவதற்கு முன் அனைத்து சுழற்சிகளையும் பயன்படுத்துங்கள்"
-
-
-msgid "Active object is not a selected grease pencil"
-msgstr "செயலில் உள்ள பொருள் தேர்ந்தெடுக்கப்பட்ட பசை எழுதுகோல் அல்ல"
-
-
-msgid "No active color to isolate"
-msgstr "தனிமைப்படுத்த செயலில் வண்ணம் இல்லை"
-
-
-msgid "No Grease Pencil data"
-msgstr "பசை எழுதுகோல் தரவு இல்லை"
-
-
-msgid "Unable to find layer to add"
-msgstr "சேர்க்க அடுக்கு கண்டுபிடிக்க முடியவில்லை"
-
-
-msgid "Cannot add active layer as mask"
-msgstr "செயலில் அடுக்கை முகமூடியாக சேர்க்க முடியாது"
-
-
-msgid "Layer already added"
-msgstr "அடுக்கு ஏற்கனவே சேர்க்கப்பட்டது"
-
-
-msgid "Maximum number of masking layers reached"
-msgstr "முகமூடி அடுக்குகளின் அதிகபட்ச எண்ணிக்கை"
-
-
-msgid "Cannot change to non-existent layer (index = %d)"
-msgstr "இல்லாத அடுக்குக்கு மாற்ற முடியாது (குறியீட்டு = %d)"
-
-
-msgid "Cannot change to non-existent material (index = %d)"
-msgstr "இல்லாத மூலப்பொருளுக்கு மாற்ற முடியாது (குறியீட்டு = %d)"
-
-
-msgid "No active GP data"
-msgstr "செயலில் சிபி தரவு இல்லை"
-
-
-msgid "Not implemented!"
-msgstr "செயல்படுத்தப்படவில்லை!"
-
-
-msgid "No strokes to paste, select and copy some points before trying again"
-msgstr "மீண்டும் முயற்சிக்கும் முன் ஒட்டவும், சில புள்ளிகளைத் தேர்ந்தெடுத்து நகலெடுக்கவும் வீச்சுகள் இல்லை"
-
-
-msgid "Cannot paste strokes when active layer is hidden or locked"
-msgstr "செயலில் அடுக்கு மறைக்கப்படும்போது அல்லது பூட்டப்பட்டால் பக்கவாதம் ஒட்ட முடியாது"
-
-
-msgid "No grease pencil data"
-msgstr "பசை எழுதுகோல் தரவு இல்லை"
-
-
-msgid "No active frame to delete"
-msgstr "நீக்க செயலில் உள்ள சட்டகம் இல்லை"
-
-
-msgid "No active frame(s) to delete"
-msgstr "நீக்க செயலில் உள்ள சட்டகம் (கள்) இல்லை"
-
-
-msgid "Curve Edit mode not supported"
-msgstr "வளைவு திருத்து பயன்முறை ஆதரிக்கப்படவில்லை"
-
-
-msgid "Cannot separate an object with one layer only"
-msgstr "ஒரு பொருளை ஒரு அடுக்குடன் மட்டுமே பிரிக்க முடியாது"
+msgid "Material '%s' could not be found"
+msgstr "மூலப்பொருள் '%s' கண்டுபிடிக்க முடியவில்லை"
 
 
 msgid "Nothing selected"
 msgstr "எதுவும் தேர்ந்தெடுக்கப்படவில்லை"
-
-
-msgid "No active area"
-msgstr "செயலில் உள்ள பரப்பு இல்லை"
-
-
-msgid "Too many strokes selected, only joined first %d strokes"
-msgstr "தேர்ந்தெடுக்கப்பட்ட பல வீச்சுகள், முதல் %d வீச்சுகள் மட்டுமே சேர்ந்தது"
-
-
-msgid "Fill: ESC/RMB cancel, LMB Fill, Shift Draw on Back, MMB Adjust Extend, S: Switch Mode, D: Stroke Collision | %s %s (%.3f)"
-msgstr "நிரப்பு: esc/rmb ரத்துசெய், எல்எம்பி நிரப்பு, சிப்ட் டிரா பேக், எம்எம்பி சரிசெய்தல் நீட்டிப்பு, எச்: சுவிட்ச் பயன்முறை, டி: ச்ட்ரோக் மோதல் | %s %s (%.3f)"
-
-
-msgid "Stroke: ON"
-msgstr "வீச்சு: ஆன்"
-
-
-msgid "Stroke: OFF"
-msgstr "வீச்சு: ஆஃப்"
-
-
-msgid "Fill tool needs active material"
-msgstr "நிரப்பு கருவி செயலில் உள்ள மூலப்பொருள் தேவை"
-
-
-msgid "Unable to fill unclosed areas"
-msgstr "திறக்கப்படாத பகுதிகளை நிரப்ப முடியவில்லை"
-
-
-msgid "No available frame for creating stroke"
-msgstr "பக்கவாதத்தை உருவாக்குவதற்கு கிடைக்கக்கூடிய சட்டகம் இல்லை"
-
-
-msgid "Active region not valid for filling operator"
-msgstr "ஆபரேட்டரை நிரப்புவதற்கு செயலில் உள்ள மண்டலம் செல்லுபடியாகாது"
-
-
-msgid "GPencil Interpolation: "
-msgstr "gpencil இடைக்கணிப்பு: "
-
-
-msgid "ESC/RMB to cancel, Enter/LMB to confirm, WHEEL/MOVE to adjust factor"
-msgstr "ரத்து செய்ய esc/rmb, உறுதிப்படுத்த, வீல்/காரணி சரிசெய்ய நகர்த்த/lmb ஐ உள்ளிடவும்"
-
-
-msgid "Standard transitions between keyframes"
-msgstr "கீஃப்ரேம்களுக்கு இடையில் நிலையான மாற்றங்கள்"
-
-
-msgid "Predefined inertial transitions, useful for motion graphics (from least to most \"dramatic\")"
-msgstr "முன் வரையறுக்கப்பட்ட செயலற்ற மாற்றங்கள், இயக்க கிராபிக்ச் பயனுள்ளவை (குறைந்தது முதல் பெரும்பாலான \"வியத்தகு\" வரை)"
-
-
-msgid "Simple physics-inspired easing effects"
-msgstr "எளிய இயற்பியல்-ஈர்க்கப்பட்ட தளர்த்தல் விளைவுகள்"
-
-
-msgctxt "GPencil"
-msgid "Interpolation"
-msgstr "இடைக்கணிப்பு"
-
-
-msgctxt "GPencil"
-msgid "Easing (by strength)"
-msgstr "எளிதாக்குதல் (வலிமையால்)"
-
-
-msgctxt "GPencil"
-msgid "Dynamic Effects"
-msgstr "மாறும் விளைவுகள்"
-
-
-msgid "Cannot find valid keyframes to interpolate (Breakdowns keyframes are not allowed)"
-msgstr "இடைக்கணிப்புக்கு செல்லுபடியாகும் கீஃப்ரேம்களைக் கண்டுபிடிக்க முடியவில்லை (முறிவுகள் கீஃப்ரேம்கள் அனுமதிக்கப்படவில்லை)"
-
-
-msgid "Cannot interpolate in curve edit mode"
-msgstr "வளைவு திருத்து பயன்முறையில் இடைக்கணிக்க முடியாது"
-
-
-msgid "Custom interpolation curve does not exist"
-msgstr "தனிப்பயன் இடைக்கணிப்பு வளைவு இல்லை"
-
-
-msgid "Expected current frame to be a breakdown"
-msgstr "எதிர்பார்க்கப்படும் தற்போதைய சட்டகம் ஒரு முறிவாக இருக்கும்"
-
-
-msgid "Nothing to merge"
-msgstr "ஒன்றிணைக்க எதுவும் இல்லை"
-
-
-msgid "Merged %d materials of %d"
-msgstr "இணைக்கப்பட்ட %d மூலப்பொருட்கள் %d"
-
-
-msgid "No valid object selected"
-msgstr "செல்லுபடியாகும் பொருள் எதுவும் தேர்ந்தெடுக்கப்படவில்லை"
-
-
-msgid "Target object not a grease pencil, ignoring!"
-msgstr "இலக்கு பொருள் பசை எழுதுகோல் அல்ல, புறக்கணிக்கிறது!"
-
-
-msgid "Target object library-data, ignoring!"
-msgstr "இலக்கு பொருள் நூலக-தரவு, புறக்கணித்தல்!"
-
-
-msgid "Grease Pencil Erase Session: Hold and drag LMB or RMB to erase | ESC/Enter to end  (or click outside this area)"
-msgstr "பசை எழுதுகோல் அழிக்கும் அமர்வு: அழிக்க எல்எம்பி அல்லது ஆர்எம்பி esc/enter க்கு enter  (அல்லது இந்த பரப்புக்கு வெளியே சொடுக்கு செய்க)"
-
-
-msgid "Grease Pencil Line Session: Hold and drag LMB to draw | ESC/Enter to end  (or click outside this area)"
-msgstr "பசை எழுதுகோல் வரி அமர்வு: வரைய எல்.எம்.பியைப் பிடித்து இழுக்கவும் | esc/enter க்கு enter  (அல்லது இந்த பரப்புக்கு வெளியே சொடுக்கு செய்க)"
-
-
-msgid "Grease Pencil Guides: LMB click and release to place reference point | Esc/RMB to cancel"
-msgstr "பசை எழுதுகோல் வழிகாட்டிகள்: எல்எம்பி குறிப்பு புள்ளிக்கு சொடுக்கு செய்து வெளியிடுங்கள் | ரத்து செய்ய esc/rmb"
-
-
-msgid "Grease Pencil Freehand Session: Hold and drag LMB to draw | M key to flip guide | O key to move reference point"
-msgstr "பசை எழுதுகோல் ஃப்ரீஏண்ட் அமர்வு: வரைய எல்எம்பியைப் பிடித்து இழுக்கவும் | மீ ஃபிளிப் வழிகாட்டிக்கு விசை | குறிப்பு புள்ளியை நகர்த்துவதற்கான விசை"
-
-
-msgid "Grease Pencil Freehand Session: Hold and drag LMB to draw"
-msgstr "பசை எழுதுகோல் ஃப்ரீஏண்ட் அமர்வு: வரைய எல்எம்பியைப் பிடித்து இழுக்கவும்"
-
-
-msgid "Grease Pencil Session: ESC/Enter to end (or click outside this area)"
-msgstr "பசை எழுதுகோல் அமர்வு: esc/enter to end (அல்லது இந்த பரப்புக்கு வெளியே சொடுக்கு செய்க)"
-
-
-msgid "Active layer is locked or hidden"
-msgstr "செயலில் அடுக்கு பூட்டப்பட்டுள்ளது அல்லது மறைக்கப்பட்டுள்ளது"
-
-
-msgid "Nothing to erase or all layers locked"
-msgstr "அழிக்க எதுவும் இல்லை அல்லது அனைத்து அடுக்குகளும் பூட்டப்பட்டுள்ளன"
-
-
-msgid "Grease Pencil operator is already active"
-msgstr "பசை எழுதுகோல் ஆபரேட்டர் ஏற்கனவே செயலில் உள்ளது"
-
-
-msgid "Grease Pencil has no active paint tool"
-msgstr "பசை எழுதுகோலுக்கு செயலில் வண்ணப்பூச்சு கருவி இல்லை"
-
-
-msgid "Line: ESC to cancel, LMB set origin, Enter/MMB to confirm, WHEEL/+- to adjust subdivision number, Shift to align, Alt to center, E: extrude, G: grab"
-msgstr "வரி: ரத்து செய்ய தப்பி, lmb செட் தோற்றம், உறுதிப்படுத்த/mmb ஐ உறுதிப்படுத்த, சக்கரம்/+- துணைப்பிரிவு எண்ணை சரிசெய்ய, சீரமைப்புக்கு மாற்றவும், ஆல்ட் சென்டருக்கு, e: எக்ச்ட்ரூட், சி: கிராப்"
-
-
-msgid "Polyline: ESC to cancel, LMB to set, Enter/MMB to confirm, WHEEL/+- to adjust subdivision number, Shift to align, G: grab"
-msgstr "பாலிலைன்: ரத்து செய்ய தப்பி, அமைக்க எல்எம்பி, உறுதிப்படுத்த/எம்எம்பி"
-
-
-msgid "Rectangle: ESC to cancel, LMB set origin, Enter/MMB to confirm, WHEEL/+- to adjust subdivision number, Shift to square, Alt to center, G: grab"
-msgstr "செவ்வகம்: ரத்து செய்ய தப்பி, lmb தொகுப்பு தோற்றம், உறுதிப்படுத்த enter/mmb, சக்கரம்/+- துணைப்பிரிவு எண்ணை சரிசெய்ய, சதுரத்திற்கு மாற்றவும், ஆல்ட் சென்டர், சி: கிராப்"
-
-
-msgid "Circle: ESC to cancel, Enter/MMB to confirm, WHEEL/+- to adjust subdivision number, Shift to square, Alt to center, G: grab"
-msgstr "வட்டம்: ரத்து செய்ய தப்பி, உறுதிப்படுத்த, வீல்/+- துணைப்பிரிவு எண்ணை சரிசெய்ய, சதுரத்திற்கு மாற்றவும், ஆல்ட் சென்டர், சி: பிடிக்கவும்"
-
-
-msgid "Arc: ESC to cancel, Enter/MMB to confirm, WHEEL/+- to adjust subdivision number, Shift to square, Alt to center, M: Flip, E: extrude, G: grab"
-msgstr "arc: ரத்து செய்ய தப்பி, உறுதிப்படுத்த/mmb ஐ உறுதிப்படுத்த, சக்கரம்/+- துணைப்பிரிவு எண்ணை சரிசெய்ய, சதுரத்திற்கு மாற்றவும், ஆல்ட் மையத்திற்கு, எம்: ஃபிளிப், இ: எக்ச்ட்ரூட், சி: கிராப்"
-
-
-msgid "Curve: ESC to cancel, Enter/MMB to confirm, WHEEL/+- to adjust subdivision number, Shift to square, Alt to center, E: extrude, G: grab"
-msgstr "வளைவு: ரத்துசெய்ய தப்பி, உறுதிப்படுத்த/mmb ஐ உள்ளிடவும், சக்கரம்/+- துணைப்பிரிவு எண்ணை சரிசெய்ய, சதுரத்திற்கு மாற்றவும், ஆல்ட் மையத்திற்கு, e: எக்ச்ட்ரூட், சி: கிராப்"
-
-
-msgid "Primitives can only be added in Draw or Edit modes"
-msgstr "டிரா அல்லது திருத்த முறைகளில் மட்டுமே ஆதிமனிதர்களை சேர்க்க முடியும்"
-
-
-msgid "Primitives cannot be added as active layer is locked or hidden"
-msgstr "செயலில் அடுக்கு பூட்டப்பட்டதாகவோ அல்லது மறைக்கப்படவோ பழமையானவர்களைச் சேர்க்க முடியாது"
-
-
-msgid "GPencil Sculpt: %s Stroke  | LMB to paint | RMB/Escape to Exit | Ctrl to Invert Action | Wheel Up/Down for Size  | Shift-Wheel Up/Down for Strength"
-msgstr "gpencil சிற்பம்: %s வீச்சு  | வண்ணம் தீட்ட எல்எம்பி | வெளியேற rmb/வெளியேற | நடவடிக்கைகளைத் தலைகீழாக மாற்ற கட்டுப்பாடு | வீல் அப்/டவுன் அளவிற்கு  | வலிமைக்கு சிப்ட்-வீல் அப்/டவுன்"
-
-
-msgid "Copy some strokes to the clipboard before using the Clone brush to paste copies of them"
-msgstr "நகலி தூரிகையைப் பயன்படுத்துவதற்கு முன்பு சில வீச்சுகள் கிளிப்போர்டில் நகலெடுக்கவும்"
-
-
-msgid "Cannot sculpt while animation is playing"
-msgstr "அனிமேசன் விளையாடும்போது சிற்பம் செய்ய முடியாது"
-
-
-msgid "Select before some Vertex to use as a filter color"
-msgstr "வடிகட்டி வண்ணமாகப் பயன்படுத்த சில வெர்டெக்சுக்கு முன் தேர்ந்தெடுக்கவும்"
-
-
-msgid "Trace"
-msgstr "சுவடு"
-
-
-msgid "No image empty selected"
-msgstr "எந்த படமும் காலியாக தேர்ந்தெடுக்கப்படவில்லை"
-
-
-msgid "No valid image format selected"
-msgstr "செல்லுபடியாகும் பட வடிவம் எதுவும் தேர்ந்தெடுக்கப்படவில்லை"
-
-
-msgid "Confirm: Enter/LMB, Cancel: (Esc/RMB) %s"
-msgstr "உறுதிப்படுத்தவும்: உள்ளிடவும்/lmb, ரத்துசெய்: (esc/rmb) %s"
-
-
-msgid ", Translation: (%f, %f)"
-msgstr ", மொழிபெயர்ப்பு: ( %f, %f)"
-
-
-msgid "Palette created"
-msgstr "தட்டு உருவாக்கப்பட்டது"
-
-
-msgid "Unable to find Vertex Information to create palette"
-msgstr "தட்டு உருவாக்க வெர்டெக்ச் தகவல்களைக் கண்டுபிடிக்க முடியவில்லை"
-
-
-msgid "GPencil Vertex Paint: LMB to paint | RMB/Escape to Exit | Ctrl to Invert Action"
-msgstr "gpencil vertex பெயிண்ட்: வண்ணப்பூச்சுக்கு lmb | வெளியேற rmb/வெளியேற | நடவடிக்கைகளைத் தலைகீழாக மாற்ற கட்டுப்பாடு"
-
-
-msgid "Cannot Paint while play animation"
-msgstr "அனிமேசன் விளையாடும்போது வண்ணம் தீட்ட முடியாது"
-
-
-msgid "GPencil Weight Paint: LMB to paint | RMB/Escape to Exit"
-msgstr "gpencil எடை வண்ணப்பூச்சு: எல்எம்பி வரை வண்ணம் தீட்ட | வெளியேற rmb/தப்பிக்க"
-
-
-msgid "GPencil Weight Blur: LMB to blur | RMB/Escape to Exit"
-msgstr "gpencil எடை மங்கலானது: மங்கலான lmb | வெளியேற rmb/தப்பிக்க"
-
-
-msgid "GPencil Weight Average: LMB to set average | RMB/Escape to Exit"
-msgstr "gpencil எடை சராசரி: சராசரியை அமைக்க lmb | வெளியேற rmb/தப்பிக்க"
-
-
-msgid "GPencil Weight Smear: LMB to smear | RMB/Escape to Exit"
-msgstr "gpencil எடை ச்மியர்: lmb to smear | வெளியேற rmb/தப்பிக்க"
-
-
-msgid "Skin_light"
-msgstr "தோல்_ஒளி"
-
-
-msgid "Skin_shadow"
-msgstr "தோல்_நிழல்"
-
-
-msgid "Material '%s' could not be found"
-msgstr "மூலப்பொருள் '%s' கண்டுபிடிக்க முடியவில்லை"
 
 
 msgid "The object has only one material"
@@ -117860,12 +115573,28 @@ msgid "No active Grease Pencil layer"
 msgstr "செயலில் பசை எழுதுகோல் அடுக்கு இல்லை"
 
 
+msgid "Active layer is locked or hidden"
+msgstr "செயலில் அடுக்கு பூட்டப்பட்டுள்ளது அல்லது மறைக்கப்பட்டுள்ளது"
+
+
 msgid "No Grease Pencil frame to draw on"
 msgstr "வரைய பசை எழுதுகோல் சட்டகம் இல்லை"
 
 
 msgid "'%s' Layer is locked"
 msgstr "'%s' அடுக்கு பூட்டப்பட்டுள்ளது"
+
+
+msgid "Cannot add active layer as mask"
+msgstr "செயலில் அடுக்கை முகமூடியாக சேர்க்க முடியாது"
+
+
+msgid "Layer already added"
+msgstr "அடுக்கு ஏற்கனவே சேர்க்கப்பட்டது"
+
+
+msgid "Unable to find layer to add"
+msgstr "சேர்க்க அடுக்கு கண்டுபிடிக்க முடியவில்லை"
 
 
 msgid "Could not resolve path '%s'"
@@ -117878,10 +115607,6 @@ msgstr "மதிப்பை அமைப்பதில் தோல்வி"
 
 msgid "Property from path '%s' is not a float"
 msgstr "பாதையின் '%s' இலிருந்து சொத்து ஒரு மிதவை அல்ல"
-
-
-msgid "LMB: Stroke - Shift: Fill - Shift+Ctrl: Stroke + Fill"
-msgstr "எல்எம்பி: ச்ட்ரோக் - சிப்ட்: ஃபில் - சிப்ட் + சிடிஆர்எல்: ச்ட்ரோக் + நிரப்பு"
 
 
 msgid "Press a key"
@@ -118187,10 +115912,6 @@ msgid "%d items"
 msgstr "%d உருப்படிகள்"
 
 
-msgid "Hex"
-msgstr "ஃச்"
-
-
 msgid "Red:"
 msgstr "சிவப்பு:"
 
@@ -118219,12 +115940,8 @@ msgid "Alpha:"
 msgstr "ஆல்பா:"
 
 
-msgid "Hex:"
-msgstr "எக்ச்:"
-
-
-msgid "(Gamma corrected)"
-msgstr "(காமா சரி செய்யப்பட்டது)"
+msgid "Hex"
+msgstr "ஃச்"
 
 
 msgid "Red, Green, Blue"
@@ -118235,16 +115952,8 @@ msgid "Hue, Saturation, Lightness"
 msgstr "சாயல், செறிவு, லேசான தன்மை"
 
 
-msgid "Color as hexadecimal values"
-msgstr "எக்சாடெசிமல் மதிப்புகளாக வண்ணம்"
-
-
 msgid "Lightness"
 msgstr "லேசான தன்மை"
-
-
-msgid "Hex triplet for color (#RRGGBB)"
-msgstr "வண்ணத்திற்கான ஃச் மும்மடங்கு (#rrggbb)"
 
 
 msgctxt "Color"
@@ -119152,10 +116861,6 @@ msgid "LMB: Click and drag to draw cut line"
 msgstr "எல்எம்பி: கட் கோட்டை வரைய சொடுக்கு செய்து இழுக்கவும்"
 
 
-msgid "LMB: Release to confirm cut line"
-msgstr "எல்எம்பி: வெட்டு வரியை உறுதிப்படுத்த வெளியீடு"
-
-
 msgid "Selected edges/faces required"
 msgstr "தேர்ந்தெடுக்கப்பட்ட விளிம்புகள்/முகங்கள் தேவை"
 
@@ -119234,10 +116939,6 @@ msgstr "பொருந்தக்கூடிய முக மண்டலங�
 
 msgid "Mesh object(s) have no active vertex/edge/face"
 msgstr "கண்ணி பொருள்(கள்) செயலில் வெர்டெக்ச்/எட்ச்/முகம் இல்லை"
-
-
-msgid "Does not work in face selection mode"
-msgstr "முகம் தேர்வு பயன்முறையில் வேலை செய்யாது"
 
 
 msgid "This operator requires an active vertex (last selected)"
@@ -119561,16 +117262,8 @@ msgid "Cannot create editmode armature"
 msgstr "எடிட்மோட் ஆர்மேச்சரை உருவாக்க முடியாது"
 
 
-msgid "Not implemented"
-msgstr "செயல்படுத்தப்படவில்லை"
-
-
 msgid "Converting some non-editable object/object data, enforcing 'Keep Original' option to True"
 msgstr "சில திருத்தப்படாத பொருள்/பொருள் தரவை மாற்றுவது, 'அசல்' விருப்பத்தை உண்மைக்கு அமல்படுத்துதல்"
-
-
-msgid "Convert Surfaces to Grease Pencil is not supported"
-msgstr "பசை எழுதுகோலுக்கு மேற்பரப்புகளை மாற்றவும் ஆதரிக்கப்படவில்லை"
 
 
 msgid "Object not found"
@@ -119777,10 +117470,6 @@ msgid "Modifier containing the node is disabled"
 msgstr "முனையைக் கொண்ட மாற்றியமைத்தல் முடக்கப்பட்டுள்ளது"
 
 
-msgid "Cannot determine bake location on disk"
-msgstr "வட்டில் சுட்டுக்கொள்ளும் இடத்தை தீர்மானிக்க முடியாது"
-
-
 msgid "Failed to remove metadata directory %s"
 msgstr "மேனிலை தரவு அடைவு %s ஐ அகற்றுவதில் தோல்வி"
 
@@ -119795,10 +117484,6 @@ msgstr "பொருள் %s, மாற்றியமைக்கும் %s 
 
 msgid "Path conflict: %d caches set to path %s"
 msgstr "பாதை மோதல்: %d தற்காலிக சேமிப்புகள் பாதை %s க்கு அமைக்கப்பட்டன"
-
-
-msgid "File must be saved before baking"
-msgstr "பேக்கிங் முன் கோப்பு சேமிக்கப்பட வேண்டும்"
 
 
 msgid "Cache has to be enabled"
@@ -120113,26 +117798,6 @@ msgid "Applied modifier was not first, result may not be as expected"
 msgstr "பயன்பாட்டு மாற்றியமைப்பாளர் முதலில் இல்லை, முடிவு எதிர்பார்த்தபடி இருக்காது"
 
 
-msgid "Reshape can work only with higher levels of subdivisions"
-msgstr "மறுசீரமைப்பு அதிக அளவு உட்பிரிவுகளுடன் மட்டுமே வேலை செய்ய முடியும்"
-
-
-msgid "Second selected mesh object required to copy shape from"
-msgstr "வடிவத்தை நகலெடுக்க தேவையான இரண்டாவது தேர்ந்தெடுக்கப்பட்ட கண்ணி பொருள்"
-
-
-msgid "Objects do not have the same number of vertices"
-msgstr "பொருள்களுக்கு ஒரே எண்ணிக்கையிலான செங்குத்துகள் இல்லை"
-
-
-msgid "No valid subdivisions found to rebuild a lower level"
-msgstr "செல்லுபடியாகும் துணைப்பிரிவுகள் எதுவும் கீழ் மட்டத்தை மீண்டும் உருவாக்கவில்லை"
-
-
-msgid "No valid subdivisions found to rebuild lower levels"
-msgstr "குறைந்த மட்டங்களை மீண்டும் கட்டியெழுப்ப செல்லுபடியாகும் துணைப்பிரிவுகள் எதுவும் கிடைக்கவில்லை"
-
-
 msgid "Modifier is disabled"
 msgstr "மாற்றியமைப்பாளர் முடக்கப்பட்டுள்ளது"
 
@@ -120169,10 +117834,6 @@ msgid "Modifier '%s' was not copied to any objects"
 msgstr "மாற்றியமைக்கும் '%s' எந்த பொருளுக்கும் நகலெடுக்கப்படவில்லை"
 
 
-msgid "%d new levels rebuilt"
-msgstr "%d புதிய நிலைகள் மீண்டும் கட்டப்பட்டன"
-
-
 msgid "Mesh '%s' has no skin vertex data"
 msgstr "மெச் '%s' தோல் வெர்டெக்ச் தரவு இல்லை"
 
@@ -120199,6 +117860,30 @@ msgstr "மூல பொருளின் பொருள் வகை ஆத�
 
 msgid "No supported objects were selected"
 msgstr "ஆதரிக்கப்பட்ட பொருள்கள் எதுவும் தேர்ந்தெடுக்கப்படவில்லை"
+
+
+msgid "Reshape can work only with higher levels of subdivisions"
+msgstr "மறுசீரமைப்பு அதிக அளவு உட்பிரிவுகளுடன் மட்டுமே வேலை செய்ய முடியும்"
+
+
+msgid "Second selected mesh object required to copy shape from"
+msgstr "வடிவத்தை நகலெடுக்க தேவையான இரண்டாவது தேர்ந்தெடுக்கப்பட்ட கண்ணி பொருள்"
+
+
+msgid "Objects do not have the same number of vertices"
+msgstr "பொருள்களுக்கு ஒரே எண்ணிக்கையிலான செங்குத்துகள் இல்லை"
+
+
+msgid "No valid subdivisions found to rebuild a lower level"
+msgstr "செல்லுபடியாகும் துணைப்பிரிவுகள் எதுவும் கீழ் மட்டத்தை மீண்டும் உருவாக்கவில்லை"
+
+
+msgid "No valid subdivisions found to rebuild lower levels"
+msgstr "குறைந்த மட்டங்களை மீண்டும் கட்டியெழுப்ப செல்லுபடியாகும் துணைப்பிரிவுகள் எதுவும் கிடைக்கவில்லை"
+
+
+msgid "%d new levels rebuilt"
+msgstr "%d புதிய நிலைகள் மீண்டும் கட்டப்பட்டன"
 
 
 msgid "Set Parent To"
@@ -120351,10 +118036,6 @@ msgstr "குவாட்ரிப்லோ: ரெலிசிங் தோல
 
 msgid "Select Collection"
 msgstr "சேகரிப்பைத் தேர்ந்தெடுக்கவும்"
-
-
-msgid "No active object"
-msgstr "செயலில் பொருள் இல்லை"
 
 
 msgid "Use another Keying Set, as the active one depends on the currently selected objects or cannot find any targets due to unsuitable context"
@@ -121210,6 +118891,61 @@ msgid "Active group is locked, aborting"
 msgstr "செயலில் உள்ள குழு பூட்டப்பட்டுள்ளது, கருக்கலைப்பு செய்கிறது"
 
 
+msgid "Fill tool needs active material"
+msgstr "நிரப்பு கருவி செயலில் உள்ள மூலப்பொருள் தேவை"
+
+
+msgid "GPencil Interpolation: "
+msgstr "gpencil இடைக்கணிப்பு: "
+
+
+msgid "ESC/RMB to cancel, Enter/LMB to confirm, WHEEL/MOVE to adjust factor"
+msgstr "ரத்து செய்ய esc/rmb, உறுதிப்படுத்த, வீல்/காரணி சரிசெய்ய நகர்த்த/lmb ஐ உள்ளிடவும்"
+
+
+msgid "Standard transitions between keyframes"
+msgstr "கீஃப்ரேம்களுக்கு இடையில் நிலையான மாற்றங்கள்"
+
+
+msgid "Predefined inertial transitions, useful for motion graphics (from least to most \"dramatic\")"
+msgstr "முன் வரையறுக்கப்பட்ட செயலற்ற மாற்றங்கள், இயக்க கிராபிக்ச் பயனுள்ளவை (குறைந்தது முதல் பெரும்பாலான \"வியத்தகு\" வரை)"
+
+
+msgid "Simple physics-inspired easing effects"
+msgstr "எளிய இயற்பியல்-ஈர்க்கப்பட்ட தளர்த்தல் விளைவுகள்"
+
+
+msgctxt "GPencil"
+msgid "Interpolation"
+msgstr "இடைக்கணிப்பு"
+
+
+msgctxt "GPencil"
+msgid "Easing (by strength)"
+msgstr "எளிதாக்குதல் (வலிமையால்)"
+
+
+msgctxt "GPencil"
+msgid "Dynamic Effects"
+msgstr "மாறும் விளைவுகள்"
+
+
+msgid "Trace"
+msgstr "சுவடு"
+
+
+msgid "Target object library-data, ignoring!"
+msgstr "இலக்கு பொருள் நூலக-தரவு, புறக்கணித்தல்!"
+
+
+msgid "No image empty selected"
+msgstr "எந்த படமும் காலியாக தேர்ந்தெடுக்கப்படவில்லை"
+
+
+msgid "No valid image format selected"
+msgstr "செல்லுபடியாகும் பட வடிவம் எதுவும் தேர்ந்தெடுக்கப்படவில்லை"
+
+
 msgid "PaintCurve"
 msgstr "பெயிண்ட் கார்வ்"
 
@@ -121288,6 +119024,10 @@ msgstr "opengl off-screen இடையகத்தை உருவாக்க�
 
 msgid "Missing%s%s%s%s detected!"
 msgstr "காணவில்லை%s%s%s%s கண்டறியப்பட்டது!"
+
+
+msgid "Palette created"
+msgstr "தட்டு உருவாக்கப்பட்டது"
 
 
 msgid "The modifier used does not support deformed locations"
@@ -121446,16 +119186,16 @@ msgid "No data in the internal clipboard to paste"
 msgstr "ஒட்டுவதற்கு உள் கிளிப்போர்டில் தரவு இல்லை"
 
 
-msgid "Keyframe pasting is not available for grease pencil or mask mode"
-msgstr "பசை எழுதுகோல் அல்லது மாச்க் பயன்முறைக்கு கீஃப்ரேம் ஒட்டுதல் கிடைக்கவில்லை"
-
-
 msgid "No selected F-Curves to paste into"
 msgstr "ஒட்டுவதற்கு தேர்ந்தெடுக்கப்பட்ட எஃப்-வளைவுகள் இல்லை"
 
 
 msgid "Insert Keyframes is not yet implemented for this mode"
 msgstr "இந்த பயன்முறைக்கு கீஃப்ரேம்களை செருகவும் இன்னும் செயல்படுத்தப்படவில்லை"
+
+
+msgid "Not implemented"
+msgstr "செயல்படுத்தப்படவில்லை"
 
 
 msgid "Not implemented for Masks"
@@ -122359,14 +120099,6 @@ msgid "No compatible images are on the clipboard"
 msgstr "கிளிப்போர்டில் இணக்கமான படங்கள் எதுவும் இல்லை"
 
 
-msgid "Unpack 1 File"
-msgstr "1 கோப்பைத் திறக்கவும்"
-
-
-msgid "Unpack %d Files"
-msgstr "%d கோப்புகளைத் திறக்கவும்"
-
-
 msgid "No packed files to unpack"
 msgstr "திறக்க நிரம்பிய கோப்புகள் இல்லை"
 
@@ -123057,10 +120789,6 @@ msgstr "'%s' செயலை அவிழ்க்க முடியாது. 
 
 msgid "Cannot unlink material '%s'. It's not clear which object or object-data it should be unlinked from, there's no object or object-data as parent in the Outliner tree"
 msgstr "மூலப்பொருள் '%s' ஐ இணைக்க முடியாது. எந்த பொருள் அல்லது பொருள்-தரவு அதை இணைக்க வேண்டும் என்பது தெளிவாக இல்லை, வெளிப்புற மரத்தில் பெற்றோராக எந்த பொருளும் அல்லது பொருள்-தரவு இல்லை"
-
-
-msgid "Cannot unlink texture '%s'. It's not clear which freestyle line style it should be unlinked from, there's no freestyle line style as parent in the Outliner tree"
-msgstr "'%s' அமைப்பை இணைக்க முடியாது. எந்த ஃப்ரீபாணி லைன் பாணியிலிருந்து அதை இணைக்க வேண்டும் என்பது தெளிவாக இல்லை, வெளிப்புற மரத்தில் பெற்றோராக ஃப்ரீபாணி லைன் பாணி இல்லை"
 
 
 msgid "Cannot unlink collection '%s'. It's not clear which scene, collection or instance empties it should be unlinked from, there's no scene, collection or instance empties as parent in the Outliner tree"
@@ -124537,11 +122265,6 @@ msgid "Could not open Alembic archive for reading, see console for detail"
 msgstr "வாசிப்புக்காக அலெம்பிக் காப்பகத்தைத் திறக்க முடியவில்லை, விவரங்களுக்கு கன்சோலைப் பார்க்கவும்"
 
 
-msgctxt "Action"
-msgid "Group"
-msgstr "குழு"
-
-
 msgid "PLY Importer: failed importing, unknown error"
 msgstr "பிளை இறக்குமதியாளர்: இறக்குமதி தோல்வியுற்றது, அறியப்படாத பிழை"
 
@@ -124648,14 +122371,6 @@ msgstr "யு.எச்.டி இறக்குமதி: %s படிக்�
 
 msgid "An exception occurred invoking USD hook '%s'"
 msgstr "யு.எச்.டி ஊக் '%s'"
-
-
-msgid "USD Import: color attribute value '%s' count inconsistent with interpolation type"
-msgstr "யு.எச்.டி இறக்குமதி: வண்ண பண்புக்கூறு மதிப்பு '%s' எண்ணிக்கை இடைக்கணிப்பு வகையுடன் முரணானது"
-
-
-msgid "USD Import: couldn't add color attribute '%s'"
-msgstr "யு.எச்.டி இறக்குமதி: வண்ண பண்புக்கூறு '%s' ஐ சேர்க்க முடியவில்லை"
 
 
 msgid "%s: Error: Couldn't get input socket %s for node %s"
@@ -125497,10 +123212,6 @@ msgid "Duplicate index %d in vertex_indices_set"
 msgstr "vertex_indices_set இல் நகல் குறியீட்டு %d"
 
 
-msgid "Cannot assign material '%s', it has to be used by the grease pencil object already"
-msgstr "மூலப்பொருள் '%s' ஐ ஒதுக்க முடியாது, இதை ஏற்கனவே பசை எழுதுகோல் பொருளால் பயன்படுத்த வேண்டும்"
-
-
 msgid "Unable to create new strip"
 msgstr "புதிய துண்டு உருவாக்க முடியவில்லை"
 
@@ -125824,10 +123535,6 @@ msgstr "பொருள் '%s' மதிப்பீடு செய்யப�
 
 msgid "Object '%s' could not create internal data for finding nearest point"
 msgstr "பொருள் '%s' அருகிலுள்ள புள்ளியைக் கண்டுபிடிப்பதற்கான உள் தரவை உருவாக்க முடியவில்லை"
-
-
-msgid "Object '%s' is not valid for this operation! Only curves are supported"
-msgstr "இந்த செயல்பாட்டிற்கு பொருள் '%s' செல்லுபடியாகாது! வளைவுகள் மட்டுமே ஆதரிக்கப்படுகின்றன"
 
 
 msgid "Palette '%s' does not contain color given"
@@ -126316,10 +124023,6 @@ msgstr "அடுக்கு படி"
 
 msgid "Outline requires an active camera"
 msgstr "அவுட்லைன் செயலில் உள்ள கேமரா தேவை"
-
-
-msgid "Subdivide"
-msgstr "உட்பிரிவு"
 
 
 msgid "Stroke Fit Method"
@@ -127061,6 +124764,10 @@ msgid "Add Input"
 msgstr "உள்ளீட்டைச் சேர்க்கவும்"
 
 
+msgid "Layer:"
+msgstr "அடுக்கு:"
+
+
 msgid "File Subpath:"
 msgstr "கோப்பு துணை பாத்:"
 
@@ -127170,6 +124877,10 @@ msgstr "வரி இடைவெளி"
 msgctxt "Text"
 msgid "Tab"
 msgstr "தாவல்"
+
+
+msgid "Addend"
+msgstr "கூடுதல்"
 
 
 msgid "The string to find in the input string"
@@ -128768,10 +126479,6 @@ msgid "The rotation of the scene's 3D cursor, in the local space of the modified
 msgstr "மாற்றியமைக்கப்பட்ட பொருளின் உள்ளக இடத்தில் காட்சியின் 3d கர்சரின் சுழற்சி"
 
 
-msgid "Operator Selection"
-msgstr "ஆபரேட்டர் தேர்வு"
-
-
 msgid "Volume scale is lower than permitted by OpenVDB"
 msgstr "திறந்தவிடிபி அனுமதித்ததை விட தொகுதி அளவு குறைவாக உள்ளது"
 
@@ -128878,10 +126585,6 @@ msgstr "உள்ளீட்டு வடிவியல் ஆதரிக்�
 
 msgid "Undefined Node Tree Type"
 msgstr "வரையறுக்கப்படாத முனை மரம் வகை"
-
-
-msgid "Addend"
-msgstr "கூடுதல்"
 
 
 msgid " (Deprecated)"

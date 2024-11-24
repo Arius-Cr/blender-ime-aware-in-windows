@@ -1889,6 +1889,7 @@ void wm_ghost_init(bContext *C)
   GHOST_SetBacktraceHandler((GHOST_TBacktraceFn)BLI_system_backtrace);
 
   g_system = GHOST_CreateSystem();
+  GPU_backend_ghost_system_set(g_system);
 
   if (UNLIKELY(g_system == nullptr)) {
     /* GHOST will have reported the back-ends that failed to load. */
@@ -1929,6 +1930,7 @@ void wm_ghost_init_background()
   GHOST_SetBacktraceHandler((GHOST_TBacktraceFn)BLI_system_backtrace);
 
   g_system = GHOST_CreateSystemBackground();
+  GPU_backend_ghost_system_set(g_system);
 
   GHOST_Debug debug = {0};
   if (G.debug & G_DEBUG_GHOST) {
@@ -2979,11 +2981,10 @@ bool WM_window_is_temp_screen(const wmWindow *win)
  * \{ */
 
 #ifdef WITH_INPUT_IME
-/**
- * \note Keep in mind #wm_window_IME_begin is also used to reposition the IME window.
- */
 void wm_window_IME_begin(wmWindow *win, int x, int y, int w, int h, bool complete)
 {
+  /* NOTE: Keep in mind #wm_window_IME_begin is also used to reposition the IME window. */
+
   BLI_assert(win);
   if ((WM_capabilities_flag() & WM_CAPABILITY_INPUT_IME) == 0) {
     return;

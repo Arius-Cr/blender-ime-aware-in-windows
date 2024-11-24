@@ -16,7 +16,6 @@ from bl_i18n_utils import (
     settings,
     utils_rtl,
 )
-from typing import Dict
 
 
 ##### Misc Utils #####
@@ -239,7 +238,7 @@ def enable_addons(addons=None, support=None, disable=False, check_only=False):
                         continue
                     print("    Enabling module ", addon_module_name)
                     bpy.ops.preferences.addon_enable(module=addon_module_name)
-            except BaseException as ex:  # XXX TEMP WORKAROUND
+            except Exception as ex:  # XXX TEMP WORKAROUND
                 print(ex)
 
         # XXX There are currently some problems with bpy/rna...
@@ -1210,7 +1209,7 @@ class I18nMessages:
         """
         Update or create a single PO file (specified by a filepath) from the given POT `I18nMessages` data.
 
-        Callback usable in a context where Blender specific modules (like `bpy`) are not available.
+        Callback usable in a context where Blender specific modules (like ``bpy``) are not available.
         """
         import sys
         sys.stdout.reconfigure(encoding="utf-8")
@@ -1230,7 +1229,7 @@ class I18nMessages:
         """
         Cleanup a single PO file (specified by a filepath).
 
-        Callback usable in a context where Blender specific modules (like `bpy`) are not available.
+        Callback usable in a context where Blender specific modules (like ``bpy``) are not available.
         """
         import sys
         sys.stdout.reconfigure(encoding="utf-8")
@@ -1250,7 +1249,7 @@ class I18nMessages:
         """
         Cleanup and write a single PO file (specified by a filepath) into the relevant Blender source 'compact' PO file.
 
-        Callback usable in a context where Blender specific modules (like `bpy`) are not available.
+        Callback usable in a context where Blender specific modules (like ``bpy``) are not available.
         """
         import sys
         sys.stdout.reconfigure(encoding="utf-8")
@@ -1334,7 +1333,7 @@ class I18n:
 
     def __init__(self, kind=None, src=None, langs=set(), settings=settings):
         self.settings = settings
-        self.trans: Dict[str, I18nMessages] = {}
+        self.trans: dict[str, I18nMessages] = {}
         self.src = {}  # Should have the same keys as self.trans (plus PARSER_PY_ID for py file)!
         self.dst = self._dst  # A callable that transforms src_path into dst_path!
         if kind and src:

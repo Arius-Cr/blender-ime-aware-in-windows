@@ -33,7 +33,6 @@ enum class Type : int8_t {
   Mask,
   DyntopoBegin,
   DyntopoEnd,
-  DyntopoSymmetrize,
   Geometry,
   FaceSet,
   Color,
@@ -62,6 +61,13 @@ void push_nodes(const Depsgraph &depsgraph,
  * #push_begin_ex instead if so desired.
  */
 void push_begin(const Scene &scene, Object &ob, const wmOperator *op);
+
+/**
+ * Pushes an undo step when entering Sculpt mode.
+ *
+ * Similar to geometry_push, this undo type does not need the PBVH to be constructed.
+ */
+void push_enter_sculpt_mode(const Scene &scene, Object &ob, const wmOperator *op);
 
 /**
  * NOTE: #push_begin is preferred since `name`

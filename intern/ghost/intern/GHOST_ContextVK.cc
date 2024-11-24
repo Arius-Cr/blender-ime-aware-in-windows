@@ -27,6 +27,7 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <mutex>
 #include <optional>
 #include <sstream>
 
@@ -136,6 +137,9 @@ class GHOST_DeviceVK {
 
   int users = 0;
 
+  /** Mutex to externally synchronize access to queue. */
+  std::mutex queue_mutex;
+
  public:
   GHOST_DeviceVK(VkInstance vk_instance, VkPhysicalDevice vk_physical_device)
       : instance(vk_instance), physical_device(vk_physical_device)
@@ -237,6 +241,13 @@ class GHOST_DeviceVK {
 
     void *device_create_info_p_next = nullptr;
 
+    /* Enable vulkan 11 features when supported on physical device. */
+    VkPhysicalDeviceVulkan11Features vulkan_11_features = {};
+    vulkan_11_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+    vulkan_11_features.pNext = device_create_info_p_next;
+    vulkan_11_features.shaderDrawParameters = features_11.shaderDrawParameters;
+    device_create_info_p_next = &vulkan_11_features;
+
     /* Enable optional vulkan 12 features when supported on physical device. */
     VkPhysicalDeviceVulkan12Features vulkan_12_features = {};
     vulkan_12_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
@@ -245,20 +256,14 @@ class GHOST_DeviceVK {
     vulkan_12_features.pNext = device_create_info_p_next;
     device_create_info_p_next = &vulkan_12_features;
 
-    /* Enable shader draw parameters on logical device when supported on physical device. */
-    VkPhysicalDeviceShaderDrawParametersFeatures shader_draw_parameters = {};
-    shader_draw_parameters.sType =
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
-    shader_draw_parameters.shaderDrawParameters = features_11.shaderDrawParameters;
-    shader_draw_parameters.pNext = device_create_info_p_next;
-    device_create_info_p_next = &shader_draw_parameters;
-
     /* Enable dynamic rendering. */
     VkPhysicalDeviceDynamicRenderingFeatures dynamic_rendering = {};
     dynamic_rendering.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
-    dynamic_rendering.dynamicRendering = true;
-    dynamic_rendering.pNext = device_create_info_p_next;
-    device_create_info_p_next = &dynamic_rendering;
+    dynamic_rendering.dynamicRendering = VK_TRUE;
+    if (has_extensions({VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME})) {
+      dynamic_rendering.pNext = device_create_info_p_next;
+      device_create_info_p_next = &dynamic_rendering;
+    }
 
     VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT
         dynamic_rendering_unused_attachments = {};
@@ -277,6 +282,16 @@ class GHOST_DeviceVK {
     if (has_extensions({VK_KHR_MAINTENANCE_4_EXTENSION_NAME})) {
       maintenance_4.pNext = device_create_info_p_next;
       device_create_info_p_next = &maintenance_4;
+    }
+
+    /* Query and enable Fragment Shader Barycentrics. */
+    VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR fragment_shader_barycentric = {};
+    fragment_shader_barycentric.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR;
+    fragment_shader_barycentric.fragmentShaderBarycentric = VK_TRUE;
+    if (has_extensions({VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME})) {
+      fragment_shader_barycentric.pNext = device_create_info_p_next;
+      device_create_info_p_next = &fragment_shader_barycentric;
     }
 
     device_create_info.pNext = device_create_info_p_next;
@@ -410,7 +425,7 @@ static GHOST_TSuccess ensure_vulkan_device(VkInstance vk_instance,
     return GHOST_kFailure;
   }
 
-  vulkan_device = std::make_optional<GHOST_DeviceVK>(vk_instance, best_physical_device);
+  vulkan_device.emplace(vk_instance, best_physical_device);
 
   return GHOST_kSuccess;
 }
@@ -554,7 +569,11 @@ GHOST_TSuccess GHOST_ContextVK::swapBuffers()
   present_info.pImageIndices = &s_currentImage;
   present_info.pResults = nullptr;
 
-  VkResult result = vkQueuePresentKHR(m_present_queue, &present_info);
+  VkResult result = VK_SUCCESS;
+  {
+    std::scoped_lock lock(vulkan_device->queue_mutex);
+    result = vkQueuePresentKHR(m_present_queue, &present_info);
+  }
   if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
     /* Swap-chain is out of date. Recreate swap-chain and skip this frame. */
     destroySwapchain();
@@ -598,7 +617,8 @@ GHOST_TSuccess GHOST_ContextVK::getVulkanHandles(void *r_instance,
                                                  void *r_physical_device,
                                                  void *r_device,
                                                  uint32_t *r_graphic_queue_family,
-                                                 void *r_queue)
+                                                 void *r_queue,
+                                                 void **r_queue_mutex)
 {
   *((VkInstance *)r_instance) = VK_NULL_HANDLE;
   *((VkPhysicalDevice *)r_physical_device) = VK_NULL_HANDLE;
@@ -609,6 +629,8 @@ GHOST_TSuccess GHOST_ContextVK::getVulkanHandles(void *r_instance,
     *((VkPhysicalDevice *)r_physical_device) = vulkan_device->physical_device;
     *((VkDevice *)r_device) = vulkan_device->device;
     *r_graphic_queue_family = vulkan_device->generic_queue_family;
+    std::mutex **queue_mutex = (std::mutex **)r_queue_mutex;
+    *queue_mutex = &vulkan_device->queue_mutex;
   }
 
   *((VkQueue *)r_queue) = m_graphic_queue;
@@ -969,23 +991,17 @@ GHOST_TSuccess GHOST_ContextVK::initializeDrawingContext()
 
     required_device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
   }
-  required_device_extensions.push_back(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME);
-  required_device_extensions.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
-  required_device_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-  /* NOTE: marking this as an optional extension, but is actually required. Renderdoc doesn't
-   * create a device with this extension, but seems to work when not requesting the extension.
-   */
+  optional_device_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
   optional_device_extensions.push_back(VK_EXT_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_EXTENSION_NAME);
   optional_device_extensions.push_back(VK_EXT_SHADER_STENCIL_EXPORT_EXTENSION_NAME);
+  optional_device_extensions.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
+  optional_device_extensions.push_back(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
 
   /* Enable MoltenVK required instance extensions. */
 #ifdef __APPLE__
   requireExtension(
       extensions_available, extensions_enabled, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 #endif
-  requireExtension(extensions_available,
-                   extensions_enabled,
-                   VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
   VkInstance instance = VK_NULL_HANDLE;
   if (!vulkan_device.has_value()) {
@@ -1072,18 +1088,6 @@ GHOST_TSuccess GHOST_ContextVK::initializeDrawingContext()
   }
 
   vulkan_device->users++;
-  /* Register optional device extensions */
-  if (vulkan_device->has_extensions({VK_KHR_MAINTENANCE_4_EXTENSION_NAME})) {
-    required_device_extensions.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
-  }
-#ifdef WITH_VULKAN_MOLTENVK
-  /* According to the Vulkan specs, when `VK_KHR_portability_subset` is available it should be
-   * enabled. See
-   * https://vulkan.lunarg.com/doc/view/1.2.198.1/mac/1.2-extensions/vkspec.html#VUID-VkDeviceCreateInfo-pProperties-04451*/
-  if (vulkan_device->has_extensions({VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME})) {
-    required_device_extensions.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
-  }
-#endif
   vulkan_device->ensure_device(required_device_extensions, optional_device_extensions);
 
   vkGetDeviceQueue(

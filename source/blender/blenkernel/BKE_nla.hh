@@ -13,6 +13,7 @@
 
 #include "DNA_listBase.h"
 
+#include "BKE_action.hh"
 #include "BKE_anim_data.hh"
 
 #include "BLI_function_ref.hh"
@@ -174,8 +175,23 @@ void BKE_nla_clip_length_ensure_nonzero(const float *actstart, float *r_actend);
 
 /**
  * Create a NLA Strip referencing the given Action.
+ *
+ * If this is a layered Action, a suitable slot is automatically chosen. If
+ * there is none available, no slot will be assigned.
  */
 NlaStrip *BKE_nlastrip_new(bAction *act, ID &animated_id);
+
+/**
+ * Create a NLA Strip referencing the given Action & Slot.
+ *
+ * If the Action is legacy, the slot is ignored.
+ *
+ * This can return nullptr only when act == nullptr or when the slot ID type
+ * does not match the given animated ID.
+ */
+NlaStrip *BKE_nlastrip_new_for_slot(bAction *act,
+                                    blender::animrig::slot_handle_t slot_handle,
+                                    ID &animated_id);
 
 /*
  * Removes the given NLA strip from the list of strips provided.
@@ -191,7 +207,8 @@ void BKE_nlastrip_remove_and_free(ListBase *strips, NlaStrip *strip, const bool 
  * Add new NLA-strip to the top of the NLA stack - i.e.
  * into the last track if space, or a new one otherwise.
  */
-NlaStrip *BKE_nlastack_add_strip(OwnedAnimData owned_adt, bAction *act, bool is_liboverride);
+NlaStrip *BKE_nlastack_add_strip(OwnedAnimData owned_adt, const bool is_liboverride);
+
 /**
  * Add a NLA Strip referencing the given speaker's sound.
  */
@@ -517,13 +534,18 @@ enum eNlaTime_ConvertModes {
 };
 
 /**
- * Non clipped mapping for strip-time <-> global time:
- * `mode = eNlaTime_ConvertModes -> NLATIME_CONVERT_*`
+ * Non clipped mapping for strip-time <-> global time.
  *
  * Public API method - perform this mapping using the given AnimData block
- * and perform any necessary sanity checks on the value
+ * and perform any necessary sanity checks on the value.
+ *
+ * \note Do not call this with an `adt` obtained from an `bAnimListElem`.
+ * Instead, use `ANIM_nla_tweakedit_remap()` for that. This is because not all
+ * data that might be in an `bAnimListElem` should be nla remapped, and this
+ * function cannot account for that, whereas `ANIM_nla_tweakedit_remap()` takes
+ * the `bAnimListElem` directly and makes sure the right thing is done.
  */
-float BKE_nla_tweakedit_remap(AnimData *adt, float cframe, short mode);
+float BKE_nla_tweakedit_remap(AnimData *adt, float cframe, eNlaTime_ConvertModes mode);
 
 /* ----------------------------- */
 /* .blend file API */

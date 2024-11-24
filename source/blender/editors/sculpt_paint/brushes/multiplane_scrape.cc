@@ -10,7 +10,6 @@
 #include "BLI_math_rotation.h"
 #include "BLI_math_vector_types.hh"
 #include "BLI_span.hh"
-#include "BLI_task.h"
 
 #include "DNA_brush_types.h"
 #include "DNA_object_types.h"
@@ -19,7 +18,7 @@
 #include "BKE_ccg.hh"
 #include "BKE_mesh.hh"
 #include "BKE_paint.hh"
-#include "BKE_pbvh_api.hh"
+#include "BKE_paint_bvh.hh"
 #include "BKE_subdiv_ccg.hh"
 
 #include "GPU_immediate.hh"
@@ -551,7 +550,7 @@ void do_multiplane_scrape_brush(const Depsgraph &depsgraph,
     return;
   }
 
-  area_co = area_no_sp * ss.cache->scale * displace;
+  area_co += area_no_sp * ss.cache->scale * displace;
 
   /* Init brush local space matrix. */
   float4x4 mat = float4x4::identity();

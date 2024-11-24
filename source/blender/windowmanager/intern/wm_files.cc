@@ -990,20 +990,17 @@ static void file_read_reports_finalize(BlendFileReadReport *bf_reports)
   if (bf_reports->count.missing_libraries != 0 || bf_reports->count.missing_linked_id != 0) {
     BKE_reportf(bf_reports->reports,
                 RPT_WARNING,
-                "%d libraries and %d linked data-blocks are missing (including %d ObjectData and "
-                "%d Proxies), please check the Info and Outliner editors for details",
+                "%d libraries and %d linked data-blocks are missing (including %d ObjectData), "
+                "please check the Info and Outliner editors for details",
                 bf_reports->count.missing_libraries,
                 bf_reports->count.missing_linked_id,
-                bf_reports->count.missing_obdata,
-                bf_reports->count.missing_obproxies);
+                bf_reports->count.missing_obdata);
   }
   else {
-    if (bf_reports->count.missing_obdata != 0 || bf_reports->count.missing_obproxies != 0) {
-      CLOG_ERROR(&LOG,
-                 "%d local ObjectData and %d local Object proxies are reported to be missing, "
-                 "this should never happen",
-                 bf_reports->count.missing_obdata,
-                 bf_reports->count.missing_obproxies);
+    if (bf_reports->count.missing_obdata != 0) {
+      CLOG_WARN(&LOG,
+                "%d local ObjectData are reported to be missing, this should never happen",
+                bf_reports->count.missing_obdata);
     }
   }
 
@@ -1153,16 +1150,9 @@ bool WM_file_read(bContext *C, const char *filepath, ReportList *reports)
     BLI_assert_msg(0, "invalid 'retval'");
   }
 
-  if (success == false) {
-    /* Remove from recent files list. */
-    if (do_history_file_update) {
-      RecentFile *recent = wm_file_history_find(filepath);
-      if (recent) {
-        wm_history_file_free(recent);
-        wm_history_file_write();
-      }
-    }
-  }
+  /* NOTE: even if the file fails to load, keep the file in the "Recent Files" list.
+   * This is done because failure to load could be caused by the file-system being
+   * temporarily offline, see: #127825. */
 
   WM_cursor_wait(false);
 
@@ -2558,7 +2548,8 @@ static int wm_homefile_write_invoke(bContext *C, wmOperator *op, const wmEvent *
   char display_name[FILE_MAX];
   BLI_path_to_display_name(display_name, sizeof(display_name), IFACE_(U.app_template));
   std::string message = fmt::format(
-      IFACE_("Make the current file the default \"{}\" startup file."), IFACE_(display_name));
+      fmt::runtime(IFACE_("Make the current file the default \"{}\" startup file.")),
+      IFACE_(display_name));
   return WM_operator_confirm_ex(C,
                                 op,
                                 IFACE_("Overwrite Template Startup File"),
@@ -2744,7 +2735,8 @@ static int wm_userpref_read_invoke(bContext *C, wmOperator *op, const wmEvent * 
   if (template_only) {
     char display_name[FILE_MAX];
     BLI_path_to_display_name(display_name, sizeof(display_name), IFACE_(U.app_template));
-    title = fmt::format(IFACE_("Load Factory \"{}\" Preferences."), IFACE_(display_name));
+    title = fmt::format(fmt::runtime(IFACE_("Load Factory \"{}\" Preferences.")),
+                        IFACE_(display_name));
   }
   else {
     title = IFACE_("Load Factory Blender Preferences");
@@ -3003,7 +2995,7 @@ static int wm_read_factory_settings_invoke(bContext *C, wmOperator *op, const wm
   if (template_only) {
     char display_name[FILE_MAX];
     BLI_path_to_display_name(display_name, sizeof(display_name), IFACE_(U.app_template));
-    title = fmt::format(IFACE_("Load Factory \"{}\" Startup File and Preferences"),
+    title = fmt::format(fmt::runtime(IFACE_("Load Factory \"{}\" Startup File and Preferences")),
                         IFACE_(display_name));
   }
   else {

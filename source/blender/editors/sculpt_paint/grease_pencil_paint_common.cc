@@ -10,6 +10,7 @@
 #include "BKE_grease_pencil.hh"
 #include "BKE_paint.hh"
 
+#include "BLI_array_utils.hh"
 #include "BLI_index_mask.hh"
 #include "BLI_math_vector.hh"
 #include "BLI_task.hh"
@@ -104,8 +105,6 @@ float brush_point_influence(const Scene &scene,
   return influence_base * brush_falloff;
 }
 
-/* Compute the closest distance to the "surface". When the point is outside the polygon, compute
- * the closest distance to the polygon points. When the point is inside the polygon return 0.*/
 float closest_distance_to_surface_2d(const float2 pt, const Span<float2> verts)
 {
   int j = verts.size() - 1;
@@ -296,9 +295,10 @@ IndexMask point_selection_mask(const GreasePencilStrokeParams &params,
                                IndexMaskMemory &memory)
 {
 
-  return (use_masking ? ed::greasepencil::retrieve_editable_and_selected_points(
-                            params.ob_eval, params.drawing, params.layer_index, memory) :
-                        params.drawing.strokes().points_range());
+  return use_masking ? ed::greasepencil::retrieve_editable_and_selected_points(
+                           params.ob_orig, params.drawing, params.layer_index, memory) :
+                       ed::greasepencil::retrieve_editable_points(
+                           params.ob_orig, params.drawing, params.layer_index, memory);
 }
 
 IndexMask stroke_selection_mask(const GreasePencilStrokeParams &params,
@@ -306,18 +306,19 @@ IndexMask stroke_selection_mask(const GreasePencilStrokeParams &params,
                                 IndexMaskMemory &memory)
 {
 
-  return (use_masking ? ed::greasepencil::retrieve_editable_and_selected_strokes(
-                            params.ob_eval, params.drawing, params.layer_index, memory) :
-                        params.drawing.strokes().curves_range());
+  return use_masking ? ed::greasepencil::retrieve_editable_and_selected_strokes(
+                           params.ob_orig, params.drawing, params.layer_index, memory) :
+                       ed::greasepencil::retrieve_editable_strokes(
+                           params.ob_orig, params.drawing, params.layer_index, memory);
 }
 
 IndexMask fill_selection_mask(const GreasePencilStrokeParams &params,
                               const bool use_masking,
                               IndexMaskMemory &memory)
 {
-  return (use_masking ? ed::greasepencil::retrieve_editable_and_selected_fill_strokes(
-                            params.ob_eval, params.drawing, params.layer_index, memory) :
-                        params.drawing.strokes().curves_range());
+  return use_masking ? ed::greasepencil::retrieve_editable_and_selected_fill_strokes(
+                           params.ob_orig, params.drawing, params.layer_index, memory) :
+                       params.drawing.strokes().curves_range();
 }
 
 bke::crazyspace::GeometryDeformation get_drawing_deformation(

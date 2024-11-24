@@ -21,7 +21,7 @@
 #include "BKE_customdata.hh"
 #include "BKE_mesh.hh"
 #include "BKE_paint.hh"
-#include "BKE_pbvh_api.hh"
+#include "BKE_paint_bvh.hh"
 #include "BKE_subdiv_ccg.hh"
 
 #include "DEG_depsgraph_query.hh"
@@ -1846,8 +1846,9 @@ Span<gpu::VertBuf *> DrawCacheImpl::ensure_attribute_data(const Object &object,
     }
   }
 
-  /* TODO: May be wrong to clear all dirty values when they might not have been in `node_mask`. */
-  data.dirty_nodes.clear_and_shrink();
+  /* TODO: It would be good to deallocate the bit vector if all of the bits have been reset to
+   * avoid unnecessary processing in subsequent redraws. */
+  dirty_mask.foreach_index_optimized<int>([&](const int i) { data.dirty_nodes[i].reset(); });
 
   flush_vbo_data(vbos, mask);
 

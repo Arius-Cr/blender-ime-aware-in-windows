@@ -11,7 +11,9 @@
 #include <string>
 
 #include "BLI_compiler_attrs.h"
+#include "BLI_map.hh"
 #include "BLI_math_vector_types.hh"
+#include "BLI_rect.h"
 #include "BLI_vector.hh"
 
 #include "RNA_types.hh"
@@ -52,10 +54,12 @@ struct bScreen;
 struct uiBlock;
 struct uiLayout;
 struct uiList;
+struct wmDrawBuffer;
 struct wmGizmoMap;
 struct wmKeyConfig;
 struct wmMsgBus;
 struct wmNotifier;
+struct wmTimer;
 struct wmWindow;
 struct wmWindowManager;
 
@@ -417,6 +421,60 @@ struct Panel_Runtime {
   LayoutPanels layout_panels;
 };
 
+namespace blender::bke {
+
+struct ARegionRuntime {
+  /** Callbacks for this region type. */
+  struct ARegionType *type;
+
+  /** Panel category to use between 'layout' and 'draw'. */
+  const char *category = nullptr;
+
+  /**
+   * The visible part of the region, use with region overlap not to draw
+   * on top of the overlapping regions.
+   *
+   * Lazy initialize, zero'd when unset, relative to #ARegion.winrct x/y min. */
+  rcti visible_rect = {};
+
+  /* The offset needed to not overlap with window scroll-bars. Only used by HUD regions for now. */
+  int offset_x = 0;
+  int offset_y = 0;
+
+  /** Maps #uiBlock::name to uiBlock for faster lookups. */
+  Map<std::string, uiBlock *> block_name_map;
+  /** #uiBlock. */
+  ListBase uiblocks = {};
+
+  /** #wmEventHandler. */
+  ListBase handlers = {};
+
+  /** Use this string to draw info. */
+  char *headerstr = nullptr;
+
+  /** Gizmo-map of this region. */
+  wmGizmoMap *gizmo_map = nullptr;
+
+  /** Blend in/out. */
+  wmTimer *regiontimer = nullptr;
+
+  wmDrawBuffer *draw_buffer = nullptr;
+
+  /** Panel categories runtime. */
+  ListBase panels_category = {};
+
+  /** Region is currently visible on screen. */
+  short visible = 0;
+
+  /** Private, cached notifier events. */
+  short do_draw = 0;
+
+  /* Dummy panel used in popups so they can support layout panels. */
+  Panel *popup_block_panel = nullptr;
+};
+
+}  // namespace blender::bke
+
 /* #uiList types. */
 
 /** Draw an item in the `ui_list`. */
@@ -613,6 +671,9 @@ void BKE_spacedata_id_unref(ScrArea *area, SpaceLink *sl, ID *id);
 /* Area/regions. */
 
 ARegion *BKE_area_region_copy(const SpaceType *st, const ARegion *region);
+
+ARegion *BKE_area_region_new();
+
 /**
  * Doesn't free the region itself.
  */

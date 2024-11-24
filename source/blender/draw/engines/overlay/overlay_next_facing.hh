@@ -10,47 +10,55 @@
 
 #include "BKE_paint.hh"
 
-#include "overlay_next_private.hh"
+#include "overlay_next_base.hh"
 
 namespace blender::draw::overlay {
 
-class Facing {
+/**
+ * Draw a specific color for front and back-faces on surfaces.
+ * Can be toggle in (Viewport Overlays > Geometry > Face Orientation)
+ */
+class Facing : Overlay {
 
  private:
-  const SelectionType selection_type_;
-
   PassMain ps_ = {"Facing"};
 
-  bool enabled = false;
-
  public:
-  Facing(const SelectionType selection_type_) : selection_type_(selection_type_) {}
-
-  void begin_sync(Resources &res, const State &state)
+  void begin_sync(Resources &res, const State &state) final
   {
-    enabled = state.v3d && (state.overlay.flag & V3D_OVERLAY_FACE_ORIENTATION) &&
-              !state.xray_enabled && (selection_type_ == SelectionType::DISABLED);
-    if (!enabled) {
+    enabled_ = state.v3d && state.show_face_orientation() && !state.xray_enabled &&
+               !res.is_selection();
+    if (!enabled_) {
       /* Not used. But release the data. */
       ps_.init();
       return;
     }
 
     const View3DShading &shading = state.v3d->shading;
-    bool use_cull = ((shading.type == OB_SOLID) && (shading.flag & V3D_SHADING_BACKFACE_CULLING));
+    const bool is_solid_viewport = shading.type == OB_SOLID;
+    bool use_cull = (is_solid_viewport && (shading.flag & V3D_SHADING_BACKFACE_CULLING));
     DRWState backface_cull_state = use_cull ? DRW_STATE_CULL_BACK : DRWState(0);
 
+    /* Use the Depth Equal test in solid mode to ensure transparent textures display correctly.
+     * (See #128113). And the Depth-Less test in other modes (E.g. EEVEE) to ensure the overlay
+     * displays correctly (See # 114000). */
+    DRWState depth_compare_state = is_solid_viewport ? DRW_STATE_DEPTH_EQUAL :
+                                                       DRW_STATE_DEPTH_LESS_EQUAL;
+
     ps_.init();
-    ps_.state_set(DRW_STATE_WRITE_COLOR | DRW_STATE_DEPTH_LESS_EQUAL | DRW_STATE_WRITE_DEPTH |
+    ps_.state_set(DRW_STATE_WRITE_COLOR | DRW_STATE_WRITE_DEPTH | depth_compare_state |
                       backface_cull_state,
                   state.clipping_plane_count);
     ps_.shader_set(res.shaders.facing.get());
-    ps_.bind_ubo("globalsBlock", &res.globals_buf);
+    ps_.bind_ubo(OVERLAY_GLOBALS_SLOT, &res.globals_buf);
   }
 
-  void object_sync(Manager &manager, const ObjectRef &ob_ref, const State &state)
+  void object_sync(Manager &manager,
+                   const ObjectRef &ob_ref,
+                   Resources & /*res*/,
+                   const State &state) final
   {
-    if (!enabled) {
+    if (!enabled_) {
       return;
     }
     const bool renderable = DRW_object_is_renderable(ob_ref.object);
@@ -61,7 +69,7 @@ class Facing {
       return;
     }
     const bool use_sculpt_pbvh = BKE_sculptsession_use_pbvh_draw(ob_ref.object, state.rv3d) &&
-                                 !DRW_state_is_image_render();
+                                 !state.is_image_render;
 
     if (use_sculpt_pbvh) {
       ResourceHandle handle = manager.resource_handle_for_sculpt(ob_ref);
@@ -78,13 +86,23 @@ class Facing {
     }
   }
 
-  void draw(Framebuffer &framebuffer, Manager &manager, View &view)
+  void pre_draw(Manager &manager, View &view) final
   {
-    if (!enabled) {
+    if (!enabled_) {
       return;
     }
+
+    manager.generate_commands(ps_, view);
+  }
+
+  void draw(Framebuffer &framebuffer, Manager &manager, View &view) final
+  {
+    if (!enabled_) {
+      return;
+    }
+
     GPU_framebuffer_bind(framebuffer);
-    manager.submit(ps_, view);
+    manager.submit_only(ps_, view);
   }
 };
 

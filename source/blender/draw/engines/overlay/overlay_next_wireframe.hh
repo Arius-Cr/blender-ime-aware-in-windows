@@ -8,15 +8,26 @@
 
 #pragma once
 
+#include "BKE_paint.hh"
 #include "DNA_volume_types.h"
 
 #include "draw_common.hh"
 
+#include "overlay_next_base.hh"
 #include "overlay_next_mesh.hh"
 
 namespace blender::draw::overlay {
 
-class Wireframe {
+/**
+ * Draw wireframe of objects.
+ *
+ * The object wireframe can be drawn because of:
+ * - display option (Object > Viewport Display > Wireframe)
+ * - overlay option (Viewport Overlays > Geometry > Wireframe)
+ * - display as (Object > Viewport Display > Wire)
+ * - wireframe shading mode
+ */
+class Wireframe : Overlay {
  private:
   PassMain wireframe_ps_ = {"Wireframe"};
   struct ColoringPass {
@@ -27,31 +38,40 @@ class Wireframe {
     PassMain::Sub *mesh_all_edges_ps_ = nullptr;
   } colored, non_colored;
 
+  /* Copy of the depth buffer to be able to read it during wireframe rendering. */
+  TextureFromPool tmp_depth_tx_ = {"tmp_depth_tx"};
+  bool do_depth_copy_workaround_ = false;
+
   /* Force display of wireframe on surface objects, regardless of the object display settings. */
   bool show_wire_ = false;
 
-  bool enabled_ = false;
-
  public:
-  void begin_sync(Resources &res, const State &state)
+  void begin_sync(Resources &res, const State &state) final
   {
-    enabled_ = (state.space_type == SPACE_VIEW3D) &&
-               (state.is_wireframe_mode || !state.hide_overlays);
+    enabled_ = state.is_space_v3d() && (state.is_wireframe_mode || !state.hide_overlays);
     if (!enabled_) {
       return;
     }
 
-    show_wire_ = (state.overlay.flag & V3D_OVERLAY_WIREFRAMES);
+    show_wire_ = state.is_wireframe_mode || state.show_wireframes();
 
+    const bool is_selection = res.is_selection();
     const bool do_smooth_lines = (U.gpu_flag & USER_GPU_FLAG_OVERLAY_SMOOTH_WIRE) != 0;
     const bool is_transform = (G.moving & G_TRANSFORM_OBJ) != 0;
     const float wire_threshold = wire_discard_threshold_get(state.overlay.wireframe_threshold);
 
-    GPUTexture **depth_tex = (state.xray_enabled) ? &res.depth_tx : &res.dummy_depth_tx;
+    GPUTexture **depth_tex = (state.xray_enabled) ? &res.depth_tx : &tmp_depth_tx_;
+    if (is_selection) {
+      depth_tex = &res.dummy_depth_tx;
+    }
+
+    /* Note: Depth buffer has different format when doing selection. Avoid copy in this case. */
+    do_depth_copy_workaround_ = !is_selection && (depth_tex == &tmp_depth_tx_);
 
     {
       auto &pass = wireframe_ps_;
       pass.init();
+      pass.bind_ubo(OVERLAY_GLOBALS_SLOT, &res.globals_buf);
       pass.state_set(DRW_STATE_FIRST_VERTEX_CONVENTION | DRW_STATE_WRITE_COLOR |
                          DRW_STATE_WRITE_DEPTH | DRW_STATE_DEPTH_LESS_EQUAL,
                      state.clipping_plane_count);
@@ -64,7 +84,6 @@ class Wireframe {
               sub.specialize_constant(shader, "use_custom_depth_bias", do_smooth_lines);
             }
             sub.shader_set(shader);
-            sub.bind_ubo("globalsBlock", &res.globals_buf);
             sub.bind_texture("depthTex", depth_tex);
             sub.push_constant("wireOpacity", state.overlay.wireframe_opacity);
             sub.push_constant("isTransform", is_transform);
@@ -90,8 +109,8 @@ class Wireframe {
 
   void object_sync(Manager &manager,
                    const ObjectRef &ob_ref,
-                   const State &state,
                    Resources &res,
+                   const State &state,
                    const bool in_edit_paint_mode)
   {
     if (!enabled_) {
@@ -103,7 +122,8 @@ class Wireframe {
     }
 
     const bool all_edges = (ob_ref.object->dtx & OB_DRAW_ALL_EDGES) != 0;
-    const bool show_surface_wire = show_wire_ || (ob_ref.object->dtx & OB_DRAWWIRE);
+    const bool show_surface_wire = show_wire_ || (ob_ref.object->dtx & OB_DRAWWIRE) ||
+                                   (ob_ref.object->dt == OB_WIRE);
 
     ColoringPass &coloring = in_edit_paint_mode ? non_colored : colored;
     switch (ob_ref.object->type) {
@@ -139,9 +159,18 @@ class Wireframe {
       }
       case OB_MESH:
         if (show_surface_wire) {
-          gpu::Batch *geom = DRW_cache_mesh_face_wireframe_get(ob_ref.object);
-          (all_edges ? coloring.mesh_all_edges_ps_ : coloring.mesh_ps_)
-              ->draw(geom, manager.unique_handle(ob_ref), res.select_id(ob_ref).get());
+          if (BKE_sculptsession_use_pbvh_draw(ob_ref.object, state.rv3d)) {
+            ResourceHandle handle = manager.unique_handle(ob_ref);
+
+            for (SculptBatch &batch : sculpt_batches_get(ob_ref.object, SCULPT_BATCH_WIREFRAME)) {
+              coloring.mesh_all_edges_ps_->draw(batch.batch, handle);
+            }
+          }
+          else {
+            gpu::Batch *geom = DRW_cache_mesh_face_wireframe_get(ob_ref.object);
+            (all_edges ? coloring.mesh_all_edges_ps_ : coloring.mesh_ps_)
+                ->draw(geom, manager.unique_handle(ob_ref), res.select_id(ob_ref).get());
+          }
         }
 
         /* Draw loose geometry. */
@@ -188,14 +217,38 @@ class Wireframe {
     }
   }
 
-  void draw(Framebuffer &framebuffer, Manager &manager, View &view)
+  void pre_draw(Manager &manager, View &view) final
   {
     if (!enabled_) {
       return;
     }
 
+    manager.generate_commands(wireframe_ps_, view);
+  }
+
+  /* TODO(fclem): Remove dependency on Resources. */
+  void draw_line(Framebuffer &framebuffer, Resources &res, Manager &manager, View &view)
+  {
+    if (!enabled_) {
+      return;
+    }
+
+    if (do_depth_copy_workaround_) {
+      eGPUTextureUsage usage = GPU_TEXTURE_USAGE_SHADER_READ | GPU_TEXTURE_USAGE_ATTACHMENT;
+      int2 render_size = int2(res.depth_tx.size());
+      tmp_depth_tx_.acquire(render_size, GPU_DEPTH24_STENCIL8, usage);
+
+      /* WORKAROUND: Nasty framebuffer copy.
+       * We should find a way to have nice wireframe without this. */
+      GPU_texture_copy(tmp_depth_tx_, res.depth_tx);
+    }
+
     GPU_framebuffer_bind(framebuffer);
-    manager.submit(wireframe_ps_, view);
+    manager.submit_only(wireframe_ps_, view);
+
+    if (do_depth_copy_workaround_) {
+      tmp_depth_tx_.release();
+    }
   }
 
  private:

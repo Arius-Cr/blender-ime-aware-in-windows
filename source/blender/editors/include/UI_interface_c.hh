@@ -877,7 +877,21 @@ uiBlock *UI_block_begin(const bContext *C,
                         ARegion *region,
                         std::string name,
                         eUIEmbossType emboss);
-void UI_block_end_ex(const bContext *C, uiBlock *block, const int xy[2], int r_xy[2]);
+uiBlock *UI_block_begin(const bContext *C,
+                        Scene *scene,
+                        wmWindow *window,
+                        ARegion *region,
+                        std::string name,
+                        eUIEmbossType emboss);
+void UI_block_end_ex(const bContext *C,
+                     Main *bmain,
+                     wmWindow *window,
+                     Scene *scene,
+                     ARegion *region,
+                     Depsgraph *depsgraph,
+                     uiBlock *block,
+                     const int xy[2] = nullptr,
+                     int r_xy[2] = nullptr);
 void UI_block_end(const bContext *C, uiBlock *block);
 /**
  * Uses local copy of style, to scale things down, and allow widgets to change stuff.
@@ -1780,6 +1794,10 @@ void UI_but_label_alpha_factor_set(uiBut *but, float alpha_factor);
 
 void UI_but_search_preview_grid_size_set(uiBut *but, int rows, int cols);
 
+void UI_but_view_item_draw_size_set(uiBut *but,
+                                    const std::optional<int> draw_width = std::nullopt,
+                                    const std::optional<int> draw_height = std::nullopt);
+
 void UI_block_func_handle_set(uiBlock *block, uiBlockHandleFunc func, void *arg);
 void UI_block_func_set(uiBlock *block, uiButHandleFunc func, void *arg1, void *arg2);
 void UI_block_funcN_set(uiBlock *block,
@@ -1803,9 +1821,7 @@ void UI_but_funcN_set(uiBut *but,
 void UI_but_func_complete_set(uiBut *but, uiButCompleteFunc func, void *arg);
 
 void UI_but_func_drawextra_set(uiBlock *block,
-                               void (*func)(const bContext *C, void *, void *, void *, rcti *rect),
-                               void *arg1,
-                               void *arg2);
+                               std::function<void(const bContext *C, rcti *rect)> func);
 
 void UI_but_func_menu_step_set(uiBut *but, uiMenuStepFunc func);
 
@@ -2841,6 +2857,7 @@ void template_asset_shelf_popover(uiLayout &layout,
 }
 
 void uiTemplateLightLinkingCollection(uiLayout *layout,
+                                      bContext *C,
                                       uiLayout *context_layout,
                                       PointerRNA *ptr,
                                       const char *propname);
@@ -2848,7 +2865,7 @@ void uiTemplateLightLinkingCollection(uiLayout *layout,
 void uiTemplateBoneCollectionTree(uiLayout *layout, bContext *C);
 void uiTemplateGreasePencilLayerTree(uiLayout *layout, bContext *C);
 
-void uiTemplateNodeTreeInterface(uiLayout *layout, PointerRNA *ptr);
+void uiTemplateNodeTreeInterface(uiLayout *layout, bContext *C, PointerRNA *ptr);
 /**
  * Draw all node buttons and socket default values with the same panel structure used by the node.
  */

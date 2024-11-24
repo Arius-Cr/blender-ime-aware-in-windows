@@ -12,14 +12,13 @@
 
 #include "RE_pipeline.h"
 
-#include "GPU_shader.hh"
 #include "GPU_texture.hh"
 
 #include "IMB_colormanagement.hh"
 #include "IMB_imbuf.hh"
 #include "IMB_imbuf_types.hh"
 
-#include "BKE_image.h"
+#include "BKE_image.hh"
 #include "BKE_lib_id.hh"
 
 #include "DNA_ID.h"
@@ -271,13 +270,13 @@ void CachedImageContainer::reset()
   }
 }
 
-Result *CachedImageContainer::get(Context &context,
-                                  Image *image,
-                                  const ImageUser *image_user,
-                                  const char *pass_name)
+Result CachedImageContainer::get(Context &context,
+                                 Image *image,
+                                 const ImageUser *image_user,
+                                 const char *pass_name)
 {
   if (!image || !image_user) {
-    return nullptr;
+    return Result(context);
   }
 
   /* Compute the effective frame number of the image if it was animated. */
@@ -300,7 +299,7 @@ Result *CachedImageContainer::get(Context &context,
   });
 
   cached_image.needed = true;
-  return &cached_image.result;
+  return cached_image.result;
 }
 
 }  // namespace blender::realtime_compositor

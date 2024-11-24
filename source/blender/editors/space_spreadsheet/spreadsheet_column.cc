@@ -2,6 +2,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
+#include "DNA_meshdata_types.h"
 #include "DNA_space_types.h"
 
 #include "MEM_guardedalloc.h"
@@ -33,7 +34,7 @@ eSpreadsheetColumnValueType cpp_type_to_column_type(const CPPType &type)
   if (type.is<int>()) {
     return SPREADSHEET_VALUE_TYPE_INT32;
   }
-  if (type.is<int2>()) {
+  if (type.is_any<short2, int2>()) {
     return SPREADSHEET_VALUE_TYPE_INT32_2D;
   }
   if (type.is<float>()) {
@@ -48,7 +49,7 @@ eSpreadsheetColumnValueType cpp_type_to_column_type(const CPPType &type)
   if (type.is<ColorGeometry4f>()) {
     return SPREADSHEET_VALUE_TYPE_COLOR;
   }
-  if (type.is<std::string>()) {
+  if (type.is<std::string>() || type.is<MStringProperty>()) {
     return SPREADSHEET_VALUE_TYPE_STRING;
   }
   if (type.is<bke::InstanceReference>()) {

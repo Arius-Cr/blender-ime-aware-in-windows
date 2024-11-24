@@ -46,17 +46,17 @@ static SpaceLink *topbar_create(const ScrArea * /*area*/, const Scene * /*scene*
   stopbar->spacetype = SPACE_TOPBAR;
 
   /* header */
-  region = static_cast<ARegion *>(MEM_callocN(sizeof(ARegion), "left aligned header for topbar"));
+  region = BKE_area_region_new();
   BLI_addtail(&stopbar->regionbase, region);
   region->regiontype = RGN_TYPE_HEADER;
   region->alignment = RGN_ALIGN_TOP;
-  region = static_cast<ARegion *>(MEM_callocN(sizeof(ARegion), "right aligned header for topbar"));
+  region = BKE_area_region_new();
   BLI_addtail(&stopbar->regionbase, region);
   region->regiontype = RGN_TYPE_HEADER;
   region->alignment = RGN_ALIGN_RIGHT | RGN_SPLIT_PREV;
 
   /* main regions */
-  region = static_cast<ARegion *>(MEM_callocN(sizeof(ARegion), "main region of topbar"));
+  region = BKE_area_region_new();
   BLI_addtail(&stopbar->regionbase, region);
   region->regiontype = RGN_TYPE_WINDOW;
 
@@ -90,7 +90,7 @@ static void topbar_main_region_init(wmWindowManager *wm, ARegion *region)
   UI_view2d_region_reinit(&region->v2d, V2D_COMMONVIEW_HEADER, region->winx, region->winy);
 
   keymap = WM_keymap_ensure(wm->defaultconf, "View2D Buttons List", SPACE_EMPTY, RGN_TYPE_WINDOW);
-  WM_event_add_keymap_handler(&region->handlers, keymap);
+  WM_event_add_keymap_handler(&region->runtime->handlers, keymap);
 }
 
 static void topbar_operatortypes() {}

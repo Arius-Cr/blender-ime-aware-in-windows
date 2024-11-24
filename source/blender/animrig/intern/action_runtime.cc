@@ -25,9 +25,6 @@
 
 namespace blender::animrig::internal {
 
-/**
- * Rebuild the slot user cache for a specific bmain.
- */
 void rebuild_slot_user_cache(Main &bmain)
 {
   /* Loop over all Actions and clear their slots' user cache. */
@@ -62,7 +59,7 @@ void rebuild_slot_user_cache(Main &bmain)
       if (!slot) {
         return true;
       }
-      /* Const cast because the foreach produces const Actions, and I (Sybren)
+      /* Constant cast because the `foreach` produces const Actions, and I (Sybren)
        * didn't want to make a non-const duplicate. */
       const_cast<Slot *>(slot)->users_add(*id);
       return true;

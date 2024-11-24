@@ -47,7 +47,7 @@ void ui_popup_translate(ARegion *region, const int mdiff[2])
   ED_region_tag_redraw(region);
 
   /* update blocks */
-  LISTBASE_FOREACH (uiBlock *, block, &region->uiblocks) {
+  LISTBASE_FOREACH (uiBlock *, block, &region->runtime->uiblocks) {
     uiPopupBlockHandle *handle = block->handle;
     /* Make empty, will be initialized on next use, see #60608. */
     BLI_rctf_init(&handle->prev_block_rect, 0, 0, 0, 0);
@@ -414,12 +414,12 @@ static void ui_block_region_refresh(const bContext *C, ARegion *region)
   ScrArea *ctx_area = CTX_wm_area(C);
   ARegion *ctx_region = CTX_wm_region(C);
 
-  if (region->do_draw & RGN_REFRESH_UI) {
+  if (region->runtime->do_draw & RGN_REFRESH_UI) {
     ScrArea *handle_ctx_area;
     ARegion *handle_ctx_region;
 
-    region->do_draw &= ~RGN_REFRESH_UI;
-    LISTBASE_FOREACH_MUTABLE (uiBlock *, block, &region->uiblocks) {
+    region->runtime->do_draw &= ~RGN_REFRESH_UI;
+    LISTBASE_FOREACH_MUTABLE (uiBlock *, block, &region->runtime->uiblocks) {
       uiPopupBlockHandle *handle = block->handle;
 
       if (handle->can_refresh) {
@@ -446,7 +446,7 @@ static void ui_block_region_refresh(const bContext *C, ARegion *region)
 
 static void ui_block_region_draw(const bContext *C, ARegion *region)
 {
-  LISTBASE_FOREACH (uiBlock *, block, &region->uiblocks) {
+  LISTBASE_FOREACH (uiBlock *, block, &region->runtime->uiblocks) {
     UI_block_draw(C, block);
   }
 }
@@ -610,7 +610,7 @@ void ui_layout_panel_popup_scroll_apply(Panel *panel, const float dy)
 
 void UI_popup_dummy_panel_set(ARegion *region, uiBlock *block)
 {
-  Panel *&panel = region->runtime.popup_block_panel;
+  Panel *&panel = region->runtime->popup_block_panel;
   if (!panel) {
     /* Dummy popup panel type. */
     static PanelType panel_type = []() {
@@ -638,7 +638,7 @@ uiBlock *ui_popup_block_refresh(bContext *C,
   const uiBlockHandleCreateFunc handle_create_func = handle->popup_create_vars.handle_create_func;
   void *arg = handle->popup_create_vars.arg;
 
-  uiBlock *block_old = static_cast<uiBlock *>(region->uiblocks.first);
+  uiBlock *block_old = static_cast<uiBlock *>(region->runtime->uiblocks.first);
 
   handle->refresh = (block_old != nullptr);
 
@@ -706,8 +706,15 @@ uiBlock *ui_popup_block_refresh(bContext *C,
   block->oldblock = nullptr;
 
   if (!block->endblock) {
-    UI_block_end_ex(
-        C, block, handle->popup_create_vars.event_xy, handle->popup_create_vars.event_xy);
+    UI_block_end_ex(C,
+                    CTX_data_main(C),
+                    window,
+                    CTX_data_scene(C),
+                    region,
+                    CTX_data_depsgraph_pointer(C),
+                    block,
+                    handle->popup_create_vars.event_xy,
+                    handle->popup_create_vars.event_xy);
   }
 
   /* if this is being created from a button */
@@ -911,9 +918,9 @@ uiPopupBlockHandle *ui_popup_block_create(bContext *C,
   type.draw = ui_block_region_draw;
   type.layout = ui_block_region_refresh;
   type.regionid = RGN_TYPE_TEMPORARY;
-  region->type = &type;
+  region->runtime->type = &type;
 
-  UI_region_handlers_add(&region->handlers);
+  UI_region_handlers_add(&region->runtime->handlers);
 
   /* Note that this will be set in the code-path that typically calls refreshing
    * (that loops over #Screen::regionbase and refreshes regions tagged with #RGN_REFRESH_UI).
@@ -966,7 +973,7 @@ void ui_popup_block_free(bContext *C, uiPopupBlockHandle *handle)
    * then close the popover too. We could extend this to other popup types too. */
   ARegion *region = handle->popup_create_vars.butregion;
   if (region != nullptr) {
-    LISTBASE_FOREACH (uiBlock *, block, &region->uiblocks) {
+    LISTBASE_FOREACH (uiBlock *, block, &region->runtime->uiblocks) {
       if (block->handle && (block->flag & UI_BLOCK_POPOVER) &&
           (block->flag & UI_BLOCK_KEEP_OPEN) == 0)
       {
@@ -989,8 +996,8 @@ void ui_popup_block_free(bContext *C, uiPopupBlockHandle *handle)
     handle->popup_create_vars.arg_free(handle->popup_create_vars.arg);
   }
 
-  if (handle->region->runtime.popup_block_panel) {
-    BKE_panel_free(handle->region->runtime.popup_block_panel);
+  if (handle->region->runtime->popup_block_panel) {
+    BKE_panel_free(handle->region->runtime->popup_block_panel);
   }
 
   ui_popup_block_remove(C, handle);

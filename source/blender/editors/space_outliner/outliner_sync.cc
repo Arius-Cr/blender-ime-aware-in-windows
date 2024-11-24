@@ -138,13 +138,10 @@ static void outliner_sync_select_from_outliner_set_types(bContext *C,
  * This is to ensure sync flag data is not lost on sync in the wrong display mode.
  * Returns true if a sync is needed.
  */
-static bool outliner_sync_select_to_outliner_set_types(const bContext *C,
+static bool outliner_sync_select_to_outliner_set_types(const TreeViewContext &tvc,
                                                        SpaceOutliner *space_outliner,
                                                        SyncSelectTypes *sync_types)
 {
-  TreeViewContext tvc;
-  outliner_viewcontext_init(C, &tvc);
-
   const bool sequence_view = space_outliner->outlinevis == SO_SEQUENCE;
 
   sync_types->object = !sequence_view &&
@@ -167,53 +164,15 @@ static bool outliner_sync_select_to_outliner_set_types(const bContext *C,
  * state of the last instance of an object linked in multiple collections.
  */
 struct SelectedItems {
-  GSet *objects;
-  GSet *edit_bones;
-  GSet *pose_bones;
+  Set<Base *> objects;
+  Set<EditBone *> edit_bones;
+  Set<bPoseChannel *> pose_bones;
 };
-
-static void selected_items_init(SelectedItems *selected_items)
-{
-  selected_items->objects = BLI_gset_new(BLI_ghashutil_ptrhash, BLI_ghashutil_ptrcmp, __func__);
-  selected_items->edit_bones = BLI_gset_new(BLI_ghashutil_ptrhash, BLI_ghashutil_ptrcmp, __func__);
-  selected_items->pose_bones = BLI_gset_new(BLI_ghashutil_ptrhash, BLI_ghashutil_ptrcmp, __func__);
-}
-
-static void selected_items_free(SelectedItems *selected_items)
-{
-  BLI_gset_free(selected_items->objects, nullptr);
-  BLI_gset_free(selected_items->edit_bones, nullptr);
-  BLI_gset_free(selected_items->pose_bones, nullptr);
-}
-
-/* Check if an instance of this object been selected by the sync */
-static bool is_object_selected(GSet *selected_objects, Base *base)
-{
-  return BLI_gset_haskey(selected_objects, base);
-}
-
-/* Check if an instance of this edit bone been selected by the sync */
-static bool is_edit_bone_selected(GSet *selected_ebones, EditBone *ebone)
-{
-  return BLI_gset_haskey(selected_ebones, ebone);
-}
-
-/* Check if an instance of this pose bone been selected by the sync */
-static bool is_pose_bone_selected(GSet *selected_pbones, bPoseChannel *pchan)
-{
-  return BLI_gset_haskey(selected_pbones, pchan);
-}
-
-/* Add element's data to selected item set */
-static void add_selected_item(GSet *selected, void *data)
-{
-  BLI_gset_add(selected, data);
-}
 
 static void outliner_select_sync_to_object(ViewLayer *view_layer,
                                            TreeElement *te,
                                            TreeStoreElem *tselem,
-                                           GSet *selected_objects)
+                                           Set<Base *> &selected_objects)
 {
   Object *ob = (Object *)tselem->id;
   Base *base = (te->directdata) ? (Base *)te->directdata :
@@ -222,10 +181,9 @@ static void outliner_select_sync_to_object(ViewLayer *view_layer,
   if (base && (base->flag & BASE_SELECTABLE)) {
     if (tselem->flag & TSE_SELECTED) {
       object::base_select(base, object::BA_SELECT);
-
-      add_selected_item(selected_objects, base);
+      selected_objects.add(base);
     }
-    else if (!is_object_selected(selected_objects, base)) {
+    else if (!selected_objects.contains(base)) {
       object::base_select(base, object::BA_DESELECT);
     }
   }
@@ -235,7 +193,7 @@ static void outliner_select_sync_to_edit_bone(const Scene *scene,
                                               ViewLayer *view_layer,
                                               TreeElement *te,
                                               TreeStoreElem *tselem,
-                                              GSet *selected_ebones)
+                                              Set<EditBone *> &selected_ebones)
 {
   bArmature *arm = (bArmature *)tselem->id;
   EditBone *ebone = (EditBone *)te->directdata;
@@ -245,9 +203,9 @@ static void outliner_select_sync_to_edit_bone(const Scene *scene,
   if (EBONE_SELECTABLE(arm, ebone)) {
     if (tselem->flag & TSE_SELECTED) {
       ED_armature_ebone_select_set(ebone, true);
-      add_selected_item(selected_ebones, ebone);
+      selected_ebones.add(ebone);
     }
-    else if (!is_edit_bone_selected(selected_ebones, ebone)) {
+    else if (!selected_ebones.contains(ebone)) {
       /* Don't flush to parent bone tip, synced selection is iterating the whole tree so
        * deselecting potential children with `ED_armature_ebone_select_set(ebone, false)`
        * would leave its own tip deselected. */
@@ -266,7 +224,7 @@ static void outliner_select_sync_to_edit_bone(const Scene *scene,
 
 static void outliner_select_sync_to_pose_bone(TreeElement *te,
                                               TreeStoreElem *tselem,
-                                              GSet *selected_pbones)
+                                              Set<bPoseChannel *> &selected_pbones)
 {
   Object *ob = (Object *)tselem->id;
   bArmature *arm = static_cast<bArmature *>(ob->data);
@@ -278,9 +236,9 @@ static void outliner_select_sync_to_pose_bone(TreeElement *te,
     if (tselem->flag & TSE_SELECTED) {
       pchan->bone->flag |= BONE_SELECTED;
 
-      add_selected_item(selected_pbones, pchan);
+      selected_pbones.add(pchan);
     }
-    else if (!is_pose_bone_selected(selected_pbones, pchan)) {
+    else if (!selected_pbones.contains(pchan)) {
       pchan->bone->flag &= ~BONE_SELECTED;
     }
   }
@@ -373,13 +331,8 @@ void ED_outliner_select_sync_from_outliner(bContext *C, SpaceOutliner *space_out
 
   /* To store elements that have been selected to prevent linked object sync errors */
   SelectedItems selected_items;
-
-  selected_items_init(&selected_items);
-
   outliner_sync_selection_from_outliner(
       scene, view_layer, &space_outliner->tree, &sync_types, &selected_items);
-
-  selected_items_free(&selected_items);
 
   /* Tag for updates and clear dirty flag to prevent a sync to the outliner on draw. */
   if (sync_types.object) {
@@ -557,23 +510,26 @@ static void get_sync_select_active_data(const bContext *C, SyncSelectActiveData 
   active_data->sequence = SEQ_select_active_get(scene);
 }
 
-void outliner_sync_selection(const bContext *C, SpaceOutliner *space_outliner)
+void outliner_sync_selection(const bContext *C,
+                             const TreeViewContext &tvc,
+                             SpaceOutliner *space_outliner)
 {
   /* Set which types of data to sync from sync dirty flag and outliner display mode */
   SyncSelectTypes sync_types;
   const bool sync_required = outliner_sync_select_to_outliner_set_types(
-      C, space_outliner, &sync_types);
+      tvc, space_outliner, &sync_types);
 
   if (sync_required) {
-    const Scene *scene = CTX_data_scene(C);
-    ViewLayer *view_layer = CTX_data_view_layer(C);
-
     /* Store active object, bones, and sequence */
     SyncSelectActiveData active_data;
     get_sync_select_active_data(C, &active_data);
 
-    outliner_sync_selection_to_outliner(
-        scene, view_layer, space_outliner, &space_outliner->tree, &active_data, &sync_types);
+    outliner_sync_selection_to_outliner(tvc.scene,
+                                        tvc.view_layer,
+                                        space_outliner,
+                                        &space_outliner->tree,
+                                        &active_data,
+                                        &sync_types);
 
     /* Keep any un-synced data in the dirty flag. */
     if (sync_types.object) {

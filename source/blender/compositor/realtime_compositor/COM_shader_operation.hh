@@ -26,10 +26,6 @@ namespace blender::realtime_compositor {
 
 using namespace nodes::derived_node_tree_types;
 
-/* A type representing a contiguous subset of the node execution schedule that will be compiled
- * into a Pixel Operation. */
-using PixelCompileUnit = VectorSet<DNode>;
-
 /* ------------------------------------------------------------------------------------------------
  * Shader Operation
  *

@@ -40,22 +40,27 @@ static VmaAllocationCreateFlags vma_allocation_flags(GPUUsageType usage)
   return VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
 }
 
-static VkMemoryPropertyFlags vma_preferred_flags(const bool is_host_visible)
+static VkMemoryPropertyFlags vma_preferred_flags()
 {
-  return is_host_visible ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT :
-                           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+  return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 }
 
-/*
- * TODO: Check which memory is selected and adjust the creation flag to add mapping. This way the
- * staging buffer can be skipped, or in case of a vertex buffer an intermediate buffer can be
- * removed.
- */
+static VkMemoryPropertyFlags vma_required_flags(const bool is_host_visible)
+{
+  return is_host_visible ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT : 0;
+}
+
 bool VKBuffer::create(size_t size_in_bytes,
                       GPUUsageType usage,
                       VkBufferUsageFlags buffer_usage,
                       const bool is_host_visible)
 {
+  /*
+   * TODO: Check which memory is selected and adjust the creation flag to add mapping. This way the
+   * staging buffer can be skipped, or in case of a vertex buffer an intermediate buffer can be
+   * removed.
+   */
+
   BLI_assert(!is_allocated());
   BLI_assert(vk_buffer_ == VK_NULL_HANDLE);
   BLI_assert(mapped_memory_ == nullptr);
@@ -83,7 +88,8 @@ bool VKBuffer::create(size_t size_in_bytes,
   VmaAllocationCreateInfo vma_create_info = {};
   vma_create_info.flags = vma_allocation_flags(usage);
   vma_create_info.priority = 1.0f;
-  vma_create_info.preferredFlags = vma_preferred_flags(is_host_visible);
+  vma_create_info.requiredFlags = vma_required_flags(is_host_visible);
+  vma_create_info.preferredFlags = vma_preferred_flags();
   vma_create_info.usage = VMA_MEMORY_USAGE_AUTO;
 
   VkResult result = vmaCreateBuffer(
@@ -100,11 +106,21 @@ bool VKBuffer::create(size_t size_in_bytes,
   return true;
 }
 
-void VKBuffer::update(const void *data) const
+void VKBuffer::update_immediately(const void *data) const
 {
   BLI_assert_msg(is_mapped(), "Cannot update a non-mapped buffer.");
   memcpy(mapped_memory_, data, size_in_bytes_);
   flush();
+}
+
+void VKBuffer::update_render_graph(VKContext &context, void *data) const
+{
+  BLI_assert(size_in_bytes_ <= 65536 && size_in_bytes_ % 4 == 0);
+  render_graph::VKUpdateBufferNode::CreateInfo update_buffer = {};
+  update_buffer.dst_buffer = vk_buffer_;
+  update_buffer.data_size = size_in_bytes_;
+  update_buffer.data = data;
+  context.render_graph.add_node(update_buffer);
 }
 
 void VKBuffer::flush() const

@@ -147,7 +147,7 @@ static void hud_region_init(wmWindowManager *wm, ARegion *region)
   region->v2d.maxzoom = 1.0f;
   region->v2d.minzoom = 1.0f;
 
-  UI_region_handlers_add(&region->handlers);
+  UI_region_handlers_add(&region->runtime->handlers);
   region->flag |= RGN_FLAG_TEMP_REGIONDATA;
 }
 
@@ -240,7 +240,7 @@ ARegionType *ED_area_type_hud(int space_type)
 
 static ARegion *hud_region_add(ScrArea *area)
 {
-  ARegion *region = MEM_cnew<ARegion>(__func__);
+  ARegion *region = BKE_area_region_new();
   ARegion *region_win = BKE_area_find_region_type(area, RGN_TYPE_WINDOW);
   if (region_win) {
     BLI_insertlinkbefore(&area->regionbase, region_win, region);
@@ -295,7 +295,7 @@ void ED_area_type_hud_ensure(bContext *C, ScrArea *area)
   }
 
   bool init = false;
-  const bool was_hidden = region == nullptr || region->visible == false;
+  const bool was_hidden = region == nullptr || region->runtime->visible == false;
   ARegion *region_op = CTX_wm_region(C);
   BLI_assert((region_op == nullptr) || (region_op->regiontype != RGN_TYPE_HUD));
   if (!last_redo_poll(C, region_op ? region_op->regiontype : -1)) {
@@ -309,7 +309,7 @@ void ED_area_type_hud_ensure(bContext *C, ScrArea *area)
   if (region == nullptr) {
     init = true;
     region = hud_region_add(area);
-    region->type = art;
+    region->runtime->type = art;
   }
 
   /* Let 'ED_area_update_region_sizes' do the work of placing the region.
@@ -354,8 +354,8 @@ void ED_area_type_hud_ensure(bContext *C, ScrArea *area)
     float x, y;
 
     UI_view2d_scroller_size_get(&region_win->v2d, true, &x, &y);
-    region->runtime.offset_x = x;
-    region->runtime.offset_y = y;
+    region->runtime->offset_x = x;
+    region->runtime->offset_y = y;
   }
 
   /* Reset zoom level (not well supported). */
@@ -366,11 +366,11 @@ void ED_area_type_hud_ensure(bContext *C, ScrArea *area)
   region->v2d.minzoom = 1.0f;
   region->v2d.maxzoom = 1.0f;
 
-  region->visible = !(region->flag & RGN_FLAG_HIDDEN);
+  region->runtime->visible = !(region->flag & RGN_FLAG_HIDDEN);
 
   /* We shouldn't need to do this every time :S */
   /* XXX, this is evil! - it also makes the menu show on first draw. :( */
-  if (region->visible) {
+  if (region->runtime->visible) {
     ARegion *region_prev = CTX_wm_region(C);
     CTX_wm_region_set((bContext *)C, region);
     hud_region_layout(C, region);
@@ -382,7 +382,8 @@ void ED_area_type_hud_ensure(bContext *C, ScrArea *area)
     CTX_wm_region_set((bContext *)C, region_prev);
   }
 
-  region->visible = !((region->flag & RGN_FLAG_HIDDEN) || (region->flag & RGN_FLAG_TOO_SMALL));
+  region->runtime->visible = !((region->flag & RGN_FLAG_HIDDEN) ||
+                               (region->flag & RGN_FLAG_TOO_SMALL));
 }
 
 ARegion *ED_area_type_hud_redo_region_find(const ScrArea *area, const ARegion *hud_region)

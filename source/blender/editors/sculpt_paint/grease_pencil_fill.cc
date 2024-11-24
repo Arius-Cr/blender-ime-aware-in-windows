@@ -18,11 +18,12 @@
 #include "BKE_crazyspace.hh"
 #include "BKE_curves.hh"
 #include "BKE_grease_pencil.hh"
-#include "BKE_image.h"
+#include "BKE_image.hh"
 #include "BKE_lib_id.hh"
 #include "BKE_material.h"
 #include "BKE_paint.hh"
 
+#include "DNA_brush_types.h"
 #include "DNA_curves_types.h"
 #include "DNA_grease_pencil_types.h"
 #include "DNA_material_types.h"
@@ -590,7 +591,8 @@ static bke::CurvesGeometry boundary_to_curves(const Scene &scene,
   MutableSpan<float3> positions = curves.positions_for_write();
   bke::MutableAttributeAccessor attributes = curves.attributes_for_write();
   /* Attributes that are defined explicitly and should not be set to default values. */
-  Set<std::string> skip_curve_attributes = {"curve_type", "material_index", "cyclic", "hardness"};
+  Set<std::string> skip_curve_attributes = {
+      "curve_type", "material_index", "cyclic", "hardness", "fill_opacity"};
   Set<std::string> skip_point_attributes = {"position", "radius", "opacity"};
 
   curves.curve_types_for_write().fill(CURVE_TYPE_POLY);
@@ -602,6 +604,10 @@ static bke::CurvesGeometry boundary_to_curves(const Scene &scene,
       "cyclic", bke::AttrDomain::Curve);
   bke::SpanAttributeWriter<float> hardnesses = attributes.lookup_or_add_for_write_span<float>(
       "hardness",
+      bke::AttrDomain::Curve,
+      bke::AttributeInitVArray(VArray<float>::ForSingle(1.0f, curves.curves_num())));
+  bke::SpanAttributeWriter<float> fill_opacities = attributes.lookup_or_add_for_write_span<float>(
+      "fill_opacity",
       bke::AttrDomain::Curve,
       bke::AttributeInitVArray(VArray<float>::ForSingle(1.0f, curves.curves_num())));
   bke::SpanAttributeWriter<float> radii = attributes.lookup_or_add_for_write_span<float>(
@@ -616,10 +622,13 @@ static bke::CurvesGeometry boundary_to_curves(const Scene &scene,
   cyclic.span.fill(true);
   materials.span.fill(material_index);
   hardnesses.span.fill(hardness);
+  /* TODO: `fill_opacities` are currently always 1.0f for the new strokes. Maybe this should be a
+   * parameter. */
 
   cyclic.finish();
   materials.finish();
   hardnesses.finish();
+  fill_opacities.finish();
 
   for (const int point_i : curves.points_range()) {
     const int pixel_index = boundary.pixels[point_i];
@@ -1022,7 +1031,9 @@ bke::CurvesGeometry fill_strokes(const ViewContext &view_context,
                                                   max_zoom_factor,
                                                   margin);
   /* Scale stroke radius by half to hide gaps between filled areas and boundaries. */
-  const float radius_scale = 0.5f;
+  const float radius_scale = (brush.gpencil_settings->fill_draw_mode == GP_FILL_DMODE_CONTROL) ?
+                                 0.0f :
+                                 0.5f;
 
   constexpr const int min_image_size = 128;
   /* Pixel scale (aka. "fill_factor, aka. "Precision") to reduce image size. */

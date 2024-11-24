@@ -14,7 +14,6 @@
 
 #include "vk_backend.hh"
 #include "vk_framebuffer.hh"
-#include "vk_memory.hh"
 #include "vk_shader_interface.hh"
 #include "vk_shader_log.hh"
 #include "vk_state_manager.hh"
@@ -24,6 +23,8 @@
 #include "BLI_vector.hh"
 
 #include "BKE_global.hh"
+
+#include <fmt/format.h>
 
 using namespace blender::gpu::shader;
 
@@ -380,14 +381,14 @@ static void print_resource(std::ostream &os,
     case ShaderCreateInfo::Resource::BindType::UNIFORM_BUFFER:
       array_offset = res.uniformbuf.name.find_first_of("[");
       name_no_array = (array_offset == -1) ? res.uniformbuf.name :
-                                             StringRef(res.uniformbuf.name.c_str(), array_offset);
+                                             StringRef(res.uniformbuf.name.data(), array_offset);
       os << "uniform _" << name_no_array << " { " << res.uniformbuf.type_name << " "
          << res.uniformbuf.name << "; };\n";
       break;
     case ShaderCreateInfo::Resource::BindType::STORAGE_BUFFER:
       array_offset = res.storagebuf.name.find_first_of("[");
       name_no_array = (array_offset == -1) ? res.storagebuf.name :
-                                             StringRef(res.storagebuf.name.c_str(), array_offset);
+                                             StringRef(res.storagebuf.name.data(), array_offset);
       print_qualifier(os, res.storagebuf.qualifiers);
       os << "buffer _";
       os << name_no_array << " { " << res.storagebuf.type_name << " " << res.storagebuf.name
@@ -482,11 +483,22 @@ static std::string main_function_wrapper(std::string &pre_main, std::string &pos
   return ss.str();
 }
 
-static std::string combine_sources(Span<const char *> sources)
+static std::string combine_sources(Span<StringRefNull> sources)
 {
-  char *sources_combined = BLI_string_join_arrayN((const char **)sources.data(), sources.size());
-  std::string result(sources_combined);
-  MEM_freeN(sources_combined);
+  std::string result = fmt::to_string(fmt::join(sources, ""));
+  /* Renderdoc step-by-step debugger cannot be used when using the #line directive. The indexed
+   * based is not supported as it doesn't make sense in Vulkan and Blender misuses this to store a
+   * hash. The filename based directive cannot be used as it cannot find the actual file on disk
+   * and state is set incorrectly.
+   *
+   * When running in renderdoc we scramble `#line` into `//ine` to work around these limitation. */
+  if (G.debug & G_DEBUG_GPU_RENDERDOC) {
+    size_t start_pos = 0;
+    while ((start_pos = result.find("#line ", start_pos)) != std::string::npos) {
+      result[start_pos] = '/';
+      result[start_pos + 1] = '/';
+    }
+  }
   return result;
 }
 
@@ -518,7 +530,7 @@ VKShader::~VKShader()
   vk_descriptor_set_layout_ = VK_NULL_HANDLE;
 }
 
-void VKShader::build_shader_module(MutableSpan<const char *> sources,
+void VKShader::build_shader_module(MutableSpan<StringRefNull> sources,
                                    shaderc_shader_kind stage,
                                    VKShaderModule &r_shader_module)
 {
@@ -538,22 +550,22 @@ void VKShader::build_shader_module(MutableSpan<const char *> sources,
   }
 }
 
-void VKShader::vertex_shader_from_glsl(MutableSpan<const char *> sources)
+void VKShader::vertex_shader_from_glsl(MutableSpan<StringRefNull> sources)
 {
   build_shader_module(sources, shaderc_vertex_shader, vertex_module);
 }
 
-void VKShader::geometry_shader_from_glsl(MutableSpan<const char *> sources)
+void VKShader::geometry_shader_from_glsl(MutableSpan<StringRefNull> sources)
 {
   build_shader_module(sources, shaderc_geometry_shader, geometry_module);
 }
 
-void VKShader::fragment_shader_from_glsl(MutableSpan<const char *> sources)
+void VKShader::fragment_shader_from_glsl(MutableSpan<StringRefNull> sources)
 {
   build_shader_module(sources, shaderc_fragment_shader, fragment_module);
 }
 
-void VKShader::compute_shader_from_glsl(MutableSpan<const char *> sources)
+void VKShader::compute_shader_from_glsl(MutableSpan<StringRefNull> sources)
 {
   build_shader_module(sources, shaderc_compute_shader, compute_module);
 }
@@ -571,12 +583,17 @@ bool VKShader::finalize(const shader::ShaderCreateInfo *info)
   if (compilation_failed) {
     return false;
   }
+  /* Add-ons that still use old API will crash as the shader create info isn't available.
+   * See #130555 */
+  if (info == nullptr) {
+    return false;
+  }
 
   if (do_geometry_shader_injection(info)) {
     std::string source = workaround_geometry_shader_source_create(*info);
-    Vector<const char *> sources;
+    Vector<StringRefNull> sources;
     sources.append("version");
-    sources.append(source.c_str());
+    sources.append(source);
     geometry_shader_from_glsl(sources);
   }
 
@@ -627,8 +644,7 @@ bool VKShader::finalize_shader_module(VKShaderModule &shader_module, const char 
   if (bool(shader_module.compilation_result.GetNumWarnings() +
            shader_module.compilation_result.GetNumErrors()))
   {
-    const char *sources = shader_module.combined_sources.c_str();
-    print_log(Span<const char *>(&sources, 1),
+    print_log({shader_module.combined_sources},
               shader_module.compilation_result.GetErrorMessage().c_str(),
               stage_name,
               bool(shader_module.compilation_result.GetNumErrors()),
@@ -640,6 +656,7 @@ bool VKShader::finalize_shader_module(VKShaderModule &shader_module, const char 
   shader_module.combined_sources.clear();
   shader_module.sources_hash.clear();
   shader_module.compilation_result = {};
+  shader_module.spirv_binary.clear();
   return compilation_succeeded;
 }
 
@@ -651,8 +668,6 @@ bool VKShader::is_ready() const
 bool VKShader::finalize_pipeline_layout(VkDevice vk_device,
                                         const VKShaderInterface &shader_interface)
 {
-  VK_ALLOCATION_CALLBACKS
-
   const uint32_t layout_count = vk_descriptor_set_layout_ == VK_NULL_HANDLE ? 0 : 1;
   VkPipelineLayoutCreateInfo pipeline_info = {};
   VkPushConstantRange push_constant_range = {};
@@ -673,8 +688,8 @@ bool VKShader::finalize_pipeline_layout(VkDevice vk_device,
     pipeline_info.pPushConstantRanges = &push_constant_range;
   }
 
-  if (vkCreatePipelineLayout(
-          vk_device, &pipeline_info, vk_allocation_callbacks, &vk_pipeline_layout) != VK_SUCCESS)
+  if (vkCreatePipelineLayout(vk_device, &pipeline_info, nullptr, &vk_pipeline_layout) !=
+      VK_SUCCESS)
   {
     return false;
   };
@@ -844,22 +859,11 @@ std::string VKShader::vertex_interface_declare(const shader::ShaderCreateInfo &i
   {
     ss << "layout(location=" << (location++) << ") out int gpu_ViewportIndex;\n";
   }
-  if (bool(info.builtins_ & BuiltinBits::BARYCENTRIC_COORD)) {
-    /* Need this for stable barycentric. */
-    ss << "layout(location=" << (location++) << ") flat out vec4 gpu_pos_flat;\n";
-    ss << "layout(location=" << (location++) << ") out vec4 gpu_pos;\n";
-
-    post_main += "  gpu_pos = gpu_pos_flat = gl_Position;\n";
-  }
   ss << "\n";
 
   /* Retarget depth from -1..1 to 0..1. This will be done by geometry stage, when geometry shaders
    * are used. */
-  const bool has_geometry_stage = bool(info.builtins_ & (BuiltinBits::BARYCENTRIC_COORD)) ||
-                                  (bool(info.builtins_ & (BuiltinBits::LAYER)) &&
-                                   workarounds.shader_output_layer) ||
-                                  (bool(info.builtins_ & (BuiltinBits::VIEWPORT_INDEX)) &&
-                                   workarounds.shader_output_viewport_index) ||
+  const bool has_geometry_stage = do_geometry_shader_injection(&info) ||
                                   !info.geometry_source_.is_empty();
   const bool retarget_depth = !has_geometry_stage;
   if (retarget_depth) {
@@ -943,97 +947,128 @@ std::string VKShader::fragment_interface_declare(const shader::ShaderCreateInfo 
     ss << "#define gpu_ViewportIndex gl_ViewportIndex\n";
   }
 
-  if (bool(info.builtins_ & BuiltinBits::BARYCENTRIC_COORD)) {
-    /* TODO: add support for
-     * https://docs.vulkan.org/features/latest/features/proposals/VK_KHR_fragment_shader_barycentric.html
-     */
-    ss << "layout(location=" << (location) << ") flat in vec4 gpu_pos[3];\n";
-    location += 3;
+  if (workarounds.fragment_shader_barycentric &&
+      bool(info.builtins_ & BuiltinBits::BARYCENTRIC_COORD))
+  {
     ss << "layout(location=" << (location++) << ") smooth in vec3 gpu_BaryCoord;\n";
     ss << "layout(location=" << (location++) << ") noperspective in vec3 gpu_BaryCoordNoPersp;\n";
-
-#if 0
-    std::cout << "native" << std::endl;
-    /* NOTE(fclem): This won't work with geometry shader. Hopefully, we don't need geometry
-     * shader workaround if this extension/feature is detected. */
-    ss << "\n/* Stable Barycentric Coordinates. */\n";
-    ss << "flat in vec4 gpu_pos_flat;\n";
-    ss << "__explicitInterpAMD in vec4 gpu_pos;\n";
-    /* Globals. */
-    ss << "vec3 gpu_BaryCoord;\n";
-    ss << "vec3 gpu_BaryCoordNoPersp;\n";
-    ss << "\n";
-    ss << "vec2 stable_bary_(vec2 in_bary) {\n";
-    ss << "  vec3 bary = vec3(in_bary, 1.0 - in_bary.x - in_bary.y);\n";
-    ss << "  if (interpolateAtVertexAMD(gpu_pos, 0) == gpu_pos_flat) { return bary.zxy; }\n";
-    ss << "  if (interpolateAtVertexAMD(gpu_pos, 2) == gpu_pos_flat) { return bary.yzx; }\n";
-    ss << "  return bary.xyz;\n";
-    ss << "}\n";
-    ss << "\n";
-
-    pre_main += "  gpu_BaryCoord = stable_bary_(gl_BaryCoordSmoothAMD);\n";
-    pre_main += "  gpu_BaryCoordNoPersp = stable_bary_(gl_BaryCoordNoPerspAMD);\n";
-#endif
   }
+
   if (info.early_fragment_test_) {
     ss << "layout(early_fragment_tests) in;\n";
   }
-  ss << "layout(" << to_string(info.depth_write_) << ") out float gl_FragDepth;\n";
+  const bool use_gl_frag_depth = info.depth_write_ != DepthWrite::UNCHANGED &&
+                                 info.fragment_source_.find("gl_FragDepth") != std::string::npos;
+  if (use_gl_frag_depth) {
+    ss << "layout(" << to_string(info.depth_write_) << ") out float gl_FragDepth;\n";
+  }
 
   ss << "\n/* Sub-pass Inputs. */\n";
-  for (const ShaderCreateInfo::SubpassIn &input : info.subpass_inputs_) {
-    std::string image_name = "gpu_subpass_img_";
-    image_name += std::to_string(input.index);
+  const VKShaderInterface &interface = interface_get();
+  const bool use_dynamic_rendering = !workarounds.dynamic_rendering;
+  if (use_dynamic_rendering) {
+    for (const ShaderCreateInfo::SubpassIn &input : info.subpass_inputs_) {
+      std::string image_name = "gpu_subpass_img_";
+      image_name += std::to_string(input.index);
 
-    /* Declare global for input. */
-    ss << to_string(input.type) << " " << input.name << ";\n";
+      /* Declare global for input. */
+      ss << to_string(input.type) << " " << input.name << ";\n";
 
-    /* IMPORTANT: We assume that the frame-buffer will be layered or not based on the layer
-     * built-in flag. */
-    bool is_layered_fb = bool(info.builtins_ & BuiltinBits::LAYER);
+      /* IMPORTANT: We assume that the frame-buffer will be layered or not based on the layer
+       * built-in flag. */
+      bool is_layered_fb = bool(info.builtins_ & BuiltinBits::LAYER);
 
-    /* Start with invalid value to detect failure cases. */
-    ImageType image_type = ImageType::FLOAT_BUFFER;
-    switch (to_component_type(input.type)) {
-      case Type::FLOAT:
-        image_type = is_layered_fb ? ImageType::FLOAT_2D_ARRAY : ImageType::FLOAT_2D;
-        break;
-      case Type::INT:
-        image_type = is_layered_fb ? ImageType::INT_2D_ARRAY : ImageType::INT_2D;
-        break;
-      case Type::UINT:
-        image_type = is_layered_fb ? ImageType::UINT_2D_ARRAY : ImageType::UINT_2D;
-        break;
-      default:
-        break;
+      /* Start with invalid value to detect failure cases. */
+      ImageType image_type = ImageType::FLOAT_BUFFER;
+      switch (to_component_type(input.type)) {
+        case Type::FLOAT:
+          image_type = is_layered_fb ? ImageType::FLOAT_2D_ARRAY : ImageType::FLOAT_2D;
+          break;
+        case Type::INT:
+          image_type = is_layered_fb ? ImageType::INT_2D_ARRAY : ImageType::INT_2D;
+          break;
+        case Type::UINT:
+          image_type = is_layered_fb ? ImageType::UINT_2D_ARRAY : ImageType::UINT_2D;
+          break;
+        default:
+          break;
+      }
+      /* Declare image. */
+      using Resource = ShaderCreateInfo::Resource;
+      /* NOTE(fclem): Using the attachment index as resource index might be problematic as it might
+       * collide with other resources. */
+      Resource res(Resource::BindType::SAMPLER, input.index);
+      res.sampler.type = image_type;
+      res.sampler.sampler = GPUSamplerState::default_sampler();
+      res.sampler.name = image_name;
+      print_resource(ss, interface, res);
+
+      char swizzle[] = "xyzw";
+      swizzle[to_component_count(input.type)] = '\0';
+
+      std::string texel_co = (is_layered_fb) ? "ivec3(gl_FragCoord.xy, gpu_Layer)" :
+                                               "ivec2(gl_FragCoord.xy)";
+
+      std::stringstream ss_pre;
+      /* Populate the global before main using imageLoad. */
+      ss_pre << "  " << input.name << " = texelFetch(" << image_name << ", " << texel_co << ", 0)."
+             << swizzle << ";\n";
+
+      pre_main += ss_pre.str();
     }
-    /* Declare image. */
-    using Resource = ShaderCreateInfo::Resource;
-    /* NOTE(fclem): Using the attachment index as resource index might be problematic as it might
-     * collide with other resources. */
-    Resource res(Resource::BindType::SAMPLER, input.index);
-    res.sampler.type = image_type;
-    res.sampler.sampler = GPUSamplerState::default_sampler();
-    res.sampler.name = image_name;
-    print_resource(ss, interface_get(), res);
+  }
+  else {
+    /* Use subpass passes input attachments when dynamic rendering isn't available. */
+    for (const ShaderCreateInfo::SubpassIn &input : info.subpass_inputs_) {
+      using Resource = ShaderCreateInfo::Resource;
+      Resource res(Resource::BindType::SAMPLER, input.index);
+      const VKDescriptorSet::Location location = interface.descriptor_set_location(res);
 
-    char swizzle[] = "xyzw";
-    swizzle[to_component_count(input.type)] = '\0';
+      std::string image_name = "gpu_subpass_img_" + std::to_string(input.index);
 
-    std::string texel_co = (is_layered_fb) ? "ivec3(gl_FragCoord.xy, gpu_Layer)" :
-                                             "ivec2(gl_FragCoord.xy)";
+      /* Declare global for input. */
+      ss << to_string(input.type) << " " << input.name << ";\n";
+      /* Declare subpass input. */
+      ss << "layout(input_attachment_index=" << input.index << ", set=0, binding=" << location
+         << ") uniform ";
+      switch (to_component_type(input.type)) {
+        case Type::INT:
+          ss << "isubpassInput";
+          break;
+        case Type::UINT:
+          ss << "usubpassInput";
+          break;
+        case Type::FLOAT:
+        default:
+          ss << "subpassInput";
+          break;
+      }
+      ss << " " << image_name << ";";
 
-    std::stringstream ss_pre;
-    /* Populate the global before main using imageLoad. */
-    ss_pre << "  " << input.name << " = texelFetch(" << image_name << ", " << texel_co << ", 0)."
-           << swizzle << ";\n";
-
-    pre_main += ss_pre.str();
+      /* Read data from subpass input. */
+      char swizzle[] = "xyzw";
+      swizzle[to_component_count(input.type)] = '\0';
+      std::stringstream ss_pre;
+      ss_pre << "  " << input.name << " = subpassLoad(" << image_name << ")." << swizzle << ";\n";
+      pre_main += ss_pre.str();
+    }
   }
 
   ss << "\n/* Outputs. */\n";
+  int fragment_out_location = 0;
   for (const ShaderCreateInfo::FragOut &output : info.fragment_outputs_) {
-    ss << "layout(location = " << output.index;
+    /* When using dynamic rendering the attachment location doesn't change. When using render
+     * passes and subpasses the location refers to the color attachment of the subpass.
+     *
+     * LIMITATION: dual source blending cannot be used together with subpasses.
+     */
+    const bool use_dual_blending = output.blend != DualBlend::NONE;
+    BLI_assert_msg(!(use_dual_blending && !info.subpass_inputs_.is_empty()),
+                   "Dual source blending are not supported with subpass inputs when using render "
+                   "passes. It can be supported, but wasn't for code readability.");
+    const int location = (use_dynamic_rendering || use_dual_blending) ? output.index :
+                                                                        fragment_out_location++;
+    ss << "layout(location = " << location;
     switch (output.blend) {
       case DualBlend::SRC_0:
         ss << ", index = 0";
@@ -1153,7 +1188,8 @@ std::string VKShader::workaround_geometry_shader_source_create(
                                    bool(info.builtins_ & BuiltinBits::LAYER);
   const bool do_viewport_workaround = workarounds.shader_output_viewport_index &&
                                       bool(info.builtins_ & BuiltinBits::VIEWPORT_INDEX);
-  const bool do_barycentric_workaround = bool(info.builtins_ & BuiltinBits::BARYCENTRIC_COORD);
+  const bool do_barycentric_workaround = workarounds.fragment_shader_barycentric &&
+                                         bool(info.builtins_ & BuiltinBits::BARYCENTRIC_COORD);
 
   shader::ShaderCreateInfo info_modified = info;
   info_modified.geometry_out_interfaces_ = info_modified.vertex_out_interfaces_;
@@ -1172,33 +1208,23 @@ std::string VKShader::workaround_geometry_shader_source_create(
     }
   }
 
+  int location_in = location;
+  int location_out = location;
   if (do_layer_workaround) {
-    ss << "layout(location=" << (location++) << ") in int gpu_Layer[];\n";
+    ss << "layout(location=" << (location_in++) << ") in int gpu_Layer[];\n";
   }
   if (do_viewport_workaround) {
-    ss << "layout(location=" << (location++) << ") in int gpu_ViewportIndex[];\n";
+    ss << "layout(location=" << (location_in++) << ") in int gpu_ViewportIndex[];\n";
   }
   if (do_barycentric_workaround) {
-    ss << "layout(location=" << (location) << ") flat out vec4 gpu_pos[3];\n";
-    location += 3;
-    ss << "layout(location=" << (location++) << ") smooth out vec3 gpu_BaryCoord;\n";
-    ss << "layout(location=" << (location++) << ") noperspective out vec3 gpu_BaryCoordNoPersp;\n";
+    ss << "layout(location=" << (location_out++) << ") smooth out vec3 gpu_BaryCoord;\n";
+    ss << "layout(location=" << (location_out++)
+       << ") noperspective out vec3 gpu_BaryCoordNoPersp;\n";
   }
   ss << "\n";
 
   ss << "void main()\n";
   ss << "{\n";
-  if (do_layer_workaround) {
-    ss << "  gl_Layer = gpu_Layer[0];\n";
-  }
-  if (do_viewport_workaround) {
-    ss << "  gl_ViewportIndex = gpu_ViewportIndex[0];\n";
-  }
-  if (do_barycentric_workaround) {
-    ss << "  gpu_pos[0] = gl_in[0].gl_Position;\n";
-    ss << "  gpu_pos[1] = gl_in[1].gl_Position;\n";
-    ss << "  gpu_pos[2] = gl_in[2].gl_Position;\n";
-  }
   for (auto i : IndexRange(3)) {
     for (StageInterfaceInfo *iface : info_modified.vertex_out_interfaces_) {
       for (auto &inout : iface->inouts) {
@@ -1211,17 +1237,23 @@ std::string VKShader::workaround_geometry_shader_source_create(
       ss << " vec3(" << int(i == 0) << ", " << int(i == 1) << ", " << int(i == 2) << ");\n";
     }
     ss << "  gl_Position = gl_in[" << i << "].gl_Position;\n";
+    if (do_layer_workaround) {
+      ss << "  gl_Layer = gpu_Layer[" << i << "];\n";
+    }
+    if (do_viewport_workaround) {
+      ss << "  gl_ViewportIndex = gpu_ViewportIndex[" << i << "];\n";
+    }
     ss << "  gpu_EmitVertex();\n";
   }
   ss << "}\n";
   return ss.str();
 }
 
-bool VKShader::do_geometry_shader_injection(const shader::ShaderCreateInfo *info)
+bool VKShader::do_geometry_shader_injection(const shader::ShaderCreateInfo *info) const
 {
   const VKWorkarounds &workarounds = VKBackend::get().device.workarounds_get();
   BuiltinBits builtins = info->builtins_;
-  if (bool(builtins & BuiltinBits::BARYCENTRIC_COORD)) {
+  if (workarounds.fragment_shader_barycentric && bool(builtins & BuiltinBits::BARYCENTRIC_COORD)) {
     return true;
   }
   if (workarounds.shader_output_layer && bool(builtins & BuiltinBits::LAYER)) {
@@ -1289,17 +1321,18 @@ VkPipeline VKShader::ensure_and_get_graphics_pipeline(GPUPrimType primitive,
   graphics_info.fragment_shader.vk_fragment_module = fragment_module.vk_shader_module;
   graphics_info.state = state_manager.state;
   graphics_info.mutable_state = state_manager.mutable_state;
-  // TODO: in stead of extend use a build pattern.
   graphics_info.fragment_shader.viewports.clear();
-  graphics_info.fragment_shader.viewports.extend(framebuffer.vk_viewports_get());
+  framebuffer.vk_viewports_append(graphics_info.fragment_shader.viewports);
   graphics_info.fragment_shader.scissors.clear();
-  graphics_info.fragment_shader.scissors.extend(framebuffer.vk_render_areas_get());
+  framebuffer.vk_render_areas_append(graphics_info.fragment_shader.scissors);
 
+  graphics_info.fragment_out.vk_render_pass = framebuffer.vk_render_pass;
   graphics_info.fragment_out.depth_attachment_format = framebuffer.depth_attachment_format_get();
   graphics_info.fragment_out.stencil_attachment_format =
       framebuffer.stencil_attachment_format_get();
   graphics_info.fragment_out.color_attachment_formats.extend(
       framebuffer.color_attachment_formats_get());
+  graphics_info.fragment_out.color_attachment_size = framebuffer.color_attachment_size;
 
   VKDevice &device = VKBackend::get().device;
   /* Store result in local variable to ensure thread safety. */

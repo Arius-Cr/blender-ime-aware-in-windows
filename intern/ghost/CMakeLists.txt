@@ -5,6 +5,7 @@
 set(INC
   PUBLIC .
   ../../source/blender/imbuf
+  ../guardedalloc
 )
 
 set(INC_SYS
@@ -98,7 +99,6 @@ if(WITH_VULKAN_BACKEND)
     list(APPEND LIB
       ${MOLTENVK_LIBRARIES}
     )
-    add_definitions(-DWITH_VULKAN_MOLTENVK)
   endif()
 
   list(APPEND SRC
@@ -435,7 +435,7 @@ elseif(WITH_GHOST_X11 OR WITH_GHOST_WAYLAND)
     )
     # Tablet.
     generate_protocol_bindings(
-      "${WAYLAND_PROTOCOLS_DIR}/unstable/tablet/tablet-unstable-v2.xml"
+      "${WAYLAND_PROTOCOLS_DIR}/stable/tablet/tablet-v2.xml"
     )
     # Primary-selection.
     generate_protocol_bindings(

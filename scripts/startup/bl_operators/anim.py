@@ -223,7 +223,7 @@ class NLA_OT_bake(Operator):
     )
     clear_constraints: BoolProperty(
         name="Clear Constraints",
-        description="Remove all constraints from keyed object/bones, and do 'visual' keying",
+        description="Remove all constraints from keyed object/bones. To get a correct bake with this setting Visual Keying should be enabled",
         default=False,
     )
     clear_parents: BoolProperty(
@@ -413,7 +413,7 @@ class UpdateAnimatedTransformConstraint(Operator):
             data = ...
             try:
                 data = eval("base." + old_path)
-            except BaseException:
+            except Exception:
                 pass
             ret = (data, old_path)
             if isinstance(base, bpy.types.TransformConstraint) and data is not ...:
@@ -430,7 +430,7 @@ class UpdateAnimatedTransformConstraint(Operator):
                     data = ...
                     try:
                         data = eval("base." + new_path)
-                    except BaseException:
+                    except Exception:
                         pass
                     ret = (data, new_path)
                     # print(ret)
@@ -686,15 +686,18 @@ class ANIM_OT_slot_new_for_id(Operator):
         if not animated_id:
             return False
         if not animated_id.animation_data or not animated_id.animation_data.action:
-            cls.poll_message_set("An action slot can only be created when an action was assigned")
+            cls.poll_message_set("An action slot can only be created when an action is assigned")
             return False
         if not animated_id.animation_data.action.is_action_layered:
             cls.poll_message_set("Action slots are only supported by layered Actions. Upgrade this Action first")
             return False
+        if not animated_id.animation_data.action.is_editable:
+            cls.poll_message_set("Creating a new Slot is not possible on a linked Action")
+            return False
         return True
 
     def execute(self, context):
-        animated_id = getattr(context, "animated_id", None)
+        animated_id = context.animated_id
 
         action = animated_id.animation_data.action
         slot = action.slots.new(for_id=animated_id)
@@ -726,7 +729,7 @@ class ANIM_OT_slot_unassign_from_id(Operator):
         return True
 
     def execute(self, context):
-        animated_id = getattr(context, "animated_id", None)
+        animated_id = context.animated_id
         animated_id.animation_data.action_slot = None
         return {'FINISHED'}
 

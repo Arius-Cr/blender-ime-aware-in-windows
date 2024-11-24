@@ -315,7 +315,7 @@ static void ui_update_flexible_spacing(const ARegion *region, uiBlock *block)
 static void ui_update_window_matrix(const wmWindow *window, const ARegion *region, uiBlock *block)
 {
   /* window matrix and aspect */
-  if (region && region->visible) {
+  if (region && region->runtime->visible) {
     /* Get projection matrix which includes View2D translation and zoom. */
     GPU_matrix_projection_get(block->winmat);
     block->aspect = 2.0f / fabsf(region->winx * block->winmat[0][0]);
@@ -333,7 +333,7 @@ static void ui_update_window_matrix(const wmWindow *window, const ARegion *regio
 
 void ui_region_winrct_get_no_margin(const ARegion *region, rcti *r_rect)
 {
-  uiBlock *block = static_cast<uiBlock *>(region->uiblocks.first);
+  uiBlock *block = static_cast<uiBlock *>(region->runtime->uiblocks.first);
   if (block && (block->flag & UI_BLOCK_LOOP) && (block->flag & UI_BLOCK_PIE_MENU) == 0) {
     BLI_rcti_rctf_copy_floor(r_rect, &block->rect);
     BLI_rcti_translate(r_rect, region->winrct.xmin, region->winrct.ymin);
@@ -1723,6 +1723,9 @@ static bool ui_but_icon_extra_is_visible_bone_eyedropper(uiBut *but)
     return false;
   }
   uiButSearch *search_but = (uiButSearch *)but;
+  if (!search_but->rnasearchprop) {
+    return false;
+  }
   const StructRNA *type = RNA_property_pointer_type(&search_but->rnasearchpoin,
                                                     search_but->rnasearchprop);
   return type == &RNA_Bone || type == &RNA_EditBone;
@@ -1916,13 +1919,16 @@ bool ui_but_context_poll_operator(bContext *C, wmOperatorType *ot, const uiBut *
   return ui_but_context_poll_operator_ex(C, but, &params);
 }
 
-void UI_block_end_ex(const bContext *C, uiBlock *block, const int xy[2], int r_xy[2])
+void UI_block_end_ex(const bContext *C,
+                     Main *bmain,
+                     wmWindow *window,
+                     Scene *scene,
+                     ARegion *region,
+                     Depsgraph *depsgraph,
+                     uiBlock *block,
+                     const int xy[2],
+                     int r_xy[2])
 {
-  wmWindow *window = CTX_wm_window(C);
-  Scene *scene = CTX_data_scene(C);
-  ARegion *region = CTX_wm_region(C);
-  Depsgraph *depsgraph = CTX_data_depsgraph_pointer(C);
-
   BLI_assert(block->active);
 
   /* Extend button data. This needs to be done before the block updating. */
@@ -1955,7 +1961,7 @@ void UI_block_end_ex(const bContext *C, uiBlock *block, const int xy[2], int r_x
     const AnimationEvalContext anim_eval_context = BKE_animsys_eval_context_construct(
         depsgraph, (scene) ? scene->r.cfra : 0.0f);
     ui_but_anim_flag(but, &anim_eval_context);
-    ui_but_override_flag(CTX_data_main(C), but);
+    ui_but_override_flag(bmain, but);
     if (UI_but_is_decorator(but)) {
       ui_but_anim_decorate_update_from_flag((uiButDecorator *)but);
     }
@@ -1969,7 +1975,7 @@ void UI_block_end_ex(const bContext *C, uiBlock *block, const int xy[2], int r_x
   if (block->layouts.first) {
     UI_block_layout_resolve(block, nullptr, nullptr);
   }
-  ui_block_align_calc(block, CTX_wm_region(C));
+  ui_block_align_calc(block, region);
   if ((block->flag & UI_BLOCK_LOOP) && (block->flag & UI_BLOCK_NUMSELECT) &&
       (block->flag & UI_BLOCK_NO_ACCELERATOR_KEYS) == 0)
   {
@@ -2007,7 +2013,7 @@ void UI_block_end_ex(const bContext *C, uiBlock *block, const int xy[2], int r_x
   /* Update bounds of all views in this block. If this block is a panel, this will be done later in
    * #UI_panels_end(), because buttons are offset there. */
   if (!block->panel) {
-    ui_block_views_bounds_calc(block);
+    ui_block_views_end(region, block);
   }
 
   if (block->rect.xmin == 0.0f && block->rect.xmax == 0.0f) {
@@ -2026,7 +2032,15 @@ void UI_block_end(const bContext *C, uiBlock *block)
 {
   wmWindow *window = CTX_wm_window(C);
 
-  UI_block_end_ex(C, block, window->eventstate->xy, nullptr);
+  UI_block_end_ex(C,
+                  CTX_data_main(C),
+                  window,
+                  CTX_data_scene(C),
+                  CTX_wm_region(C),
+                  CTX_data_depsgraph_pointer(C),
+                  block,
+                  window->eventstate->xy,
+                  nullptr);
 }
 
 /* ************** BLOCK DRAWING FUNCTION ************* */
@@ -2179,7 +2193,7 @@ static void ui_block_message_subscribe(ARegion *region, wmMsgBus *mbus, uiBlock 
 
 void UI_region_message_subscribe(ARegion *region, wmMsgBus *mbus)
 {
-  LISTBASE_FOREACH (uiBlock *, block, &region->uiblocks) {
+  LISTBASE_FOREACH (uiBlock *, block, &region->runtime->uiblocks) {
     ui_block_message_subscribe(region, mbus, block);
   }
 }
@@ -3397,8 +3411,8 @@ void ui_but_range_set_soft(uiBut *but)
       int imin, imax, istep;
 
       RNA_property_int_ui_range(&but->rnapoin, but->rnaprop, &imin, &imax, &istep);
-      softmin = (imin == INT_MIN) ? -1e4 : imin;
-      softmax = (imin == INT_MAX) ? 1e4 : imax;
+      softmin = std::max(imin, INT_MIN);
+      softmax = std::min(imax, INT_MAX);
       // step = istep;  /* UNUSED */
       // precision = 1; /* UNUSED */
 
@@ -3718,19 +3732,16 @@ void UI_blocklist_draw(const bContext *C, const ListBase *lb)
 
 void UI_blocklist_free(const bContext *C, ARegion *region)
 {
-  ListBase *lb = &region->uiblocks;
+  ListBase *lb = &region->runtime->uiblocks;
   while (uiBlock *block = static_cast<uiBlock *>(BLI_pophead(lb))) {
     UI_block_free(C, block);
   }
-  if (region->runtime.block_name_map != nullptr) {
-    BLI_ghash_free(region->runtime.block_name_map, nullptr, nullptr);
-    region->runtime.block_name_map = nullptr;
-  }
+  region->runtime->block_name_map.clear_and_shrink();
 }
 
 void UI_blocklist_free_inactive(const bContext *C, ARegion *region)
 {
-  ListBase *lb = &region->uiblocks;
+  ListBase *lb = &region->runtime->uiblocks;
 
   LISTBASE_FOREACH_MUTABLE (uiBlock *, block, lb) {
     if (!block->handle) {
@@ -3738,12 +3749,8 @@ void UI_blocklist_free_inactive(const bContext *C, ARegion *region)
         block->active = false;
       }
       else {
-        if (region->runtime.block_name_map != nullptr) {
-          uiBlock *b = static_cast<uiBlock *>(
-              BLI_ghash_lookup(region->runtime.block_name_map, block->name.c_str()));
-          if (b == block) {
-            BLI_ghash_remove(region->runtime.block_name_map, b->name.c_str(), nullptr, nullptr);
-          }
+        if (region->runtime->block_name_map.lookup_default(block->name, nullptr) == block) {
+          region->runtime->block_name_map.remove_as(block->name);
         }
         BLI_remlink(lb, block);
         UI_block_free(C, block);
@@ -3754,16 +3761,13 @@ void UI_blocklist_free_inactive(const bContext *C, ARegion *region)
 
 void UI_block_region_set(uiBlock *block, ARegion *region)
 {
-  ListBase *lb = &region->uiblocks;
+  ListBase *lb = &region->runtime->uiblocks;
   uiBlock *oldblock = nullptr;
 
   /* each listbase only has one block with this name, free block
    * if is already there so it can be rebuilt from scratch */
   if (lb) {
-    if (region->runtime.block_name_map == nullptr) {
-      region->runtime.block_name_map = BLI_ghash_str_new(__func__);
-    }
-    oldblock = (uiBlock *)BLI_ghash_lookup(region->runtime.block_name_map, block->name.c_str());
+    oldblock = region->runtime->block_name_map.lookup_default(block->name, nullptr);
 
     if (oldblock) {
       oldblock->active = false;
@@ -3773,21 +3777,19 @@ void UI_block_region_set(uiBlock *block, ARegion *region)
 
     /* at the beginning of the list! for dynamical menus/blocks */
     BLI_addhead(lb, block);
-    BLI_ghash_reinsert(region->runtime.block_name_map,
-                       const_cast<char *>(block->name.c_str()),
-                       block,
-                       nullptr,
-                       nullptr);
+    region->runtime->block_name_map.add_overwrite_as(block->name, block);
   }
 
   block->oldblock = oldblock;
 }
 
-uiBlock *UI_block_begin(const bContext *C, ARegion *region, std::string name, eUIEmbossType emboss)
+uiBlock *UI_block_begin(const bContext *C,
+                        Scene *scene,
+                        wmWindow *window,
+                        ARegion *region,
+                        std::string name,
+                        eUIEmbossType emboss)
 {
-  wmWindow *window = CTX_wm_window(C);
-  Scene *scene = CTX_data_scene(C);
-
   uiBlock *block = MEM_new<uiBlock>(__func__);
   block->active = true;
   block->emboss = emboss;
@@ -3820,12 +3822,17 @@ uiBlock *UI_block_begin(const bContext *C, ARegion *region, std::string name, eU
   ui_update_window_matrix(window, region, block);
 
   /* Tag as popup menu if not created within a region. */
-  if (!(region && region->visible)) {
+  if (!(region && region->runtime->visible)) {
     block->auto_open = true;
     block->flag |= UI_BLOCK_LOOP;
   }
 
   return block;
+}
+
+uiBlock *UI_block_begin(const bContext *C, ARegion *region, std::string name, eUIEmbossType emboss)
+{
+  return UI_block_begin(C, CTX_data_scene(C), CTX_wm_window(C), region, std::move(name), emboss);
 }
 
 void ui_block_add_dynamic_listener(uiBlock *block,
@@ -4134,7 +4141,7 @@ void ui_block_cm_to_display_space_v3(uiBlock *block, float pixel[3])
 /**
  * Factory function: Allocate button and set #uiBut.type.
  *
- * \note: #ui_but_mem_delete is the matching 'destructor' function.
+ * \note #ui_but_mem_delete is the matching 'destructor' function.
  */
 static uiBut *ui_but_new(const eButType type)
 {
@@ -4505,6 +4512,19 @@ static void ui_def_but_rna__menu(bContext *C, uiLayout *layout, void *but_p)
   const bool prior_label = but->prev && but->prev->type == UI_BTYPE_LABEL && but->prev->str[0] &&
                            but->prev->alignnr == but->alignnr;
 
+  /* When true, store a copy of the description and use the tool-tip callback to return that copy.
+   * This way, further calls to #EnumPropertyRNA::item_fn which occur when evaluating shortcuts
+   * don't cause strings to be freed. See #ui_but_event_property_operator_string, see: #129151.
+   *
+   * - This is *not* a generic fix for #126541,
+   *   references to strings still need to be held by Python.
+   *
+   * - Duplicating descriptions in most UI logic should be avoided.
+   *   Make an exception for menus as they aren't typically refreshed during animation
+   *   playback or other situations where the overhead would be noticeable.
+   */
+  bool use_enum_copy_description = free && (RNA_property_py_data_get(but->rnaprop) != nullptr);
+
   if (title && title[0] && (categories == 0) && (!but->str[0] || !prior_label)) {
     /* Show title when no categories and calling button has no text or prior label. */
     uiDefBut(
@@ -4574,6 +4594,8 @@ static void ui_def_but_rna__menu(bContext *C, uiLayout *layout, void *but_p)
     }
     else {
       int icon = item->icon;
+      const char *description_static = use_enum_copy_description ? nullptr : item->description;
+
       /* Use blank icon if there is none for this item (but for some other one) to make sure labels
        * align. */
       if (icon == ICON_NONE && has_item_with_icon) {
@@ -4594,7 +4616,7 @@ static void ui_def_but_rna__menu(bContext *C, uiLayout *layout, void *but_p)
                                      &handle->retvalue,
                                      item->value,
                                      0.0,
-                                     item->description);
+                                     description_static);
       }
       else {
         item_but = uiDefButI(block,
@@ -4608,10 +4630,23 @@ static void ui_def_but_rna__menu(bContext *C, uiLayout *layout, void *but_p)
                              &handle->retvalue,
                              item->value,
                              0.0,
-                             item->description);
+                             description_static);
       }
       if (item->value == current_value) {
         item_but->flag |= UI_SELECT_DRAW;
+      }
+
+      if (use_enum_copy_description) {
+        if (item->description && item->description[0]) {
+          char *description_copy = BLI_strdup(item->description);
+          UI_but_func_tooltip_set(
+              item_but,
+              [](bContext * /*C*/, void *argN, const char * /*tip*/) -> std::string {
+                return static_cast<const char *>(argN);
+              },
+              description_copy,
+              MEM_freeN);
+        }
       }
     }
   }
@@ -5106,7 +5141,7 @@ int UI_autocomplete_end(AutoComplete *autocpl, char *autoname)
   return match;
 }
 
-#define PREVIEW_TILE_PAD (0.15f * UI_UNIT_X)
+#define PREVIEW_TILE_PAD (0.225f * UI_UNIT_X)
 
 int UI_preview_tile_size_x(const int size_px)
 {
@@ -6068,15 +6103,10 @@ void UI_but_func_rename_full_set(uiBut *but,
   but->rename_full_func = rename_full_func;
 }
 
-void UI_but_func_drawextra_set(
-    uiBlock *block,
-    void (*func)(const bContext *C, void *idv, void *arg1, void *arg2, rcti *rect),
-    void *arg1,
-    void *arg2)
+void UI_but_func_drawextra_set(uiBlock *block,
+                               std::function<void(const bContext *C, rcti *rect)> func)
 {
   block->drawextra = func;
-  block->drawextra_arg1 = arg1;
-  block->drawextra_arg2 = arg2;
 }
 
 void UI_but_func_set(uiBut *but, uiButHandleFunc func, void *arg1, void *arg2)
@@ -6583,6 +6613,16 @@ void UI_but_search_preview_grid_size_set(uiBut *but, int rows, int cols)
   uiButSearch *but_search = reinterpret_cast<uiButSearch *>(but);
   but_search->preview_rows = rows;
   but_search->preview_cols = cols;
+}
+
+void UI_but_view_item_draw_size_set(uiBut *but,
+                                    const std::optional<int> draw_width,
+                                    const std::optional<int> draw_height)
+{
+  BLI_assert(but->type == UI_BTYPE_VIEW_ITEM);
+  uiButViewItem *but_view_item = reinterpret_cast<uiButViewItem *>(but);
+  but_view_item->draw_width = draw_width.value_or(0);
+  but_view_item->draw_height = draw_height.value_or(0);
 }
 
 void UI_but_focus_on_enter_event(wmWindow *win, uiBut *but)
