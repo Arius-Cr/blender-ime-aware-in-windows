@@ -753,6 +753,7 @@ class USDExportTest(AbstractUSDTest):
         self.assertEqual(prim.GetTypeName(), "Skeleton")
         prim_skel = UsdSkel.BindingAPI(prim)
         anim = UsdSkel.Animation(prim_skel.GetAnimationSource())
+        self.assertEqual(anim.GetPrim().GetName(), "ArmatureAction_001")
         self.assertEqual(anim.GetJointsAttr().Get(),
                          ['Bone',
                           'Bone/Bone_001',
@@ -762,9 +763,9 @@ class USDExportTest(AbstractUSDTest):
         loc_samples = anim.GetTranslationsAttr().GetTimeSamples()
         rot_samples = anim.GetRotationsAttr().GetTimeSamples()
         scale_samples = anim.GetScalesAttr().GetTimeSamples()
-        self.assertEqual(loc_samples, [1.0, 2.0, 3.0, 4.0, 5.0])
-        self.assertEqual(rot_samples, [1.0, 2.0, 3.0, 4.0, 5.0])
-        self.assertEqual(scale_samples, [1.0, 2.0, 3.0, 4.0, 5.0])
+        self.assertEqual(loc_samples, [])
+        self.assertEqual(rot_samples, [1.0, 2.0, 3.0])
+        self.assertEqual(scale_samples, [])
 
         # Validate the shape key animation
         prim = stage.GetPrimAtPath("/root/cube_anim_keys")

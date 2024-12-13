@@ -2656,7 +2656,7 @@ static eHandlerActionFlag wm_handler_operator_call(bContext *C,
 
     if (ot && wm_operator_check_locked_interface(C, ot)) {
       bool use_last_properties = true;
-      PointerRNA tool_properties = {nullptr};
+      PointerRNA tool_properties = {};
 
       bToolRef *keymap_tool = nullptr;
       if (handler_base->type == WM_HANDLER_TYPE_KEYMAP) {
@@ -6679,7 +6679,7 @@ bool WM_window_modal_keymap_status_draw(bContext *C, wmWindow *win, uiLayout *la
                  op->type, items[i].value, true))
     {
       /*  Show text instead */
-      uiItemL(row, fmt::format("{}: {}", *str, items[i].name).c_str(), ICON_NONE);
+      uiItemL(row, fmt::format("{}: {}", *str, items[i].name), ICON_NONE);
     }
   }
   return true;

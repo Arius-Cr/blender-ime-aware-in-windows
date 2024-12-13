@@ -141,9 +141,9 @@ static void transdata_elem_translate(const TransInfo *t,
 
   if (t->options & CTX_GPENCIL_STROKES) {
     /* Grease pencil multi-frame falloff. */
-    bGPDstroke *gps = (bGPDstroke *)td->extra;
-    if (gps != nullptr) {
-      mul_v3_fl(tvec, td->factor * gps->runtime.multi_frame_falloff);
+    float *gp_falloff = static_cast<float *>(td->extra);
+    if (gp_falloff != nullptr) {
+      mul_v3_fl(tvec, td->factor * *gp_falloff);
     }
     else {
       mul_v3_fl(tvec, td->factor);
@@ -227,6 +227,10 @@ static void headerTranslation(TransInfo *t, const float vec[3], char str[UI_MAX_
       dvec[0] = val - ival;
     }
 
+    if (t->flag & T_2D_EDIT) {
+      applyAspectRatio(t, dvec);
+    }
+
     if (t->con.mode & CON_APPLY) {
       int i = 0;
       if (t->con.mode & CON_AXIS0) {
@@ -241,10 +245,6 @@ static void headerTranslation(TransInfo *t, const float vec[3], char str[UI_MAX_
       while (i != 3) {
         dvec[i++] = 0.0f;
       }
-    }
-
-    if (t->flag & T_2D_EDIT) {
-      applyAspectRatio(t, dvec);
     }
 
     dist = len_v3(dvec);
@@ -350,16 +350,7 @@ static void ApplySnapTranslation(TransInfo *t, float vec[3])
   float point[3];
   getSnapPoint(t, point);
 
-  if (t->spacetype == SPACE_NODE) {
-    char border = t->tsnap.snapNodeBorder;
-    if (border & (NODE_LEFT | NODE_RIGHT)) {
-      vec[0] = point[0] - t->tsnap.snap_source[0];
-    }
-    if (border & (NODE_BOTTOM | NODE_TOP)) {
-      vec[1] = point[1] - t->tsnap.snap_source[1];
-    }
-  }
-  else if (t->spacetype == SPACE_SEQ) {
+  if (t->spacetype == SPACE_SEQ) {
     if (t->region->regiontype == RGN_TYPE_PREVIEW) {
       transform_snap_sequencer_image_apply_translate(t, vec);
     }

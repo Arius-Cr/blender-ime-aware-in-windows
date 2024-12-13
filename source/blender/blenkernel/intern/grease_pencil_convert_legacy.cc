@@ -637,11 +637,11 @@ class AnimDataConvertor {
  * - Array of indices in the new vertex group list for remapping
  */
 static void find_used_vertex_groups(const bGPDframe &gpf,
-                                    const ListBase &all_names,
+                                    const ListBase &vertex_group_names,
+                                    const int num_vertex_groups,
                                     ListBase &r_vertex_group_names,
                                     Array<int> &r_indices)
 {
-  const int num_vertex_groups = BLI_listbase_count(&all_names);
   Array<int> is_group_used(num_vertex_groups, false);
   LISTBASE_FOREACH (bGPDstroke *, gps, &gpf.strokes) {
     if (!gps->dvert) {
@@ -650,7 +650,7 @@ static void find_used_vertex_groups(const bGPDframe &gpf,
     Span<MDeformVert> dverts = {gps->dvert, gps->totpoints};
     for (const MDeformVert &dvert : dverts) {
       for (const MDeformWeight &weight : Span<MDeformWeight>{dvert.dw, dvert.totweight}) {
-        if (weight.def_nr >= dvert.totweight) {
+        if (weight.def_nr >= num_vertex_groups) {
           /* Ignore invalid deform weight group indices. */
           continue;
         }
@@ -662,7 +662,7 @@ static void find_used_vertex_groups(const bGPDframe &gpf,
   r_indices.reinitialize(num_vertex_groups);
   int new_group_i = 0;
   int old_group_i;
-  LISTBASE_FOREACH_INDEX (const bDeformGroup *, def_group, &all_names, old_group_i) {
+  LISTBASE_FOREACH_INDEX (const bDeformGroup *, def_group, &vertex_group_names, old_group_i) {
     if (!is_group_used[old_group_i]) {
       r_indices[old_group_i] = -1;
       continue;
@@ -842,7 +842,9 @@ static Drawing legacy_gpencil_frame_to_grease_pencil_drawing(const bGPDframe &gp
   /* Find used vertex groups in this drawing. */
   ListBase stroke_vertex_group_names;
   Array<int> stroke_def_nr_map;
-  find_used_vertex_groups(gpf, vertex_group_names, stroke_vertex_group_names, stroke_def_nr_map);
+  const int num_vertex_groups = BLI_listbase_count(&vertex_group_names);
+  find_used_vertex_groups(
+      gpf, vertex_group_names, num_vertex_groups, stroke_vertex_group_names, stroke_def_nr_map);
   BLI_assert(BLI_listbase_is_empty(&curves.vertex_group_names));
   curves.vertex_group_names = stroke_vertex_group_names;
   const bool use_dverts = !BLI_listbase_is_empty(&curves.vertex_group_names);
@@ -853,7 +855,7 @@ static Drawing legacy_gpencil_frame_to_grease_pencil_drawing(const bGPDframe &gp
     dst_dvert.dw = static_cast<MDeformWeight *>(MEM_dupallocN(src_dvert.dw));
     const MutableSpan<MDeformWeight> vertex_weights = {dst_dvert.dw, dst_dvert.totweight};
     for (MDeformWeight &weight : vertex_weights) {
-      if (weight.def_nr >= dst_dvert.totweight) {
+      if (weight.def_nr >= num_vertex_groups) {
         /* Ignore invalid deform weight group indices. */
         continue;
       }
@@ -1206,31 +1208,31 @@ static bNodeTree *offset_radius_node_tree_add(ConversionData &conversion_data, L
       DATA_("Layer"), "", "NodeSocketString", NODE_INTERFACE_SOCKET_INPUT, nullptr);
 
   bNode *group_output = bke::node_add_node(nullptr, group, "NodeGroupOutput");
-  group_output->locx = 800;
-  group_output->locy = 160;
+  group_output->location[0] = 800;
+  group_output->location[1] = 160;
   bNode *group_input = bke::node_add_node(nullptr, group, "NodeGroupInput");
-  group_input->locx = 0;
-  group_input->locy = 160;
+  group_input->location[0] = 0;
+  group_input->location[1] = 160;
 
   bNode *set_curve_radius = bke::node_add_node(nullptr, group, "GeometryNodeSetCurveRadius");
-  set_curve_radius->locx = 600;
-  set_curve_radius->locy = 160;
+  set_curve_radius->location[0] = 600;
+  set_curve_radius->location[1] = 160;
   bNode *named_layer_selection = bke::node_add_node(
       nullptr, group, "GeometryNodeInputNamedLayerSelection");
-  named_layer_selection->locx = 200;
-  named_layer_selection->locy = 100;
+  named_layer_selection->location[0] = 200;
+  named_layer_selection->location[1] = 100;
   bNode *input_radius = bke::node_add_node(nullptr, group, "GeometryNodeInputRadius");
-  input_radius->locx = 0;
-  input_radius->locy = 0;
+  input_radius->location[0] = 0;
+  input_radius->location[1] = 0;
 
   bNode *add = bke::node_add_node(nullptr, group, "ShaderNodeMath");
   add->custom1 = NODE_MATH_ADD;
-  add->locx = 200;
-  add->locy = 0;
+  add->location[0] = 200;
+  add->location[1] = 0;
 
   bNode *clamp_radius = bke::node_add_node(nullptr, group, "ShaderNodeClamp");
-  clamp_radius->locx = 400;
-  clamp_radius->locy = 0;
+  clamp_radius->location[0] = 400;
+  clamp_radius->location[1] = 0;
   bNodeSocket *sock_max = bke::node_find_socket(clamp_radius, SOCK_IN, "Max");
   static_cast<bNodeSocketValueFloat *>(sock_max->default_value)->value = FLT_MAX;
 

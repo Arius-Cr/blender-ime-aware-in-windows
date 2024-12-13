@@ -32,7 +32,7 @@ void foreach_fcurve_in_action(Action &action, FunctionRef<void(FCurve &fcurve)> 
       if (strip->type() != Strip::Type::Keyframe) {
         continue;
       }
-      for (ChannelBag *bag : strip->data<StripKeyframeData>(action).channelbags()) {
+      for (Channelbag *bag : strip->data<StripKeyframeData>(action).channelbags()) {
         for (FCurve *fcu : bag->fcurves()) {
           callback(*fcu);
         }
@@ -56,7 +56,7 @@ void foreach_fcurve_in_action_slot(Action &action,
         if (strip->type() != Strip::Type::Keyframe) {
           continue;
         }
-        for (ChannelBag *bag : strip->data<StripKeyframeData>(action).channelbags()) {
+        for (Channelbag *bag : strip->data<StripKeyframeData>(action).channelbags()) {
           if (bag->slot_handle != handle) {
             continue;
           }
@@ -100,7 +100,7 @@ bool foreach_action_slot_use_with_references(ID &animated_id,
   if (adt) {
     if (adt->action) {
       /* Direct assignment. */
-      if (!callback(animated_id, adt->action, adt->slot_handle, adt->slot_name)) {
+      if (!callback(animated_id, adt->action, adt->slot_handle, adt->last_slot_identifier)) {
         return false;
       }
     }
@@ -108,7 +108,8 @@ bool foreach_action_slot_use_with_references(ID &animated_id,
     /* NLA strips. */
     const bool looped_until_last_strip = bke::nla::foreach_strip_adt(*adt, [&](NlaStrip *strip) {
       if (strip->act) {
-        if (!callback(animated_id, strip->act, strip->action_slot_handle, strip->action_slot_name))
+        if (!callback(
+                animated_id, strip->act, strip->action_slot_handle, strip->last_slot_identifier))
         {
           return false;
         }
@@ -144,7 +145,7 @@ bool foreach_action_slot_use_with_references(ID &animated_id,
     return callback(animated_id,
                     constraint_data->act,
                     constraint_data->action_slot_handle,
-                    constraint_data->action_slot_name);
+                    constraint_data->last_slot_identifier);
   };
 
   /* Visit Object constraints. */

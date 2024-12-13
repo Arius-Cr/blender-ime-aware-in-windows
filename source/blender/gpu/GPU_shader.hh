@@ -65,9 +65,6 @@ GPUShader *GPU_shader_create_from_info_name(const char *info_name);
  */
 const GPUShaderCreateInfo *GPU_shader_create_info_get(const char *info_name);
 
-void GPU_shader_create_info_get_unfinalized_copy(const char *info_name,
-                                                 GPUShaderCreateInfo &r_info);
-
 /**
  * Error checking for user created shaders.
  * \return true is create info is valid.
@@ -191,6 +188,7 @@ void GPU_shader_uniform_2fv(GPUShader *sh, const char *name, const float data[2]
 void GPU_shader_uniform_3fv(GPUShader *sh, const char *name, const float data[3]);
 void GPU_shader_uniform_4fv(GPUShader *sh, const char *name, const float data[4]);
 void GPU_shader_uniform_2iv(GPUShader *sh, const char *name, const int data[2]);
+void GPU_shader_uniform_3iv(GPUShader *sh, const char *name, const int data[3]);
 void GPU_shader_uniform_mat4(GPUShader *sh, const char *name, const float data[4][4]);
 void GPU_shader_uniform_mat3_as_mat4(GPUShader *sh, const char *name, const float data[3][3]);
 void GPU_shader_uniform_1f_array(GPUShader *sh, const char *name, int len, const float *val);
@@ -205,12 +203,14 @@ void GPU_shader_uniform_4fv_array(GPUShader *sh, const char *name, int len, cons
  * Used to create #GPUVertexFormat from the shader's vertex input layout.
  * \{ */
 
-unsigned int GPU_shader_get_attribute_len(const GPUShader *shader);
+uint GPU_shader_get_attribute_len(const GPUShader *shader);
+uint GPU_shader_get_ssbo_input_len(const GPUShader *shader);
 int GPU_shader_get_attribute(const GPUShader *shader, const char *name);
 bool GPU_shader_get_attribute_info(const GPUShader *shader,
                                    int attr_location,
                                    char r_name[256],
                                    int *r_type);
+bool GPU_shader_get_ssbo_input_info(const GPUShader *shader, int ssbo_location, char r_name[256]);
 
 /** \} */
 
@@ -307,14 +307,6 @@ GPUShader *GPU_shader_create_ex(std::optional<blender::StringRefNull> vertcode,
  */
 bool GPU_shader_transform_feedback_enable(GPUShader *shader, blender::gpu::VertBuf *vertbuf);
 void GPU_shader_transform_feedback_disable(GPUShader *shader);
-
-/**
- * SSBO Vertex-fetch is used as an alternative path to geometry shaders wherein the vertex count is
- * expanded up-front. This function fetches the number of specified output vertices per input
- * primitive.
- */
-int GPU_shader_get_ssbo_vertex_fetch_num_verts_per_prim(GPUShader *shader);
-bool GPU_shader_uses_ssbo_vertex_fetch(GPUShader *shader);
 
 /**
  * Shader cache warming.
@@ -426,3 +418,11 @@ int GPU_shader_get_builtin_block(GPUShader *shader, int builtin);
 int GPU_shader_get_uniform_block(GPUShader *shader, const char *name);
 
 /** \} */
+
+#define GPU_SHADER_FREE_SAFE(shader) \
+  do { \
+    if (shader != nullptr) { \
+      GPU_shader_free(shader); \
+      shader = nullptr; \
+    } \
+  } while (0)

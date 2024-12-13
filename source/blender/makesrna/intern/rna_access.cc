@@ -151,7 +151,7 @@ PointerRNA RNA_id_pointer_create(ID *id)
   StructRNA *type, *idtype = nullptr;
 
   if (id) {
-    PointerRNA tmp = {nullptr};
+    PointerRNA tmp = {};
     tmp.data = id;
     idtype = rna_ID_refine(&tmp);
 
@@ -6624,7 +6624,7 @@ int RNA_function_call(
   return -1;
 }
 
-const char *RNA_translate_ui_text(
+std::optional<blender::StringRefNull> RNA_translate_ui_text(
     const char *text, const char *text_ctxt, StructRNA *type, PropertyRNA *prop, int translate)
 {
   return rna_translate_ui_text(text, text_ctxt, type, prop, translate);

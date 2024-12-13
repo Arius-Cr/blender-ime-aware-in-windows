@@ -369,6 +369,7 @@ struct Draw {
        uint expanded_prim_len,
        ResourceHandle handle)
   {
+    BLI_assert(batch != nullptr);
     this->batch = batch;
     this->handle = handle;
     BLI_assert(instance_len < SHRT_MAX);
@@ -462,6 +463,9 @@ struct StateSet {
 
   void execute(RecordingState &state) const;
   std::string serialize() const;
+
+  /* Set state of the GPU module manually. */
+  static void set(DRWState state = DRW_STATE_DEFAULT);
 };
 
 struct StencilSet {
@@ -537,6 +541,7 @@ class DrawCommandBuf {
                    GPUPrimType expanded_prim_type,
                    uint16_t expanded_prim_len)
   {
+    BLI_assert(batch != nullptr);
     vertex_first = vertex_first != -1 ? vertex_first : 0;
     instance_len = instance_len != -1 ? instance_len : 1;
 
@@ -657,6 +662,7 @@ class DrawMultiBuf {
                    GPUPrimType expanded_prim_type,
                    uint16_t expanded_prim_len)
   {
+    BLI_assert(batch != nullptr);
     /* Custom draw-calls cannot be batched and will produce one group per draw. */
     const bool custom_group = ((vertex_first != 0 && vertex_first != -1) || vertex_len != -1);
 

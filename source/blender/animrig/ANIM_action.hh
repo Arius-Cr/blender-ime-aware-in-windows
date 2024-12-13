@@ -145,42 +145,54 @@ class Action : public ::bAction {
   const Slot *slot_for_handle(slot_handle_t handle) const;
 
   /**
-   * Set the slot name, ensure it is unique, and propagate the new name to
+   * Set the slot display name (the part of the identifier after the two-letter
+   * ID prefix), ensure the resulting identifier is unique, and propagate the
+   * new identifier to all data-blocks that use it
+   *
+   * This has to be done on the Action level to ensure each slot has a unique
+   * identifier within the Action.
+   *
+   * \see #Action::slot_identifier_set
+   */
+  void slot_display_name_set(Main &bmain, Slot &slot, StringRefNull new_display_name);
+
+  /**
+   * Set the slot identifier, ensure it is unique, and propagate the new identifier to
    * all data-blocks that use it.
    *
    * This has to be done on the Action level to ensure each slot has a
-   * unique name within the Action.
+   * unique identifier within the Action.
    *
    * \note This does NOT ensure the first two characters match the ID type of
    * this slot. This is the caller's responsibility.
    *
-   * \see #Action::slot_name_define
-   * \see #Action::slot_name_propagate
+   * \see #Action::slot_identifier_define
+   * \see #Action::slot_identifier_propagate
    */
-  void slot_name_set(Main &bmain, Slot &slot, StringRefNull new_name);
+  void slot_identifier_set(Main &bmain, Slot &slot, StringRefNull new_identifier);
 
   /**
-   * Set the slot name, and ensure it is unique.
+   * Set the slot identifier, and ensure it is unique.
    *
    * \note This does NOT ensure the first two characters match the ID type of
    * this slot. This is the caller's responsibility.
    *
-   * \see #Action::slot_name_set
-   * \see #Action::slot_name_propagate
+   * \see #Action::slot_identifier_set
+   * \see #Action::slot_identifier_propagate
    */
-  void slot_name_define(Slot &slot, StringRefNull new_name);
+  void slot_identifier_define(Slot &slot, StringRefNull new_identifier);
 
   /**
-   * Update the `AnimData::action_slot_name` field of any ID that is animated by
+   * Update the `AnimData::last_slot_identifier` field of any ID that is animated by
    * this Slot.
    *
-   * Should be called after `slot_name_define(slot)`. This is implemented as a separate
+   * Should be called after `slot_identifier_define(slot)`. This is implemented as a separate
    * function due to the need to access `bmain`, which is available in the RNA on-property-update
    * handler, but not in the RNA property setter.
    */
-  void slot_name_propagate(Main &bmain, const Slot &slot);
+  void slot_identifier_propagate(Main &bmain, const Slot &slot);
 
-  Slot *slot_find_by_name(StringRefNull slot_name);
+  Slot *slot_find_by_identifier(StringRefNull slot_identifier);
 
   /**
    * Create a new, unused Slot.
@@ -191,7 +203,18 @@ class Action : public ::bAction {
   Slot &slot_add();
 
   /**
-   * Create a new slot, named after the given ID, and limited to the ID's type.
+   * Create a new, unused Slot for the given ID type.
+   *
+   * The returned slot will only be suitable for the specified ID type.
+   */
+  Slot &slot_add_for_id_type(ID_Type idtype);
+
+  /**
+   * Create a new slot suitable for the ID's type.
+   *
+   * The slot will be named after `animated_id.adt.last_slot_identifier`, defaulting to the ID's
+   * name when that is not set. This is done so that toggling Actions works transparently, when
+   * toggling between `this` and the Action last assigned to the ID.
    *
    * Note that this assigns neither this Action nor the new Slot to the ID. This function
    * merely initializes the Slot itself to suitable values to start animating this ID.
@@ -237,20 +260,6 @@ class Action : public ::bAction {
    */
   Span<const StripKeyframeData *> strip_keyframe_data() const;
   Span<StripKeyframeData *> strip_keyframe_data();
-
-  /**
-   * Find the slot that best matches the animated ID.
-   *
-   * If the ID is already animated by this Action, by matching this
-   * Action's slots with (in order):
-   *
-   * - `animated_id.adt->slot_handle`,
-   * - `animated_id.adt->slot_name`,
-   * - `animated_id.name`.
-   *
-   * Note that this is different from #slot_for_id, which does not use the
-   * slot name, and only works when this Action is already assigned. */
-  Slot *find_suitable_slot_for(const ID &animated_id);
 
   /**
    * Return whether this Action actually has any animation data for the given slot.
@@ -323,8 +332,8 @@ class Action : public ::bAction {
   float2 get_frame_range_of_keys(bool include_modifiers) const ATTR_WARN_UNUSED_RESULT;
 
   /**
-   * Set the slot's ID type to that of the animated ID, ensure the name
-   * prefix is set accordingly, and that the name is unique within the
+   * Set the slot's ID type to that of the animated ID, ensure the identifier
+   * prefix is set accordingly, and that the identifier is unique within the
    * Action.
    *
    * This is a low-level function, and shouldn't be called directly outside of
@@ -378,14 +387,14 @@ class Action : public ::bAction {
   Slot &slot_allocate();
 
   /**
-   * Ensure the slot name prefix matches its ID type.
+   * Ensure the slot identifier prefix matches its ID type.
    *
    * This ensures that the first two characters match the ID type of
    * this slot.
    *
-   * \see #Action::slot_name_propagate
+   * \see #Action::slot_identifier_propagate
    */
-  void slot_name_ensure_prefix(Slot &slot);
+  void slot_identifier_ensure_prefix(Slot &slot);
 };
 static_assert(sizeof(Action) == sizeof(::bAction),
               "DNA struct and its C++ wrapper must have the same size");
@@ -620,28 +629,28 @@ class Slot : public ::ActionSlot {
   constexpr static slot_handle_t unassigned = 0;
 
   /**
-   * Slot names consist of a two-character ID code, then the display name.
-   * This means that the minimum length of a valid name is 3 characters.
+   * Slot identifiers consist of a two-character ID code, then the display name.
+   * This means that the minimum length of a valid identifier is 3 characters.
    */
-  constexpr static int name_length_min = 3;
+  constexpr static int identifier_length_min = 3;
 
-  constexpr static int name_length_max = MAX_ID_NAME;
-  static_assert(sizeof(AnimData::slot_name) == name_length_max);
-  static_assert(sizeof(NlaStrip::action_slot_name) == name_length_max);
+  constexpr static int identifier_length_max = MAX_ID_NAME;
+  static_assert(sizeof(AnimData::last_slot_identifier) == identifier_length_max);
+  static_assert(sizeof(NlaStrip::last_slot_identifier) == identifier_length_max);
 
   /**
-   * Return the name prefix for the Slot's type.
+   * Return the identifier prefix for the Slot's type.
    *
    * This is the ID name prefix, so "OB" for objects, "CA" for cameras, etc.
    */
-  std::string name_prefix_for_idtype() const;
+  std::string identifier_prefix_for_idtype() const;
 
   /**
-   * Return the name without the prefix, also known as the "display name".
+   * Return the identifier without the prefix, also known as the "display name".
    *
-   * \see name_prefix_for_idtype
+   * \see identifier_prefix_for_idtype
    */
-  StringRefNull name_without_prefix() const;
+  StringRefNull identifier_without_prefix() const;
 
   /** Return whether this Slot is usable by this ID type. */
   bool is_suitable_for(const ID &animated_id) const;
@@ -710,20 +719,20 @@ class Slot : public ::ActionSlot {
   static void users_invalidate(Main &bmain);
 
   /**
-   * Ensure the first two characters of the name match the ID type.
+   * Ensure the first two characters of the identifier match the ID type.
    *
    * This typically should not be called directly. Prefer assigning to an ID to
-   * get the idtype and name prefix properly set. Prefer calling
-   * `Action::slot_name_set()` if you want to set the slot name. Both of those
+   * get the idtype and identifier prefix properly set. Prefer calling
+   * `Action::slot_identifier_set()` if you want to set the slot identifier. Both of those
    * approaches take care of ensuring uniqueness and other invariants.
    *
-   * \note This does NOT ensure name uniqueness within the Action. That is the
+   * \note This does NOT ensure identifier uniqueness within the Action. That is the
    * responsibility of the caller.
    *
    * \see #assign_action_slot
-   * \see #Action::slot_name_set
+   * \see #Action::slot_identifier_set
    */
-  void name_ensure_prefix();
+  void identifier_ensure_prefix();
 
  protected:
   friend Action;
@@ -749,42 +758,42 @@ class StripKeyframeData : public ::ActionStripKeyframeData {
   explicit StripKeyframeData(const StripKeyframeData &other);
   ~StripKeyframeData();
 
-  /* ChannelBag array access. */
-  blender::Span<const ChannelBag *> channelbags() const;
-  blender::Span<ChannelBag *> channelbags();
-  const ChannelBag *channelbag(int64_t index) const;
-  ChannelBag *channelbag(int64_t index);
+  /* Channelbag array access. */
+  blender::Span<const Channelbag *> channelbags() const;
+  blender::Span<Channelbag *> channelbags();
+  const Channelbag *channelbag(int64_t index) const;
+  Channelbag *channelbag(int64_t index);
 
   /**
    * Find the animation channels for this slot.
    *
    * \return nullptr if there is none yet for this slot.
    */
-  const ChannelBag *channelbag_for_slot(const Slot &slot) const;
-  ChannelBag *channelbag_for_slot(const Slot &slot);
-  const ChannelBag *channelbag_for_slot(slot_handle_t slot_handle) const;
-  ChannelBag *channelbag_for_slot(slot_handle_t slot_handle);
+  const Channelbag *channelbag_for_slot(const Slot &slot) const;
+  Channelbag *channelbag_for_slot(const Slot &slot);
+  const Channelbag *channelbag_for_slot(slot_handle_t slot_handle) const;
+  Channelbag *channelbag_for_slot(slot_handle_t slot_handle);
 
   /**
    * Add the animation channels for this slot.
    *
-   * Should only be called when there is no `ChannelBag` for this slot yet.
+   * Should only be called when there is no `Channelbag` for this slot yet.
    */
-  ChannelBag &channelbag_for_slot_add(const Slot &slot);
+  Channelbag &channelbag_for_slot_add(const Slot &slot);
 
   /**
-   * Find the ChannelBag for `slot`, or if none exists, create it.
+   * Find the Channelbag for `slot`, or if none exists, create it.
    */
-  ChannelBag &channelbag_for_slot_ensure(const Slot &slot);
+  Channelbag &channelbag_for_slot_ensure(const Slot &slot);
 
   /**
-   * Remove the ChannelBag from this slot.
+   * Remove the Channelbag from this slot.
    *
    * After this call the reference is no longer valid, as the memory will have been freed.
    *
-   * \return true when the ChannelBag was found & removed, false if it wasn't found.
+   * \return true when the Channelbag was found & removed, false if it wasn't found.
    */
-  bool channelbag_remove(ChannelBag &channelbag_to_remove);
+  bool channelbag_remove(Channelbag &channelbag_to_remove);
 
   /**
    * Remove all strip data for the given slot.
@@ -794,7 +803,7 @@ class StripKeyframeData : public ::ActionStripKeyframeData {
   void slot_data_remove(slot_handle_t slot_handle);
 
   /** Return the channelbag's index, or -1 if there is none for this slot handle. */
-  int64_t find_channelbag_index(const ChannelBag &channelbag) const;
+  int64_t find_channelbag_index(const Channelbag &channelbag) const;
 
   SingleKeyingResult keyframe_insert(Main *bmain,
                                      const Slot &slot,
@@ -810,11 +819,11 @@ static_assert(sizeof(StripKeyframeData) == sizeof(::ActionStripKeyframeData),
 /**
  * Collection of F-Curves, intended for a specific Slot handle.
  */
-class ChannelBag : public ::ActionChannelBag {
+class Channelbag : public ::ActionChannelbag {
  public:
-  ChannelBag() = default;
-  explicit ChannelBag(const ChannelBag &other);
-  ~ChannelBag();
+  Channelbag() = default;
+  explicit Channelbag(const Channelbag &other);
+  ~Channelbag();
 
   /* FCurves access. */
   blender::Span<const FCurve *> fcurves() const;
@@ -843,7 +852,7 @@ class ChannelBag : public ::ActionChannelBag {
   FCurve &fcurve_ensure(Main *bmain, FCurveDescriptor fcurve_descriptor);
 
   /**
-   * Create an F-Curve, but only if it doesn't exist yet in this ChannelBag.
+   * Create an F-Curve, but only if it doesn't exist yet in this Channelbag.
    *
    * \return the F-Curve it it was created, or nullptr if it already existed.
    *
@@ -856,9 +865,9 @@ class ChannelBag : public ::ActionChannelBag {
   FCurve *fcurve_create_unique(Main *bmain, FCurveDescriptor fcurve_descriptor);
 
   /**
-   * Append an F-Curve to this ChannelBag.
+   * Append an F-Curve to this Channelbag.
    *
-   * Ownership of the F-Curve is also transferred to the ChannelBag. The F-Curve
+   * Ownership of the F-Curve is also transferred to the Channelbag. The F-Curve
    * will not belong to any channel group after appending.
    *
    * This is considered a low-level function. Things like depsgraph relations
@@ -867,7 +876,7 @@ class ChannelBag : public ::ActionChannelBag {
   void fcurve_append(FCurve &fcurve);
 
   /**
-   * Remove an F-Curve from the ChannelBag.
+   * Remove an F-Curve from the Channelbag.
    *
    * Additionally, if the fcurve was the last fcurve in a channel group, that
    * channel group is also deleted.
@@ -882,7 +891,7 @@ class ChannelBag : public ::ActionChannelBag {
   bool fcurve_remove(FCurve &fcurve_to_remove);
 
   /**
-   * Remove an F-Curve from the ChannelBag, identified by its index in the array.
+   * Remove an F-Curve from the Channelbag, identified by its index in the array.
    *
    * Acts the same as fcurve_remove() except it's a bit more efficient as it
    * doesn't need to find the F-Curve in the array first.
@@ -892,7 +901,7 @@ class ChannelBag : public ::ActionChannelBag {
   void fcurve_remove_by_index(int64_t fcurve_array_index);
 
   /**
-   * Detach an F-Curve from the ChannelBag.
+   * Detach an F-Curve from the Channelbag.
    *
    * Additionally, if the fcurve was the last fcurve in a channel group, that
    * channel group is deleted.
@@ -907,7 +916,7 @@ class ChannelBag : public ::ActionChannelBag {
   bool fcurve_detach(FCurve &fcurve_to_detach);
 
   /**
-   * Detach an F-Curve from the ChannelBag, identified by its index in the array.
+   * Detach an F-Curve from the Channelbag, identified by its index in the array.
    *
    * Acts the same as fcurve_detach() except it's a bit more efficient as it
    * doesn't need to find the F-Curve in the array first.
@@ -928,7 +937,7 @@ class ChannelBag : public ::ActionChannelBag {
   void fcurve_move(FCurve &fcurve, int to_fcurve_index);
 
   /**
-   * Remove all F-Curves from this ChannelBag.
+   * Remove all F-Curves from this Channelbag.
    */
   void fcurves_clear();
 
@@ -962,7 +971,7 @@ class ChannelBag : public ::ActionChannelBag {
    * Create a new empty channel group with the given name.
    *
    * The new group is added to the end of the channel group array of the
-   * ChannelBag.
+   * Channelbag.
    *
    * This function ensures the group has a unique name, and thus the name of the
    * created group may differ from the `name` parameter.
@@ -975,7 +984,7 @@ class ChannelBag : public ::ActionChannelBag {
    * Find a channel group with the given name, or if none exists create one.
    *
    * If a new group is created, it's added to the end of the channel group array
-   * of the ChannelBag.
+   * of the Channelbag.
    *
    * \return A reference to the channel group.
    */
@@ -1032,7 +1041,7 @@ class ChannelBag : public ::ActionChannelBag {
   /**
    * Create an F-Curve.
    *
-   * Assumes that there is no such F-Curve yet on this ChannelBag. If it is
+   * Assumes that there is no such F-Curve yet on this Channelbag. If it is
    * uncertain whether this is the case, use `fcurve_create_unique()` instead.
    *
    * \param bmain: Used to tag the dependency graph(s) for relationship
@@ -1106,13 +1115,13 @@ class ChannelBag : public ::ActionChannelBag {
   void restore_channel_group_invariants();
 };
 
-static_assert(sizeof(ChannelBag) == sizeof(::ActionChannelBag),
+static_assert(sizeof(Channelbag) == sizeof(::ActionChannelbag),
               "DNA struct and its C++ wrapper must have the same size");
 
 /**
- * A group of channels within a ChannelBag.
+ * A group of channels within a Channelbag.
  *
- * This does *not* own the fcurves--the ChannelBag does. This just groups
+ * This does *not* own the fcurves--the Channelbag does. This just groups
  * fcurves for organizational purposes, e.g. for use in the channel list in the
  * animation editors.
  *
@@ -1154,7 +1163,7 @@ Action &action_add(Main &bmain, StringRefNull name);
 enum class ActionSlotAssignmentResult : int8_t {
   OK = 0,
   SlotNotFromAction = 1, /* Slot does not belong to the assigned Action. */
-  SlotNotSuitable = 2,   /* Slot is not suitable for the given ID type.*/
+  SlotNotSuitable = 2,   /* Slot is not suitable for the given ID type. */
   MissingAction = 3,     /* No Action assigned yet, so cannot assign slot. */
 };
 
@@ -1221,10 +1230,10 @@ ActionSlotAssignmentResult assign_action_and_slot(Action *action,
  * mode (in which case no Action assignments can happen), or when the legacy Action ID type doesn't
  * match the animated ID.
  *
- * \note Contrary to `assign_action()` this skips the search by slot name when the Action is
+ * \note Contrary to `assign_action()` this skips the search by slot identifier when the Action is
  * already assigned. It should be possible for an animator to un-assign a slot, then create a new
- * slot by inserting a new key. This shouldn't auto-assign the old slot (by name) and _then_ insert
- * the key.
+ * slot by inserting a new key. This shouldn't auto-assign the old slot (by identifier) and _then_
+ * insert the key.
  *
  * \see assign_action()
  */
@@ -1262,37 +1271,45 @@ ActionSlotAssignmentResult assign_action_and_slot(Action *action,
  * This is a low-level function, intended as a building block for higher-level Action assignment
  * functions.
  *
+ * The function is named "generic" as it is independent of whether this is for
+ * direct assignment to the ID, or to an NLA strip, or an Action Constraint.
  */
 [[nodiscard]] bool generic_assign_action(ID &animated_id,
                                          bAction *action_to_assign,
                                          bAction *&action_ptr_ref,
                                          slot_handle_t &slot_handle_ref,
-                                         char *slot_name);
+                                         char *slot_identifier);
 
 /**
  * Generic function to build Slot-assignment logic.
  *
  * This is a low-level function, intended as a building block for higher-level slot assignment
  * functions.
+ *
+ * The function is named "generic" as it is independent of whether this is for
+ * direct assignment to the ID, or to an NLA strip, or an Action Constraint.
  */
 [[nodiscard]] ActionSlotAssignmentResult generic_assign_action_slot(Slot *slot_to_assign,
                                                                     ID &animated_id,
                                                                     bAction *&action_ptr_ref,
                                                                     slot_handle_t &slot_handle_ref,
-                                                                    char *slot_name);
+                                                                    char *slot_identifier);
 
 /**
  * Generic function to build Slot Handle-assignment logic.
  *
  * This is a low-level function, intended as a building block for higher-level slot handle
  * assignment functions.
+ *
+ * The function is named "generic" as it is independent of whether this is for
+ * direct assignment to the ID, or to an NLA strip, or an Action Constraint.
  */
 [[nodiscard]] ActionSlotAssignmentResult generic_assign_action_slot_handle(
     slot_handle_t slot_handle_to_assign,
     ID &animated_id,
     bAction *&action_ptr_ref,
     slot_handle_t &slot_handle_ref,
-    char *slot_name);
+    char *slot_identifier);
 
 /* --------------- Accessors --------------------- */
 
@@ -1312,9 +1329,9 @@ Action *get_action(ID &animated_id);
  */
 std::optional<std::pair<Action *, Slot *>> get_action_slot_pair(ID &animated_id);
 
-const animrig::ChannelBag *channelbag_for_action_slot(const Action &action,
+const animrig::Channelbag *channelbag_for_action_slot(const Action &action,
                                                       slot_handle_t slot_handle);
-animrig::ChannelBag *channelbag_for_action_slot(Action &action, slot_handle_t slot_handle);
+animrig::Channelbag *channelbag_for_action_slot(Action &action, slot_handle_t slot_handle);
 
 /**
  * Return the F-Curves for this specific slot handle.
@@ -1506,20 +1523,20 @@ void action_fcurve_move(Action &action_dst,
                         FCurve &fcurve);
 
 /**
- * Moves all F-Curves from one ChannelBag to the other.
+ * Moves all F-Curves from one Channelbag to the other.
  *
- * The ChannelBags do not need to be part of the same action, or even belong to
+ * The Channelbags do not need to be part of the same action, or even belong to
  * an action at all.
  *
  * If the F-Curves belonged to channel groups, the group membership also carries
- * over to the destination ChannelBag. If groups with the same names don't
- * exist, they are created. \see blender::animrig::action_fcurve_detach
+ * over to the destination Channelbag. If groups with the same names don't
+ * exist, they are created. \see #blender::animrig::action_fcurve_detach
  *
- * The order of existing channel groups in the destination ChannelBag are not
+ * The order of existing channel groups in the destination Channelbag are not
  * changed, and any new groups are placed after those in the order they appeared
  * in the src group.
  */
-void channelbag_fcurves_move(ChannelBag &channelbag_dst, ChannelBag &channelbag_src);
+void channelbag_fcurves_move(Channelbag &channelbag_dst, Channelbag &channelbag_src);
 
 /**
  * Find an appropriate user of the given Action + Slot for keyframing purposes.
@@ -1622,9 +1639,9 @@ Action *convert_to_layered_action(Main &bmain, const Action &legacy_action);
 
 /**
  * Move the given slot from `from_action` to `to_action`.
- * The slot name might not be exactly the same if the name already exists in the slots of
- * `to_action`. Also the slot handle is likely going to be different on `to_action`.
- * All users of the slot will be reassigned to the moved slot on `to_action`.
+ * The slot identifier might not be exactly the same if the identifier already exists in the slots
+ * of `to_action`. Also the slot handle is likely going to be different on `to_action`. All users
+ * of the slot will be reassigned to the moved slot on `to_action`.
  *
  * \note The `from_action` will not be deleted by this function. But it might leave it without
  * users which means it will not be saved (unless it has a fake user).
@@ -1699,11 +1716,11 @@ inline const blender::animrig::StripKeyframeData &ActionStripKeyframeData::wrap(
   return *reinterpret_cast<const blender::animrig::StripKeyframeData *>(this);
 }
 
-inline blender::animrig::ChannelBag &ActionChannelBag::wrap()
+inline blender::animrig::Channelbag &ActionChannelbag::wrap()
 {
-  return *reinterpret_cast<blender::animrig::ChannelBag *>(this);
+  return *reinterpret_cast<blender::animrig::Channelbag *>(this);
 }
-inline const blender::animrig::ChannelBag &ActionChannelBag::wrap() const
+inline const blender::animrig::Channelbag &ActionChannelbag::wrap() const
 {
-  return *reinterpret_cast<const blender::animrig::ChannelBag *>(this);
+  return *reinterpret_cast<const blender::animrig::Channelbag *>(this);
 }

@@ -20,6 +20,39 @@
 
 namespace blender::draw::overlay {
 
+/* Add prepass which will write to the depth buffer so that the
+ * alpha-under overlays (alpha checker) will draw correctly for external engines.
+ * NOTE: Use the same Z-depth value as in the regular image drawing engine. */
+class ImagePrepass : Overlay {
+ private:
+  PassSimple ps_ = {"ImagePrepass"};
+
+ public:
+  void begin_sync(Resources &res, const State &state) final
+  {
+    enabled_ = state.is_space_image() && !res.is_selection();
+
+    if (!enabled_) {
+      return;
+    }
+
+    ps_.init();
+    ps_.state_set(DRW_STATE_WRITE_DEPTH | DRW_STATE_DEPTH_ALWAYS);
+    ps_.shader_set(res.shaders.mesh_edit_depth.get());
+    ps_.draw(res.shapes.image_quad.get());
+  }
+
+  void draw_on_render(GPUFrameBuffer *framebuffer, Manager &manager, View &view) final
+  {
+    if (!enabled_) {
+      return;
+    }
+
+    GPU_framebuffer_bind(framebuffer);
+    manager.submit(ps_, view);
+  }
+};
+
 /**
  * A depth pass that write surface depth when it is needed.
  * It is also used for selecting non overlay-only objects.
@@ -28,14 +61,13 @@ class Prepass : Overlay {
  private:
   PassMain ps_ = {"prepass"};
   PassMain::Sub *mesh_ps_ = nullptr;
+  PassMain::Sub *mesh_flat_ps_ = nullptr;
   PassMain::Sub *hair_ps_ = nullptr;
   PassMain::Sub *curves_ps_ = nullptr;
   PassMain::Sub *point_cloud_ps_ = nullptr;
   PassMain::Sub *grease_pencil_ps_ = nullptr;
 
   bool use_material_slot_selection_ = false;
-
-  overlay::GreasePencil::ViewParameters grease_pencil_view;
 
  public:
   void begin_sync(Resources &res, const State &state) final
@@ -49,14 +81,6 @@ class Prepass : Overlay {
       curves_ps_ = nullptr;
       point_cloud_ps_ = nullptr;
       return;
-    }
-
-    {
-      /* TODO(fclem): This is against design. We should not sync depending on view position.
-       * Eventually, we should do this in a compute shader prepass. */
-      float4x4 viewinv;
-      DRW_view_viewmat_get(nullptr, viewinv.ptr(), true);
-      grease_pencil_view = {DRW_view_is_persp_get(nullptr), viewinv};
     }
 
     use_material_slot_selection_ = state.is_material_select;
@@ -75,6 +99,11 @@ class Prepass : Overlay {
       sub.shader_set(res.is_selection() ? res.shaders.depth_mesh_conservative.get() :
                                           res.shaders.depth_mesh.get());
       mesh_ps_ = &sub;
+    }
+    {
+      auto &sub = ps_.sub("MeshFlat");
+      sub.shader_set(res.shaders.depth_mesh.get());
+      mesh_flat_ps_ = &sub;
     }
     {
       auto &sub = ps_.sub("Hair");
@@ -185,6 +214,15 @@ class Prepass : Overlay {
         }
         else {
           geom_single = DRW_cache_mesh_surface_get(ob_ref.object);
+
+          if (res.is_selection() && !use_material_slot_selection_ &&
+              FlatObjectRef::flat_axis_index_get(ob_ref.object) != -1)
+          {
+            /* Avoid losing flat objects when in ortho views (see #56549) */
+            mesh_flat_ps_->draw(DRW_cache_mesh_all_edges_get(ob_ref.object),
+                                manager.unique_handle(ob_ref),
+                                res.select_id(ob_ref).get());
+          }
         }
         pass = mesh_ps_;
         break;
@@ -196,6 +234,10 @@ class Prepass : Overlay {
         }
         geom_single = DRW_cache_volume_selection_surface_get(ob_ref.object);
         pass = mesh_ps_;
+        /* TODO(fclem): Get rid of these check and enforce correct API on the batch cache. */
+        if (geom_single == nullptr) {
+          return;
+        }
         break;
       case OB_POINTCLOUD:
         geom_single = point_cloud_sub_pass_setup(*point_cloud_ps_, ob_ref.object);
@@ -211,8 +253,8 @@ class Prepass : Overlay {
            * The grease pencil engine already renders it properly. */
           return;
         }
-        GreasePencil::draw_grease_pencil(*grease_pencil_ps_,
-                                         grease_pencil_view,
+        GreasePencil::draw_grease_pencil(res,
+                                         *grease_pencil_ps_,
                                          state.scene,
                                          ob_ref.object,
                                          manager.unique_handle(ob_ref),

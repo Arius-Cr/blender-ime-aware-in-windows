@@ -73,8 +73,6 @@ char *blf_dir_metrics_search(const char *filepath);
 int blf_font_init();
 void blf_font_exit();
 
-bool blf_font_id_is_valid(int fontid);
-
 /**
  * Return glyph id from char-code.
  */
@@ -206,7 +204,8 @@ GlyphBLF *blf_glyph_ensure_icon(
 float blf_character_to_curves(FontBLF *font,
                               unsigned int unicode,
                               ListBase *nurbsbase,
-                              const float scale);
+                              const float scale,
+                              bool use_fallback);
 
 void blf_glyph_draw(FontBLF *font, GlyphCacheBLF *gc, GlyphBLF *g, int x, int y);
 

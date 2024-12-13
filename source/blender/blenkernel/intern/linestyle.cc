@@ -443,17 +443,11 @@ static void linestyle_blend_write(BlendWriter *writer, ID *id, const void *id_ad
     }
   }
   if (linestyle->nodetree) {
-    BLO_Write_IDBuffer *temp_embedded_id_buffer = BLO_write_allocate_id_buffer();
-    BLO_write_init_id_buffer_from_id(
-        temp_embedded_id_buffer, &linestyle->nodetree->id, BLO_write_is_undo(writer));
-    BLO_write_struct_at_address(writer,
-                                bNodeTree,
-                                linestyle->nodetree,
-                                BLO_write_get_id_buffer_temp_id(temp_embedded_id_buffer));
+    BLO_Write_IDBuffer temp_embedded_id_buffer{linestyle->nodetree->id, writer};
+    BLO_write_struct_at_address(
+        writer, bNodeTree, linestyle->nodetree, temp_embedded_id_buffer.get());
     blender::bke::node_tree_blend_write(
-        writer,
-        reinterpret_cast<bNodeTree *>(BLO_write_get_id_buffer_temp_id(temp_embedded_id_buffer)));
-    BLO_write_destroy_id_buffer(&temp_embedded_id_buffer);
+        writer, reinterpret_cast<bNodeTree *>(temp_embedded_id_buffer.get()));
   }
 }
 
@@ -1941,17 +1935,17 @@ void BKE_linestyle_default_shader(const bContext *C, FreestyleLineStyle *linesty
       nullptr, &linestyle->id, "stroke_shader", "ShaderNodeTree");
 
   uv_along_stroke = blender::bke::node_add_static_node(C, ntree, SH_NODE_UVALONGSTROKE);
-  uv_along_stroke->locx = 0.0f;
-  uv_along_stroke->locy = 300.0f;
+  uv_along_stroke->location[0] = 0.0f;
+  uv_along_stroke->location[1] = 300.0f;
   uv_along_stroke->custom1 = 0; /* use_tips */
 
   input_texture = blender::bke::node_add_static_node(C, ntree, SH_NODE_TEX_IMAGE);
-  input_texture->locx = 200.0f;
-  input_texture->locy = 300.0f;
+  input_texture->location[0] = 200.0f;
+  input_texture->location[1] = 300.0f;
 
   output_linestyle = blender::bke::node_add_static_node(C, ntree, SH_NODE_OUTPUT_LINESTYLE);
-  output_linestyle->locx = 400.0f;
-  output_linestyle->locy = 300.0f;
+  output_linestyle->location[0] = 400.0f;
+  output_linestyle->location[1] = 300.0f;
   output_linestyle->custom1 = MA_RAMP_BLEND;
   output_linestyle->custom2 = 0; /* use_clamp */
 

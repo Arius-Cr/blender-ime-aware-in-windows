@@ -112,7 +112,7 @@ class DisplaceOperation : public NodeOperation {
 
     /* In order to perform EWA sampling, we need to compute the partial derivative of the displaced
      * coordinates along the x and y directions using a finite difference approximation. But in
-     * order to avoid loading multiple neighbouring displacement values for each pixel, we operate
+     * order to avoid loading multiple neighboring displacement values for each pixel, we operate
      * on the image in 2x2 blocks of pixels, where the derivatives are computed horizontally and
      * vertically across the 2x2 block such that odd texels use a forward finite difference
      * equation while even invocations use a backward finite difference equation. */
@@ -133,9 +133,9 @@ class DisplaceOperation : public NodeOperation {
 
         /* Note that the input displacement is in pixel space, so divide by the input size to
          * transform it into the normalized sampler space. */
-        float2 scale = float2(x_scale.load_pixel_extended(texel).x,
-                              y_scale.load_pixel_extended(texel).x);
-        float2 displacement = input_displacement.load_pixel_extended(texel).xy() * scale /
+        float2 scale = float2(x_scale.load_pixel_extended<float>(texel),
+                              y_scale.load_pixel_extended<float>(texel));
+        float2 displacement = input_displacement.load_pixel_extended<float4>(texel).xy() * scale /
                               float2(size);
         return coordinates - displacement;
       };

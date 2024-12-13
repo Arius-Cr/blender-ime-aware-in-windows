@@ -14,6 +14,7 @@ from bl_ui.properties_data_grease_pencil import (
     GreasePencil_LayerTransformPanel,
     GreasePencil_LayerRelationsPanel,
     GreasePencil_LayerAdjustmentsPanel,
+    GreasePencil_LayerDisplayPanel,
 )
 
 from rna_prop_ui import PropertyPanel
@@ -320,7 +321,7 @@ class DOPESHEET_HT_editor_buttons:
         row.context_pointer_set("animated_id", animated_id)
         row.template_search(
             adt, "action_slot",
-            adt, "action_slots",
+            adt, "action_suitable_slots",
             new="anim.slot_new_for_id",
             unlink="anim.slot_unassign_from_id",
         )
@@ -965,6 +966,15 @@ class DOPESHEET_PT_grease_pencil_layer_adjustments(
     bl_options = {'DEFAULT_CLOSED'}
 
 
+class DOPESHEET_PT_grease_pencil_layer_display(
+        GreasePencilLayersDopeSheetPanel,
+        GreasePencil_LayerDisplayPanel,
+        Panel):
+    bl_label = "Display"
+    bl_parent_id = "DOPESHEET_PT_grease_pencil_mode"
+    bl_options = {'DEFAULT_CLOSED'}
+
+
 classes = (
     DOPESHEET_HT_header,
     DOPESHEET_PT_proportional_edit,
@@ -992,6 +1002,7 @@ classes = (
     DOPESHEET_PT_grease_pencil_layer_transform,
     DOPESHEET_PT_grease_pencil_layer_adjustments,
     DOPESHEET_PT_grease_pencil_layer_relations,
+    DOPESHEET_PT_grease_pencil_layer_display,
 )
 
 if __name__ == "__main__":  # only for live edit.

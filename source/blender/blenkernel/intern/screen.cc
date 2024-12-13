@@ -334,37 +334,39 @@ static void panel_list_copy(ListBase *newlb, const ListBase *lb)
 
 ARegion *BKE_area_region_copy(const SpaceType *st, const ARegion *region)
 {
-  ARegion *newar = static_cast<ARegion *>(MEM_dupallocN(region));
+  ARegion *dst = static_cast<ARegion *>(MEM_dupallocN(region));
 
-  newar->runtime = MEM_new<blender::bke::ARegionRuntime>(__func__);
+  dst->runtime = MEM_new<blender::bke::ARegionRuntime>(__func__);
+  dst->runtime->type = region->runtime->type;
+  dst->runtime->do_draw = region->runtime->do_draw;
 
-  newar->prev = newar->next = nullptr;
-  BLI_listbase_clear(&newar->panels_category_active);
-  BLI_listbase_clear(&newar->ui_lists);
+  dst->prev = dst->next = nullptr;
+  BLI_listbase_clear(&dst->panels_category_active);
+  BLI_listbase_clear(&dst->ui_lists);
 
   /* use optional regiondata callback */
   if (region->regiondata) {
     ARegionType *art = BKE_regiontype_from_id(st, region->regiontype);
 
     if (art && art->duplicate) {
-      newar->regiondata = art->duplicate(region->regiondata);
+      dst->regiondata = art->duplicate(region->regiondata);
     }
     else if (region->flag & RGN_FLAG_TEMP_REGIONDATA) {
-      newar->regiondata = nullptr;
+      dst->regiondata = nullptr;
     }
     else {
-      newar->regiondata = MEM_dupallocN(region->regiondata);
+      dst->regiondata = MEM_dupallocN(region->regiondata);
     }
   }
 
-  panel_list_copy(&newar->panels, &region->panels);
+  panel_list_copy(&dst->panels, &region->panels);
 
-  BLI_listbase_clear(&newar->ui_previews);
-  BLI_duplicatelist(&newar->ui_previews, &region->ui_previews);
-  BLI_listbase_clear(&newar->view_states);
-  BLI_duplicatelist(&newar->view_states, &region->view_states);
+  BLI_listbase_clear(&dst->ui_previews);
+  BLI_duplicatelist(&dst->ui_previews, &region->ui_previews);
+  BLI_listbase_clear(&dst->view_states);
+  BLI_duplicatelist(&dst->view_states, &region->view_states);
 
-  return newar;
+  return dst;
 }
 
 ARegion *BKE_area_region_new()
@@ -1251,7 +1253,6 @@ static void direct_link_region(BlendDataReader *reader, ARegion *region, int spa
   region->runtime = MEM_new<blender::bke::ARegionRuntime>(__func__);
   region->v2d.sms = nullptr;
   region->v2d.alpha_hor = region->v2d.alpha_vert = 255; /* visible by default */
-  memset(&region->drawrct, 0, sizeof(region->drawrct));
 }
 
 void BKE_screen_view3d_do_versions_250(View3D *v3d, ListBase *regions)

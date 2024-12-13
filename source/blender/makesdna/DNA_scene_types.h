@@ -829,11 +829,6 @@ typedef struct RenderData {
 
   /** Precision used by the GPU execution of the compositor tree. */
   int compositor_precision; /* eCompositorPrecision */
-
-  /* If false and the experimental enable_new_cpu_compositor is true, use the new experimental
-   * CPU compositor implementation, otherwise, use the old CPU compositor. */
-  char use_old_cpu_compositor;
-  char _pad10[7];
 } RenderData;
 
 /** #RenderData::quality_flag */
@@ -2425,10 +2420,6 @@ ENUM_OPERATORS(eSnapTargetOP, SCE_SNAP_TARGET_NOT_NONEDITED)
 /** #ToolSettings::snap_mode */
 typedef enum eSnapMode {
   SCE_SNAP_TO_NONE = 0,
-
-  /** #ToolSettings::snap_node_mode */
-  SCE_SNAP_TO_NODE_X = (1 << 0),
-  SCE_SNAP_TO_NODE_Y = (1 << 1),
 
   /** #ToolSettings::snap_anim_mode */
   SCE_SNAP_TO_FRAME = (1 << 0),

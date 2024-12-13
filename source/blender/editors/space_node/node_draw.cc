@@ -364,27 +364,30 @@ static Array<uiBlock *> node_uiblocks_init(const bContext &C, const Span<bNode *
   return blocks;
 }
 
-float2 node_to_view(const bNode &node, const float2 &co)
+float2 node_to_view(const float2 &co)
 {
-  const float2 node_location = bke::node_to_view(&node, co);
-  return node_location * UI_SCALE_FAC;
+  return co * UI_SCALE_FAC;
+}
+
+static rctf node_to_rect(const bNode &node)
+{
+  rctf rect{};
+  rect.xmin = node.location[0];
+  rect.ymin = node.location[1] - node.height;
+  rect.xmax = node.location[0] + node.width;
+  rect.ymax = node.location[1];
+  return rect;
 }
 
 void node_to_updated_rect(const bNode &node, rctf &r_rect)
 {
-  const float2 xmin_ymax = node_to_view(node, {node.offsetx, node.offsety});
-  r_rect.xmin = xmin_ymax.x;
-  r_rect.ymax = xmin_ymax.y;
-  const float2 xmax_ymin = node_to_view(node,
-                                        {node.offsetx + node.width, node.offsety - node.height});
-  r_rect.xmax = xmax_ymin.x;
-  r_rect.ymin = xmax_ymin.y;
+  r_rect = node_to_rect(node);
+  BLI_rctf_mul(&r_rect, UI_SCALE_FAC);
 }
 
-float2 node_from_view(const bNode &node, const float2 &co)
+float2 node_from_view(const float2 &co)
 {
-  const float2 node_location = co / UI_SCALE_FAC;
-  return bke::node_from_view(&node, node_location);
+  return co / UI_SCALE_FAC;
 }
 
 static bool is_node_panels_supported(const bNode &node)
@@ -408,11 +411,8 @@ static bool node_update_basis_buttons(const bContext &C,
 
   PointerRNA nodeptr = RNA_pointer_create(&ntree.id, &RNA_Node, &node);
 
-  /* Get "global" coordinates. */
-  float2 loc = node_to_view(node, float2(0));
   /* Round the node origin because text contents are always pixel-aligned. */
-  loc.x = round(loc.x);
-  loc.y = round(loc.y);
+  const float2 loc = math::round(node_to_view(node.location));
 
   dy -= NODE_DYS / 4;
 
@@ -446,15 +446,16 @@ const char *node_socket_get_label(const bNodeSocket *socket, const char *panel_l
 {
   /* Get the short label if possible. This is used when grouping sockets under panels,
    * to avoid redundancy in the label. */
-  const char *socket_short_label = bke::nodeSocketShortLabel(socket);
+  const std::optional<StringRefNull> socket_short_label = bke::nodeSocketShortLabel(socket);
   const char *socket_translation_context = node_socket_get_translation_context(*socket);
 
-  if (socket_short_label) {
-    return CTX_IFACE_(socket_translation_context, socket_short_label);
+  if (socket_short_label.has_value()) {
+    return CTX_IFACE_(socket_translation_context, socket_short_label->c_str());
   }
 
-  const char *socket_label = bke::nodeSocketLabel(socket);
-  const char *translated_socket_label = CTX_IFACE_(socket_translation_context, socket_label);
+  const StringRefNull socket_label = bke::nodeSocketLabel(socket);
+  const char *translated_socket_label = CTX_IFACE_(socket_translation_context,
+                                                   socket_label.c_str());
 
   /* Shorten socket label if it begins with the panel label. */
   if (panel_label) {
@@ -653,7 +654,7 @@ static void determine_visible_panels_impl_recursive(const bNode &node,
                                                     MutableSpan<bool> r_result)
 {
   if (!potentially_visible_states[panel_decl.index]) {
-    /* This panel does not contain any visible sockets.*/
+    /* This panel does not contain any visible sockets. */
     return;
   }
   r_result[panel_decl.index] = true;
@@ -700,6 +701,9 @@ static void add_flat_items_for_socket(bNode &node,
                                       Vector<FlatNodeItem> &r_items)
 {
   bNodeSocket &socket = node.socket_by_decl(socket_decl);
+  if (!socket.is_visible()) {
+    return;
+  }
   if (!socket_decl.align_with_previous_socket) {
     r_items.append({flat_item::Socket()});
   }
@@ -827,7 +831,7 @@ static float get_margin_to_bottom(const Span<FlatNodeItem> items)
   const flat_item::Type last_item_type = last_item.type();
   switch (last_item_type) {
     case flat_item::Type::Socket:
-      return 5 * NODE_ITEM_SPACING_Y;
+      return 2 * NODE_ITEM_SPACING_Y;
     case flat_item::Type::Separator:
       return NODE_ITEM_SPACING_Y;
     case flat_item::Type::Layout:
@@ -1058,7 +1062,7 @@ static void node_update_basis_from_declaration(
     socket->flag &= ~SOCK_PANEL_COLLAPSED;
   }
 
-  /* Gather flattened list of items in the node.*/
+  /* Gather flattened list of items in the node. */
   const Vector<FlatNodeItem> flat_items = make_flat_node_items(node);
   if (flat_items.is_empty()) {
     const float margin = get_margin_empty();
@@ -1068,7 +1072,7 @@ static void node_update_basis_from_declaration(
 
   for (const int item_i : flat_items.index_range()) {
     /* Apply margins. This should be the only place that applies margins between elements so that
-     * it is easy change later on.*/
+     * it is easy change later on. */
     if (item_i == 0) {
       const float margin = get_margin_from_top(flat_items);
       locy -= margin;
@@ -1093,7 +1097,7 @@ static void node_update_basis_from_declaration(
           else if constexpr (std::is_same_v<ItemT, flat_item::Layout>) {
             const nodes::LayoutDeclaration &decl = *item.decl;
             /* Round the node origin because text contents are always pixel-aligned. */
-            const float2 loc = math::round(node_to_view(node, float2(0)));
+            const float2 loc = math::round(node_to_view(node.location));
             uiLayout *layout = UI_block_layout(&block,
                                                UI_LAYOUT_VERTICAL,
                                                UI_LAYOUT_PANEL,
@@ -1216,11 +1220,8 @@ static void node_update_basis(const bContext &C,
                               bNode &node,
                               uiBlock &block)
 {
-  /* Get "global" coordinates. */
-  float2 loc = node_to_view(node, float2(0));
   /* Round the node origin because text contents are always pixel-aligned. */
-  loc.x = round(loc.x);
-  loc.y = round(loc.y);
+  const float2 loc = math::round(node_to_view(node.location));
 
   int dy = loc.y;
 
@@ -1255,11 +1256,8 @@ static void node_update_hidden(bNode &node, uiBlock &block)
 {
   int totin = 0, totout = 0;
 
-  /* Get "global" coordinates. */
-  float2 loc = node_to_view(node, float2(0));
   /* Round the node origin because text contents are always pixel-aligned. */
-  loc.x = round(loc.x);
-  loc.y = round(loc.y);
+  const float2 loc = math::round(node_to_view(node.location));
 
   /* Calculate minimal radius. */
   for (const bNodeSocket *socket : node.input_sockets()) {
@@ -1393,10 +1391,8 @@ static void node_socket_tooltip_set(uiBlock &block,
 {
   /* Ideally sockets themselves should be buttons, but they aren't currently. So add an invisible
    * button on top of them for the tooltip. */
-  const eUIEmbossType old_emboss = UI_block_emboss_get(&block);
-  UI_block_emboss_set(&block, UI_EMBOSS_NONE);
   uiBut *but = uiDefIconBut(&block,
-                            UI_BTYPE_BUT,
+                            UI_BTYPE_LABEL,
                             0,
                             ICON_NONE,
                             location.x - size.x / 2.0f,
@@ -1407,7 +1403,6 @@ static void node_socket_tooltip_set(uiBlock &block,
                             0,
                             0,
                             nullptr);
-
   UI_but_func_tooltip_set(
       but,
       [](bContext *C, void *argN, const char * /*tip*/) {
@@ -1419,9 +1414,6 @@ static void node_socket_tooltip_set(uiBlock &block,
       },
       POINTER_FROM_INT(socket_index_in_tree),
       nullptr);
-  /* Disable the button so that clicks on it are ignored the link operator still works. */
-  UI_but_flag_enable(but, UI_BUT_DISABLED);
-  UI_block_emboss_set(&block, old_emboss);
 }
 
 static const float virtual_node_socket_outline_color[4] = {0.5, 0.5, 0.5, 1.0};
@@ -2398,7 +2390,9 @@ static void node_draw_panels_background(const bNode &node)
   BLI_assert(is_node_panels_supported(node));
 
   float panel_color[4];
-  UI_GetThemeColorShade4fv(TH_NODE, -15, panel_color);
+  UI_GetThemeColor4fv(TH_PANEL_SUB_BACK, panel_color);
+  /* Increase contrast in nodes a bit. */
+  panel_color[3] *= 1.5f;
   const rctf &totr = node.runtime->totr;
 
   const nodes::PanelDeclaration *final_panel_decl = nullptr;
@@ -3458,7 +3452,7 @@ static void node_draw_basis(const bContext &C,
                         showname,
                         int(rct.xmin + NODE_MARGIN_X + 0.4f),
                         int(rct.ymax - NODE_DY),
-                        short(iconofs - rct.xmin - (18.0f * UI_SCALE_FAC)),
+                        short(iconofs - rct.xmin - NODE_MARGIN_X),
                         short(NODE_DY),
                         nullptr,
                         0,
@@ -3710,7 +3704,7 @@ static void node_draw_hidden(const bContext &C,
                         showname,
                         round_fl_to_int(rct.xmin + NODE_MARGIN_X),
                         round_fl_to_int(centy - NODE_DY * 0.5f),
-                        short(BLI_rctf_size_x(&rct) - ((18.0f + 12.0f) * UI_SCALE_FAC)),
+                        short(BLI_rctf_size_x(&rct) - (2 * U.widget_unit)),
                         short(NODE_DY),
                         nullptr,
                         0,
@@ -3873,11 +3867,18 @@ static float frame_node_label_height(const NodeFrame &frame_data)
 
 #define NODE_FRAME_MARGIN (1.5f * U.widget_unit)
 
-/* XXX Does a bounding box update by iterating over all children.
+/**
+ * Does a bounding box update by iterating over all children.
  * Not ideal to do this in every draw call, but doing as transform callback doesn't work,
- * since the child node totr rects are not updated properly at that point. */
-static void frame_node_prepare_for_draw(bNode &node, Span<bNode *> nodes)
+ * since the frame node automatic size depends on the size of each node which is only calculated
+ * while drawing.
+ */
+static rctf calc_node_frame_dimensions(bNode &node)
 {
+  if (!node.is_frame()) {
+    return node.runtime->totr;
+  }
+
   NodeFrame *data = (NodeFrame *)node.storage;
 
   const float margin = NODE_FRAME_MARGIN;
@@ -3897,13 +3898,9 @@ static void frame_node_prepare_for_draw(bNode &node, Span<bNode *> nodes)
   /* For shrinking bounding box, initialize the rect from first child node. */
   bool bbinit = (data->flag & NODE_FRAME_SHRINK);
   /* Fit bounding box to all children. */
-  for (const bNode *tnode : nodes) {
-    if (tnode->parent != &node) {
-      continue;
-    }
-
+  for (bNode *child : node.direct_children_in_frame()) {
     /* Add margin to node rect. */
-    rctf noderect = tnode->runtime->totr;
+    rctf noderect = calc_node_frame_dimensions(*child);
     noderect.xmin -= margin;
     noderect.xmax += margin;
     noderect.ymin -= margin;
@@ -3921,19 +3918,20 @@ static void frame_node_prepare_for_draw(bNode &node, Span<bNode *> nodes)
   }
 
   /* Now adjust the frame size from view-space bounding box. */
-  const float2 offset = node_from_view(node, {rect.xmin, rect.ymax});
-  node.offsetx = offset.x;
-  node.offsety = offset.y;
-  const float2 max = node_from_view(node, {rect.xmax, rect.ymin});
-  node.width = max.x - node.offsetx;
-  node.height = -max.y + node.offsety;
+  const float2 min = node_from_view({rect.xmin, rect.ymin});
+  const float2 max = node_from_view({rect.xmax, rect.ymax});
+  node.location[0] = min.x;
+  node.location[1] = max.y;
+  node.width = max.x - min.x;
+  node.height = max.y - min.y;
 
   node.runtime->totr = rect;
+  return rect;
 }
 
 static void reroute_node_prepare_for_draw(bNode &node)
 {
-  const float2 loc = node_to_view(node, float2(0));
+  const float2 loc = node_to_view(node.location);
 
   /* When the node is hidden, the input and output socket are both in the same place. */
   node.input_socket(0).runtime->location = loc;
@@ -3979,12 +3977,9 @@ static void node_update_nodetree(const bContext &C,
     }
   }
 
-  /* Now calculate the size of frame nodes, which can depend on the size of other nodes.
-   * Update nodes in reverse, so children sizes get updated before parents. */
-  for (int i = nodes.size() - 1; i >= 0; i--) {
-    if (nodes[i]->is_frame()) {
-      frame_node_prepare_for_draw(*nodes[i], nodes);
-    }
+  /* Now calculate the size of frame nodes, which can depend on the size of other nodes. */
+  for (bNode *frame : ntree.root_frames()) {
+    calc_node_frame_dimensions(*frame);
   }
 }
 

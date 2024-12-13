@@ -1689,10 +1689,10 @@ static void join_groups_action_temp(bAction *act)
  * `mode`.
  *
  * NOTE: the current implementation has quadratic performance with respect to
- * the number of groups in a `ChannelBag`, due to both `Span::first_index_try()`
- * and `ChannelBag::channel_group_move()` having linear performance. If this
+ * the number of groups in a `Channelbag`, due to both `Span::first_index_try()`
+ * and `Channelbag::channel_group_move()` having linear performance. If this
  * becomes a performance bottleneck in practice, we can create a dedicated
- * method on `ChannelBag` for collectively moving a non-contiguous set of
+ * method on `Channelbag` for collectively moving a non-contiguous set of
  * channel groups that works in linear time.
  *
  * TODO: there's a fair amount of apparent repetition in this code and the code
@@ -1722,7 +1722,7 @@ static void rearrange_layered_action_channel_groups(bAnimContext *ac,
         if (!SEL_AGRP(group)) {
           continue;
         }
-        blender::animrig::ChannelBag &bag = group->channel_bag->wrap();
+        blender::animrig::Channelbag &bag = group->channelbag->wrap();
         const int group_index = bag.channel_groups().first_index_try(group);
         const int to_index = group_index - 1;
         BLI_assert(group_index >= 0);
@@ -1747,7 +1747,7 @@ static void rearrange_layered_action_channel_groups(bAnimContext *ac,
         if (!SEL_AGRP(group)) {
           continue;
         }
-        blender::animrig::ChannelBag &bag = group->channel_bag->wrap();
+        blender::animrig::Channelbag &bag = group->channelbag->wrap();
         bag.channel_group_move(*group, 0);
       }
       break;
@@ -1760,7 +1760,7 @@ static void rearrange_layered_action_channel_groups(bAnimContext *ac,
         if (!SEL_AGRP(group)) {
           continue;
         }
-        blender::animrig::ChannelBag &bag = group->channel_bag->wrap();
+        blender::animrig::Channelbag &bag = group->channelbag->wrap();
         const int group_index = bag.channel_groups().first_index_try(group);
         const int to_index = group_index + 1;
         BLI_assert(group_index >= 0);
@@ -1785,7 +1785,7 @@ static void rearrange_layered_action_channel_groups(bAnimContext *ac,
         if (!SEL_AGRP(group)) {
           continue;
         }
-        blender::animrig::ChannelBag &bag = group->channel_bag->wrap();
+        blender::animrig::Channelbag &bag = group->channelbag->wrap();
         bag.channel_group_move(*group, bag.channel_groups().size() - 1);
       }
       break;
@@ -1799,10 +1799,10 @@ static void rearrange_layered_action_channel_groups(bAnimContext *ac,
  * Move selected, visible fcurves in the channel list according to `mode`.
  *
  * NOTE: the current implementation has quadratic performance with respect to
- * the number of fcurves in a `ChannelBag`, due to both
- * `Span::first_index_try()` and `ChannelBag::fcurve_move()` having linear
+ * the number of fcurves in a `Channelbag`, due to both
+ * `Span::first_index_try()` and `Channelbag::fcurve_move()` having linear
  * performance. If this becomes a performance bottleneck in practice, we can
- * create a dedicated method on `ChannelBag` for collectively moving a
+ * create a dedicated method on `Channelbag` for collectively moving a
  * non-contiguous set of fcurves that works in linear time.
  *
  * TODO: there's a fair amount of apparent repetition in this code and the code
@@ -1838,12 +1838,12 @@ static void rearrange_layered_action_fcurves(bAnimContext *ac,
       return *fcurve->grp;
     }
 
-    blender::animrig::ChannelBag *bag = channelbag_for_action_slot(action,
+    blender::animrig::Channelbag *bag = channelbag_for_action_slot(action,
                                                                    fcurve_ale->slot_handle);
     BLI_assert(bag != nullptr);
 
     bActionGroup group = {};
-    group.channel_bag = bag;
+    group.channelbag = bag;
     group.fcurve_range_start = 0;
     if (!bag->channel_groups().is_empty()) {
       bActionGroup *last_group = bag->channel_groups().last();
@@ -1874,7 +1874,7 @@ static void rearrange_layered_action_fcurves(bAnimContext *ac,
           continue;
         }
 
-        blender::animrig::ChannelBag &bag = group.channel_bag->wrap();
+        blender::animrig::Channelbag &bag = group.channelbag->wrap();
         const int fcurve_index = bag.fcurves().first_index_try(fcurve);
         const int to_index = fcurve_index - 1;
 
@@ -1901,7 +1901,7 @@ static void rearrange_layered_action_fcurves(bAnimContext *ac,
           continue;
         }
 
-        blender::animrig::ChannelBag &bag = group.channel_bag->wrap();
+        blender::animrig::Channelbag &bag = group.channelbag->wrap();
         bag.fcurve_move(*fcurve, group.fcurve_range_start);
       }
       return;
@@ -1917,7 +1917,7 @@ static void rearrange_layered_action_fcurves(bAnimContext *ac,
           continue;
         }
 
-        blender::animrig::ChannelBag &bag = group.channel_bag->wrap();
+        blender::animrig::Channelbag &bag = group.channelbag->wrap();
         const int fcurve_index = bag.fcurves().first_index_try(fcurve);
         const int to_index = fcurve_index + 1;
 
@@ -1946,7 +1946,7 @@ static void rearrange_layered_action_fcurves(bAnimContext *ac,
           continue;
         }
 
-        blender::animrig::ChannelBag &bag = group.channel_bag->wrap();
+        blender::animrig::Channelbag &bag = group.channelbag->wrap();
         bag.fcurve_move(*fcurve, group.fcurve_range_start + group.fcurve_range_length - 1);
       }
       return;
@@ -2396,11 +2396,11 @@ static void animchannels_group_channels(bAnimContext *ac,
    * each fcurve individually (each of which is an O(N) operation), but it's
    * also the simplest thing we can do given the data we have. In the future we
    * can do something smarter, particularly if it becomes a performance issue. */
-  blender::animrig::ChannelBag *last_channelbag = nullptr;
+  blender::animrig::Channelbag *last_channelbag = nullptr;
   bActionGroup *group = nullptr;
   LISTBASE_FOREACH (bAnimListElem *, ale, &anim_data) {
     FCurve *fcu = (FCurve *)ale->data;
-    blender::animrig::ChannelBag *channelbag = channelbag_for_action_slot(act->wrap(),
+    blender::animrig::Channelbag *channelbag = channelbag_for_action_slot(act->wrap(),
                                                                           ale->slot_handle);
 
     if (channelbag != last_channelbag) {
@@ -2534,7 +2534,7 @@ static int animchannels_ungroup_exec(bContext *C, wmOperator * /*op*/)
     }
 
     /* Layered action. */
-    fcu->grp->channel_bag->wrap().fcurve_ungroup(*fcu);
+    fcu->grp->channelbag->wrap().fcurve_ungroup(*fcu);
   }
 
   /* cleanup */
@@ -2673,7 +2673,7 @@ static int animchannels_delete_exec(bContext *C, wmOperator * /*op*/)
            * along with the group. This difference in behavior is replicated
            * from legacy actions. */
 
-          blender::animrig::ChannelBag &channel_bag = agrp->channel_bag->wrap();
+          blender::animrig::Channelbag &channelbag = agrp->channelbag->wrap();
 
           /* Remove all the fcurves in the group, which also automatically
            * deletes the group when the last fcurve is deleted. Since the group
@@ -2683,7 +2683,7 @@ static int animchannels_delete_exec(bContext *C, wmOperator * /*op*/)
           const int fcurve_range_start = agrp->fcurve_range_start;
           const int fcurve_range_length = agrp->fcurve_range_length;
           for (int i = 0; i < fcurve_range_length; i++) {
-            channel_bag.fcurve_remove(*channel_bag.fcurve(fcurve_range_start));
+            channelbag.fcurve_remove(*channelbag.fcurve(fcurve_range_start));
           }
 
           DEG_id_tag_update_ex(CTX_data_main(C), &adt->action->id, ID_RECALC_ANIMATION);
@@ -4404,16 +4404,18 @@ static int click_select_channel_grease_pencil_datablock(bAnimListElem *ale)
   return (ND_ANIMCHAN | NA_EDITED);
 }
 
-static int click_select_channel_grease_pencil_layer_group(bAnimListElem *ale)
+static int click_select_channel_grease_pencil_layer_group(bContext *C, bAnimListElem *ale)
 {
-  GreasePencilLayerTreeGroup *layer_group = static_cast<GreasePencilLayerTreeGroup *>(ale->data);
+  using namespace blender::bke::greasepencil;
+  LayerGroup &layer_group = static_cast<GreasePencilLayerTreeGroup *>(ale->data)->wrap();
 
   /* Toggle expand:
    * - Although the triangle widget already allows this,
    *   the whole channel can also be used for this purpose.
    */
-  layer_group->base.flag ^= GP_LAYER_TREE_NODE_EXPANDED;
-
+  layer_group.set_expanded(!layer_group.is_expanded());
+  WM_event_add_notifier(C, NC_SPACE | ND_SPACE_PROPERTIES | NA_EDITED, nullptr);
+  WM_event_add_notifier(C, NC_GPENCIL | ND_DATA | NA_EDITED, nullptr);
   return (ND_ANIMCHAN | NA_EDITED);
 }
 
@@ -4593,7 +4595,7 @@ static int mouse_anim_channels(bContext *C,
       notifierFlags |= click_select_channel_grease_pencil_datablock(ale);
       break;
     case ANIMTYPE_GREASE_PENCIL_LAYER_GROUP:
-      notifierFlags |= click_select_channel_grease_pencil_layer_group(ale);
+      notifierFlags |= click_select_channel_grease_pencil_layer_group(C, ale);
       break;
     case ANIMTYPE_GREASE_PENCIL_LAYER:
       notifierFlags |= click_select_channel_grease_pencil_layer(C, ac, ale, selectmode, filter);
@@ -5244,7 +5246,7 @@ static int slot_channels_move_to_new_action_exec(bContext *C, wmOperator * /* op
   Main *bmain = CTX_data_main(C);
   if (slots.size() == 1) {
     char actname[MAX_ID_NAME - 2];
-    SNPRINTF(actname, DATA_("%sAction"), slots[0].first->name + 2);
+    SNPRINTF(actname, DATA_("%sAction"), slots[0].first->identifier + 2);
     target_action = &action_add(*bmain, actname);
   }
   else {
@@ -5311,7 +5313,7 @@ static int separate_slots_exec(bContext *C, wmOperator * /* op */)
   while (action->slot_array_num) {
     Slot *slot = action->slot(action->slot_array_num - 1);
     char actname[MAX_ID_NAME - 2];
-    SNPRINTF(actname, DATA_("%sAction"), slot->name + 2);
+    SNPRINTF(actname, DATA_("%sAction"), slot->identifier + 2);
     Action &target_action = action_add(*bmain, actname);
     Layer &layer = target_action.layer_add(std::nullopt);
     layer.strip_add(target_action, Strip::Type::Keyframe);
@@ -5558,7 +5560,7 @@ static rctf calculate_selection_fcurve_bounds(bAnimContext *ac,
 
 static int view_curve_in_graph_editor_exec(bContext *C, wmOperator *op)
 {
-  PointerRNA button_ptr = {nullptr};
+  PointerRNA button_ptr = {};
   PropertyRNA *button_prop = nullptr;
   uiBut *but;
   int index;

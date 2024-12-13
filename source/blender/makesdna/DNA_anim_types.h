@@ -245,9 +245,13 @@ typedef struct FMod_Noise {
   float strength;
   float phase;
   float offset;
+  float roughness;
+  float lacunarity;
 
   short depth;
   short modification;
+  char legacy_noise;
+  char _pad[3];
 } FMod_Noise;
 
 /* modification modes */
@@ -762,7 +766,7 @@ typedef struct NlaStrip {
    * \note Most code should not write to this field directly, but use functions from
    * `blender::animrig::nla` instead, see ANIM_nla.hh.
    */
-  char action_slot_name[66]; /* MAX_ID_NAME */
+  char last_slot_identifier[66]; /* MAX_ID_NAME */
   char _pad0[2];
 
   /** F-Curves for controlling this strip's influence and timing */ /* TODO: move out? */
@@ -1164,7 +1168,7 @@ typedef struct AnimData {
    *
    * \see #ActionSlot::name
    */
-  char slot_name[66]; /* MAX_ID_NAME */
+  char last_slot_identifier[66]; /* MAX_ID_NAME */
   uint8_t _pad0[2];
 
   /**
@@ -1173,7 +1177,7 @@ typedef struct AnimData {
    */
   bAction *tmpact;
   int32_t tmp_slot_handle;
-  char tmp_slot_name[66]; /* MAX_ID_NAME */
+  char tmp_last_slot_identifier[66]; /* MAX_ID_NAME */
   uint8_t _pad1[2];
 
   /* nla-tracks */
@@ -1219,7 +1223,8 @@ typedef struct AnimData {
 #ifdef __cplusplus
 /* Some static assertions that things that should have the same type actually do. */
 static_assert(std::is_same_v<decltype(ActionSlot::handle), decltype(AnimData::slot_handle)>);
-static_assert(std::is_same_v<decltype(ActionSlot::name), decltype(AnimData::slot_name)>);
+static_assert(
+    std::is_same_v<decltype(ActionSlot::identifier), decltype(AnimData::last_slot_identifier)>);
 #endif
 
 /* Animation Data settings (mostly for NLA) */

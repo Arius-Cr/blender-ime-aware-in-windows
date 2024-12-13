@@ -668,8 +668,6 @@ static int acf_object_icon(bAnimListElem *ale)
       return ICON_OUTLINER_OB_VOLUME;
     case OB_EMPTY:
       return ICON_OUTLINER_OB_EMPTY;
-    case OB_GPENCIL_LEGACY:
-      return ICON_OUTLINER_OB_GREASEPENCIL;
     case OB_GREASE_PENCIL:
       return ICON_OUTLINER_OB_GREASEPENCIL;
     default:
@@ -1416,7 +1414,7 @@ static void acf_action_slot_name(bAnimListElem *ale, char *r_name)
 
   BLI_assert(ale->bmain);
   const int num_users = slot->users(*ale->bmain).size();
-  const char *display_name = slot->name_without_prefix().c_str();
+  const char *display_name = slot->identifier_without_prefix().c_str();
 
   BLI_assert(num_users >= 0);
   switch (num_users) {
@@ -3905,6 +3903,14 @@ static void *layer_setting_ptr(bAnimListElem *ale,
   return GET_ACF_FLAG_PTR(layer->base.flag, r_type);
 }
 
+static bool layer_channel_color(const bAnimListElem *ale, uint8_t r_color[3])
+{
+  using namespace bke::greasepencil;
+  GreasePencilLayerTreeNode &layer = *static_cast<GreasePencilLayerTreeNode *>(ale->data);
+  rgb_float_to_uchar(r_color, layer.color);
+  return true;
+}
+
 static int layer_group_icon(bAnimListElem *ale)
 {
   using namespace bke::greasepencil;
@@ -3987,7 +3993,7 @@ static bAnimChannelType ACF_GPL = {
     /*channel_role*/ ACHANNEL_ROLE_CHANNEL,
 
     /*get_backdrop_color*/ acf_generic_channel_color,
-    /*get_channel_color*/ nullptr,
+    /*get_channel_color*/ greasepencil::layer_channel_color,
     /*draw_backdrop*/ acf_generic_channel_backdrop,
     /*get_indent_level*/ acf_generic_indentation_flexible,
     /*get_offset*/ greasepencil::layer_offset,
@@ -5894,7 +5900,7 @@ void ANIM_channel_draw_widgets(const bContext *C,
 
   /* step 4) draw text - check if renaming widget is in use... */
   if (is_being_renamed) {
-    PointerRNA ptr = {nullptr};
+    PointerRNA ptr = {};
     PropertyRNA *prop = nullptr;
 
     /* draw renaming widget if we can get RNA pointer for it

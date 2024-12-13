@@ -96,6 +96,7 @@
 #include "BLI_linklist.h"
 #include "BLI_math_base.h"
 #include "BLI_mempool.h"
+#include "BLI_multi_value_map.hh"
 #include "BLI_set.hh"
 #include "BLI_threads.h"
 
@@ -1026,81 +1027,82 @@ static void write_userdef(BlendWriter *writer, const UserDef *userdef)
 }
 
 /** Keep it last of `write_*_data` functions. */
-static void write_libraries(WriteData *wd, Main *main)
+static void write_libraries(WriteData *wd, Main *bmain)
 {
-  ListBase *lbarray[INDEX_ID_MAX];
-  ID *id;
-  int a, tot;
-  bool found_one;
+  /* Gather IDs coming from each library. */
+  blender::MultiValueMap<Library *, ID *> linked_ids_by_library;
+  {
+    ID *id;
+    FOREACH_MAIN_ID_BEGIN (bmain, id) {
+      if (!ID_IS_LINKED(id)) {
+        continue;
+      }
+      BLI_assert(id->lib);
+      linked_ids_by_library.add(id->lib, id);
+    }
+    FOREACH_MAIN_ID_END;
+  }
 
-  for (; main; main = main->next) {
-    a = tot = set_listbasepointers(main, lbarray);
+  LISTBASE_FOREACH (Library *, library_ptr, &bmain->libraries) {
+    Library &library = *library_ptr;
+    const blender::Span<ID *> ids = linked_ids_by_library.lookup(&library);
 
-    /* Test: is lib being used. */
-    if (main->curlib && main->curlib->packedfile) {
-      found_one = true;
+    /* Gather IDs that are somehow directly referenced by data in the current blend file. */
+    blender::Vector<ID *> ids_used_from_library;
+    for (ID *id : ids) {
+      if (id->us == 0) {
+        continue;
+      }
+      if (id->tag & ID_TAG_EXTERN) {
+        ids_used_from_library.append(id);
+        continue;
+      }
+      if ((id->tag & ID_TAG_INDIRECT) && (id->flag & ID_FLAG_INDIRECT_WEAK_LINK)) {
+        ids_used_from_library.append(id);
+        continue;
+      }
+    }
+
+    bool should_write_library = false;
+    if (library.packedfile) {
+      should_write_library = true;
     }
     else if (wd->use_memfile) {
-      /* When writing undo step we always write all existing libraries, makes reading undo step
-       * much easier when dealing with purely indirectly used libraries. */
-      found_one = true;
+      /* When writing undo step we always write all existing libraries. That makes reading undo
+       * step much easier when dealing with purely indirectly used libraries. */
+      should_write_library = true;
     }
     else {
-      found_one = false;
-      while (!found_one && tot--) {
-        for (id = static_cast<ID *>(lbarray[tot]->first); id; id = static_cast<ID *>(id->next)) {
-          if (id->us > 0 &&
-              ((id->tag & ID_TAG_EXTERN) ||
-               ((id->tag & ID_TAG_INDIRECT) && (id->flag & ID_FLAG_INDIRECT_WEAK_LINK))))
-          {
-            found_one = true;
-            break;
-          }
-        }
+      should_write_library = !ids_used_from_library.is_empty();
+    }
+
+    if (!should_write_library) {
+      /* Nothing from the library is used, so it does not have to be written. */
+      continue;
+    }
+
+    BlendWriter writer = {wd};
+    writestruct(wd, ID_LI, Library, 1, &library);
+    BKE_id_blend_write(&writer, &library.id);
+
+    /* Write packed file if necessary. */
+    if (library.packedfile) {
+      BKE_packedfile_blend_write(&writer, library.packedfile);
+      if (!wd->use_memfile) {
+        CLOG_INFO(&LOG, 2, "Write packed .blend: %s", library.filepath);
       }
     }
 
-    /* To be able to restore `quit.blend` and temp saves,
-     * the packed blend has to be in undo buffers... */
-    /* XXX needs rethink, just like save UI in undo files now -
-     * would be nice to append things only for the `quit.blend` and temp saves. */
-    if (found_one) {
-      /* Not overridable. */
-
-      void *runtime_name_data = main->curlib->runtime.name_map;
-      main->curlib->runtime.name_map = nullptr;
-
-      BlendWriter writer = {wd};
-      writestruct(wd, ID_LI, Library, 1, main->curlib);
-      BKE_id_blend_write(&writer, &main->curlib->id);
-
-      main->curlib->runtime.name_map = static_cast<UniqueName_Map *>(runtime_name_data);
-
-      if (main->curlib->packedfile) {
-        BKE_packedfile_blend_write(&writer, main->curlib->packedfile);
-        if (wd->use_memfile == false) {
-          CLOG_INFO(&LOG, 2, "Write packed .blend: %s", main->curlib->filepath);
-        }
+    /* Write placeholders for linked data-blocks that are used. */
+    for (const ID *id : ids_used_from_library) {
+      if (!BKE_idtype_idcode_is_linkable(GS(id->name))) {
+        CLOG_ERROR(&LOG,
+                   "Data-block '%s' from lib '%s' is not linkable, but is flagged as "
+                   "directly linked",
+                   id->name,
+                   library.runtime.filepath_abs);
       }
-
-      /* Write link placeholders for all direct linked IDs. */
-      while (a--) {
-        for (id = static_cast<ID *>(lbarray[a]->first); id; id = static_cast<ID *>(id->next)) {
-          if (id->us > 0 &&
-              ((id->tag & ID_TAG_EXTERN) ||
-               ((id->tag & ID_TAG_INDIRECT) && (id->flag & ID_FLAG_INDIRECT_WEAK_LINK))))
-          {
-            if (!BKE_idtype_idcode_is_linkable(GS(id->name))) {
-              CLOG_ERROR(&LOG,
-                         "Data-block '%s' from lib '%s' is not linkable, but is flagged as "
-                         "directly linked",
-                         id->name,
-                         main->curlib->runtime.filepath_abs);
-            }
-            writestruct(wd, ID_LINK_PLACEHOLDER, ID, 1, id);
-          }
-        }
-      }
+      writestruct(wd, ID_LINK_PLACEHOLDER, ID, 1, id);
     }
   }
 
@@ -1185,53 +1187,22 @@ static void write_thumb(WriteData *wd, const BlendThumbnail *thumb)
 /** \name File Writing (Private)
  * \{ */
 
-#define ID_BUFFER_STATIC_SIZE 8192
-
-struct BLO_Write_IDBuffer {
-  const IDTypeInfo *id_type;
-  ID *temp_id;
-  char id_buffer_static[ID_BUFFER_STATIC_SIZE];
-};
-
-static void id_buffer_init_for_id_type(BLO_Write_IDBuffer *id_buffer, const IDTypeInfo *id_type)
+BLO_Write_IDBuffer::BLO_Write_IDBuffer(ID &id, const bool is_undo)
+    : buffer_(BKE_idtype_get_info_from_id(&id)->struct_size, alignof(ID))
 {
-  if (id_type != id_buffer->id_type) {
-    const size_t idtype_struct_size = id_type->struct_size;
-    if (idtype_struct_size > ID_BUFFER_STATIC_SIZE) {
-      CLOG_ERROR(&LOG,
-                 "ID maximum buffer size (%d bytes) is not big enough to fit IDs of type %s, "
-                 "which needs %lu bytes",
-                 ID_BUFFER_STATIC_SIZE,
-                 id_type->name,
-                 idtype_struct_size);
-      id_buffer->temp_id = static_cast<ID *>(MEM_mallocN(idtype_struct_size, __func__));
-    }
-    else {
-      if (static_cast<void *>(id_buffer->temp_id) != id_buffer->id_buffer_static) {
-        MEM_SAFE_FREE(id_buffer->temp_id);
-      }
-      id_buffer->temp_id = reinterpret_cast<ID *>(id_buffer->id_buffer_static);
-    }
-    id_buffer->id_type = id_type;
-  }
-}
-
-static void id_buffer_init_from_id(BLO_Write_IDBuffer *id_buffer, ID *id, const bool is_undo)
-{
-  BLI_assert(id_buffer->id_type == BKE_idtype_get_info_from_id(id));
+  const IDTypeInfo *id_type = BKE_idtype_get_info_from_id(&id);
+  ID *temp_id = static_cast<ID *>(buffer_.buffer());
 
   if (is_undo) {
     /* Record the changes that happened up to this undo push in
      * recalc_up_to_undo_push, and clear `recalc_after_undo_push` again
      * to start accumulating for the next undo push. */
-    id->recalc_up_to_undo_push = id->recalc_after_undo_push;
-    id->recalc_after_undo_push = 0;
+    id.recalc_up_to_undo_push = id.recalc_after_undo_push;
+    id.recalc_after_undo_push = 0;
   }
 
   /* Copy ID data itself into buffer, to be able to freely modify it. */
-  const size_t idtype_struct_size = id_buffer->id_type->struct_size;
-  ID *temp_id = id_buffer->temp_id;
-  memcpy(temp_id, id, idtype_struct_size);
+  memcpy(temp_id, &id, id_type->struct_size);
 
   /* Clear runtime data to reduce false detection of changed data in undo/redo context. */
   if (is_undo) {
@@ -1260,6 +1231,11 @@ static void id_buffer_init_from_id(BLO_Write_IDBuffer *id_buffer, ID *id, const 
   if (drawdata) {
     BLI_listbase_clear(reinterpret_cast<ListBase *>(drawdata));
   }
+}
+
+BLO_Write_IDBuffer::BLO_Write_IDBuffer(ID &id, BlendWriter *writer)
+    : BLO_Write_IDBuffer(id, BLO_write_is_undo(writer))
+{
 }
 
 /* Helper callback for checking linked IDs used by given ID (assumed local), to ensure directly
@@ -1299,6 +1275,101 @@ static int write_id_direct_linked_data_process_cb(LibraryIDLinkCallbackData *cb_
 }
 
 /**
+ * Writes ID and all its direct data to the file.
+ */
+static void write_id(WriteData *wd, ID *id)
+{
+  const IDTypeInfo *id_type = BKE_idtype_get_info_from_id(id);
+  mywrite_id_begin(wd, id);
+  if (id_type->blend_write != nullptr) {
+    BlendWriter writer = {wd};
+    BLO_Write_IDBuffer id_buffer{*id, &writer};
+    id_type->blend_write(&writer, id_buffer.get(), id);
+  }
+  mywrite_id_end(wd, id);
+}
+
+static void write_blend_file_header(WriteData *wd)
+{
+  char buf[16];
+  SNPRINTF(buf,
+           "BLENDER%c%c%.3d",
+           (sizeof(void *) == 8) ? '-' : '_',
+           (ENDIAN_ORDER == B_ENDIAN) ? 'V' : 'v',
+           BLENDER_FILE_VERSION);
+
+  mywrite(wd, buf, 12);
+}
+
+/**
+ * Gathers all local IDs that should be written to the file.
+ */
+static blender::Vector<ID *> gather_local_ids_to_write(Main *bmain, const bool is_undo)
+{
+  blender::Vector<ID *> local_ids_to_write;
+  ID *id;
+  FOREACH_MAIN_ID_BEGIN (bmain, id) {
+    if (GS(id->name) == ID_LI) {
+      /* Libraries are handled separately below. */
+      continue;
+    }
+    if (ID_IS_LINKED(id)) {
+      /* Linked data-blocks are handled separately below. */
+      continue;
+    }
+    const IDTypeInfo *id_type = BKE_idtype_get_info_from_id(id);
+    UNUSED_VARS_NDEBUG(id_type);
+    /* We should never attempt to write non-regular IDs
+     * (i.e. all kind of temp/runtime ones). */
+    BLI_assert((id->tag & (ID_TAG_NO_MAIN | ID_TAG_NO_USER_REFCOUNT | ID_TAG_NOT_ALLOCATED)) == 0);
+    /* We only write unused IDs in undo case. */
+    if (!is_undo) {
+      /* NOTE: All 'never unused' local IDs (Scenes, WindowManagers, ...) should always be
+       * written to disk, so their user-count should never be zero currently. Note that
+       * libraries have already been skipped above, as they need a specific handling. */
+      if (id->us == 0) {
+        /* FIXME: #124857: Some old files seem to cause incorrect handling of their temp
+         * screens.
+         *
+         * See e.g. file attached to #124777 (from 2.79.1).
+         *
+         * For now ignore, issue is not obvious to track down (`temp` bScreen ID from read data
+         * _does_ have the proper `temp` tag), and seems anecdotal at worst. */
+        BLI_assert((id_type->flags & IDTYPE_FLAGS_NEVER_UNUSED) == 0);
+        continue;
+      }
+
+      /* XXX Special handling for ShapeKeys, as having unused shapekeys is not a good thing
+       * (and reported as error by e.g. `BLO_main_validate_shapekeys`), skip writing shapekeys
+       * when their 'owner' is not written.
+       *
+       * NOTE: Since ShapeKeys are conceptually embedded IDs (like root node trees e.g.), this
+       * behavior actually makes sense anyway. This remains more of a temp hack until topic of
+       * how to handle unused data on save is properly tackled. */
+      if (GS(id->name) == ID_KE) {
+        Key *shape_key = reinterpret_cast<Key *>(id);
+        /* NOTE: Here we are accessing the real owner ID data, not it's 'proxy' shallow copy
+         * generated for its file-writing. This is not expected to be an issue, but is worth
+         * noting. */
+        if (shape_key->from == nullptr || shape_key->from->us == 0) {
+          continue;
+        }
+      }
+    }
+
+    if ((id->tag & ID_TAG_RUNTIME) != 0 && !is_undo) {
+      /* Runtime IDs are never written to .blend files, and they should not influence
+       * (in)direct status of linked IDs they may use. */
+      continue;
+    }
+
+    local_ids_to_write.append(id);
+  }
+  FOREACH_MAIN_ID_END;
+  return local_ids_to_write;
+}
+
+/**
  * When #MemFile arguments are non-null, this is a file-safe to memory.
  *
  * \param compare: Previous memory file (can be nullptr).
@@ -1312,8 +1383,6 @@ static bool write_file_handle(Main *mainvar,
                               const bool use_userdef,
                               const BlendThumbnail *thumb)
 {
-  ListBase mainlist;
-  char buf[16];
   WriteData *wd;
 
   wd = mywrite_begin(ww, compare, current);
@@ -1364,16 +1433,7 @@ static bool write_file_handle(Main *mainvar,
     }
   }
 
-  blo_split_main(&mainlist, mainvar);
-
-  SNPRINTF(buf,
-           "BLENDER%c%c%.3d",
-           (sizeof(void *) == 8) ? '-' : '_',
-           (ENDIAN_ORDER == B_ENDIAN) ? 'V' : 'v',
-           BLENDER_FILE_VERSION);
-
-  mywrite(wd, buf, 12);
-
+  write_blend_file_header(wd);
   write_renderinfo(wd, mainvar);
   write_thumb(wd, thumb);
   write_global(wd, write_flags, mainvar);
@@ -1382,119 +1442,34 @@ static bool write_file_handle(Main *mainvar,
    * avoid thumbnail detecting changes because of this. */
   mywrite_flush(wd);
 
-  OverrideLibraryStorage *override_storage = wd->use_memfile ?
-                                                 nullptr :
-                                                 BKE_lib_override_library_operations_store_init();
+  const bool is_undo = wd->use_memfile;
+  blender::Vector<ID *> local_ids_to_write = gather_local_ids_to_write(mainvar, is_undo);
 
-  /* This outer loop allows to save first data-blocks from real mainvar,
-   * then the temp ones from override process,
-   * if needed, without duplicating whole code. */
-  Main *bmain = mainvar;
-  BLO_Write_IDBuffer *id_buffer = BLO_write_allocate_id_buffer();
-  do {
-    ListBase *lbarray[INDEX_ID_MAX];
-    int a = set_listbasepointers(bmain, lbarray);
-    while (a--) {
-      ID *id = static_cast<ID *>(lbarray[a]->first);
-
-      if (id == nullptr || GS(id->name) == ID_LI) {
-        continue; /* Libraries are handled separately below. */
-      }
-
-      const IDTypeInfo *id_type = BKE_idtype_get_info_from_id(id);
-      id_buffer_init_for_id_type(id_buffer, id_type);
-
-      for (; id; id = static_cast<ID *>(id->next)) {
-        /* We should never attempt to write non-regular IDs
-         * (i.e. all kind of temp/runtime ones). */
-        BLI_assert((id->tag & (ID_TAG_NO_MAIN | ID_TAG_NO_USER_REFCOUNT | ID_TAG_NOT_ALLOCATED)) ==
-                   0);
-
-        /* We only write unused IDs in undo case. */
-        if (!wd->use_memfile) {
-          /* NOTE: All 'never unused' local IDs (Scenes, WindowManagers, ...) should always be
-           * written to disk, so their user-count should never be zero currently. Note that
-           * libraries have already been skipped above, as they need a specific handling. */
-          if (id->us == 0) {
-            /* FIXME: #124857: Some old files seem to cause incorrect handling of their temp
-             * screens.
-             *
-             * See e.g. file attached to #124777 (from 2.79.1).
-             *
-             * For now ignore, issue is not obvious to track down (`temp` bScreen ID from read data
-             * _does_ have the proper `temp` tag), and seems anecdotal at worst. */
-            BLI_assert((id_type->flags & IDTYPE_FLAGS_NEVER_UNUSED) == 0);
-            continue;
-          }
-
-          /* XXX Special handling for ShapeKeys, as having unused shapekeys is not a good thing
-           * (and reported as error by e.g. `BLO_main_validate_shapekeys`), skip writing shapekeys
-           * when their 'owner' is not written.
-           *
-           * NOTE: Since ShapeKeys are conceptually embedded IDs (like root node trees e.g.), this
-           * behavior actually makes sense anyway. This remains more of a temp hack until topic of
-           * how to handle unused data on save is properly tackled. */
-          if (GS(id->name) == ID_KE) {
-            Key *shape_key = reinterpret_cast<Key *>(id);
-            /* NOTE: Here we are accessing the real owner ID data, not it's 'proxy' shallow copy
-             * generated for its file-writing. This is not expected to be an issue, but is worth
-             * noting. */
-            if (shape_key->from == nullptr || shape_key->from->us == 0) {
-              continue;
-            }
-          }
-        }
-
-        if ((id->tag & ID_TAG_RUNTIME) != 0 && !wd->use_memfile) {
-          /* Runtime IDs are never written to .blend files, and they should not influence
-           * (in)direct status of linked IDs they may use. */
-          continue;
-        }
-
-        const bool do_override = !ELEM(override_storage, nullptr, bmain) &&
-                                 ID_IS_OVERRIDE_LIBRARY_REAL(id);
-
-        /* If not writing undo data, properly set directly linked IDs as `ID_TAG_EXTERN`. */
-        if (!wd->use_memfile) {
-          BKE_library_foreach_ID_link(bmain,
-                                      id,
-                                      write_id_direct_linked_data_process_cb,
-                                      nullptr,
-                                      IDWALK_READONLY | IDWALK_INCLUDE_UI);
-        }
-
-        if (do_override) {
-          BKE_lib_override_library_operations_store_start(bmain, override_storage, id);
-        }
-
-        mywrite_id_begin(wd, id);
-
-        id_buffer_init_from_id(id_buffer, id, wd->use_memfile);
-
-        if (id_type->blend_write != nullptr) {
-          id_type->blend_write(&writer, static_cast<ID *>(id_buffer->temp_id), id);
-        }
-
-        if (do_override) {
-          BKE_lib_override_library_operations_store_end(override_storage, id);
-        }
-
-        mywrite_id_end(wd, id);
-      }
-
-      mywrite_flush(wd);
+  if (!is_undo) {
+    /* If not writing undo data, properly set directly linked IDs as `ID_TAG_EXTERN`. */
+    for (ID *id : local_ids_to_write) {
+      BKE_library_foreach_ID_link(mainvar,
+                                  id,
+                                  write_id_direct_linked_data_process_cb,
+                                  nullptr,
+                                  IDWALK_READONLY | IDWALK_INCLUDE_UI);
     }
-  } while ((bmain != override_storage) && (bmain = override_storage));
 
-  BLO_write_destroy_id_buffer(&id_buffer);
-
-  if (override_storage) {
-    BKE_lib_override_library_operations_store_finalize(override_storage);
-    override_storage = nullptr;
+    /* Forcefully ensure we know about all needed override operations. */
+    for (ID *id : local_ids_to_write) {
+      if (ID_IS_OVERRIDE_LIBRARY_REAL(id) && !ID_IS_OVERRIDE_LIBRARY_VIRTUAL(id)) {
+        BKE_lib_override_library_operations_create(mainvar, id, nullptr);
+      }
+    }
   }
 
-  /* Special handling, operating over split Mains... */
-  write_libraries(wd, mainvar->next);
+  /* Actually write local data-blocks to the file. */
+  for (ID *id : local_ids_to_write) {
+    write_id(wd, id);
+  }
+
+  /* Write libraries about libraries and linked data-blocks. */
+  write_libraries(wd, mainvar);
 
   /* So changes above don't cause a 'DNA1' to be detected as changed on undo. */
   mywrite_flush(wd);
@@ -1513,8 +1488,6 @@ static bool write_file_handle(Main *mainvar,
   BHead bhead{};
   bhead.code = BLO_CODE_ENDB;
   write_bhead(wd, bhead);
-
-  blo_join_main(&mainlist);
 
   return mywrite_end(wd);
 }
@@ -1794,35 +1767,6 @@ bool BLO_write_file_mem(Main *mainvar, MemFile *compare, MemFile *current, const
       mainvar, nullptr, compare, current, write_flags, use_userdef, nullptr);
 
   return (err == 0);
-}
-
-/*
- * API to handle writing IDs while clearing some of their runtime data.
- */
-
-BLO_Write_IDBuffer *BLO_write_allocate_id_buffer()
-{
-  return MEM_cnew<BLO_Write_IDBuffer>(__func__);
-}
-
-void BLO_write_init_id_buffer_from_id(BLO_Write_IDBuffer *id_buffer, ID *id, const bool is_undo)
-{
-  const IDTypeInfo *id_type = BKE_idtype_get_info_from_id(id);
-  id_buffer_init_for_id_type(id_buffer, id_type);
-  id_buffer_init_from_id(id_buffer, id, is_undo);
-}
-
-ID *BLO_write_get_id_buffer_temp_id(BLO_Write_IDBuffer *id_buffer)
-{
-  return id_buffer->temp_id;
-}
-
-void BLO_write_destroy_id_buffer(BLO_Write_IDBuffer **id_buffer)
-{
-  if (static_cast<void *>((*id_buffer)->temp_id) != (*id_buffer)->id_buffer_static) {
-    MEM_SAFE_FREE((*id_buffer)->temp_id);
-  }
-  MEM_SAFE_FREE(*id_buffer);
 }
 
 /*

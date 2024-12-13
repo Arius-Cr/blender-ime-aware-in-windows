@@ -456,7 +456,7 @@ static bke::MeshNormalDomain bmesh_normals_domain(BMesh *bm)
     return bke::MeshNormalDomain::Point;
   }
 
-  if (CustomData_has_layer(&bm->ldata, CD_CUSTOMLOOPNORMAL)) {
+  if (CustomData_has_layer_named(&bm->ldata, CD_PROP_INT16_2D, "custom_normal")) {
     return bke::MeshNormalDomain::Corner;
   }
 
@@ -492,7 +492,8 @@ void mesh_render_data_update_corner_normals(MeshRenderData &mr)
   }
   else {
     mr.bm_loop_normals.reinitialize(mr.corners_num);
-    const int clnors_offset = CustomData_get_offset(&mr.bm->ldata, CD_CUSTOMLOOPNORMAL);
+    const int clnors_offset = CustomData_get_offset_named(
+        &mr.bm->ldata, CD_PROP_INT16_2D, "custom_normal");
     BM_loops_calc_normal_vcos(mr.bm,
                               mr.bm_vert_coords,
                               mr.bm_vert_normals,
@@ -544,8 +545,8 @@ std::unique_ptr<MeshRenderData> mesh_render_data_create(Object &object,
 
   mr->use_hide = use_hide;
 
-  if (is_editmode) {
-    const Mesh *editmesh_orig = BKE_object_get_pre_modified_mesh(&object);
+  const Mesh *editmesh_orig = BKE_object_get_pre_modified_mesh(&object);
+  if (is_editmode && editmesh_orig) {
     const Mesh *eval_cage = BKE_object_get_editmesh_eval_cage(&object);
 
     mr->bm = editmesh_orig->runtime->edit_mesh->bm;

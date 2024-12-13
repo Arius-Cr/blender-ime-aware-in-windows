@@ -23,8 +23,8 @@ namespace blender::draw::overlay {
  * Draw object bounds and texture space.
  *
  * The object bound can be drawn because of:
- * - display option (Object > Viewport Display > Bounds)
- * - display as (Object > Viewport Display > Bounds)
+ * - display bounds (Object > Viewport Display > Bounds)
+ * - display as (Object > Viewport Display > Display As > Bounds)
  * - rigid body (Physics > Rigid Body > Collision > Shape)
  *
  * Texture space can be modified by (Data > Texture Space)
@@ -119,10 +119,10 @@ class Bounds : Overlay {
           call_buffers_.capsule_cap.append(data, select_id);
           mat.z_axis() *= -1;
           mat.location().z = center.z - std::max(0.0f, size.z - size.x);
-          data.object_to_world_ = object_mat * mat;
+          data.object_to_world = object_mat * mat;
           call_buffers_.capsule_cap.append(data, select_id);
           mat.z_axis().z = std::max(0.0f, size.z * 2.0f - size.x * 2.0f);
-          data.object_to_world_ = object_mat * mat;
+          data.object_to_world = object_mat * mat;
           call_buffers_.capsule_body.append(data, select_id);
           break;
         }
@@ -196,7 +196,7 @@ class Bounds : Overlay {
     }
   }
 
-  void end_sync(Resources &res, const ShapeCache &shapes, const State &state) final
+  void end_sync(Resources &res, const State &state) final
   {
     ps_.init();
     ps_.state_set(DRW_STATE_WRITE_COLOR | DRW_STATE_WRITE_DEPTH | DRW_STATE_DEPTH_LESS_EQUAL,
@@ -205,12 +205,12 @@ class Bounds : Overlay {
     ps_.bind_ubo(OVERLAY_GLOBALS_SLOT, &res.globals_buf);
     res.select_bind(ps_);
 
-    call_buffers_.box.end_sync(ps_, shapes.cube.get());
-    call_buffers_.sphere.end_sync(ps_, shapes.empty_sphere.get());
-    call_buffers_.cylinder.end_sync(ps_, shapes.cylinder.get());
-    call_buffers_.cone.end_sync(ps_, shapes.empty_cone.get());
-    call_buffers_.capsule_body.end_sync(ps_, shapes.capsule_body.get());
-    call_buffers_.capsule_cap.end_sync(ps_, shapes.capsule_cap.get());
+    call_buffers_.box.end_sync(ps_, res.shapes.cube.get());
+    call_buffers_.sphere.end_sync(ps_, res.shapes.empty_sphere.get());
+    call_buffers_.cylinder.end_sync(ps_, res.shapes.cylinder.get());
+    call_buffers_.cone.end_sync(ps_, res.shapes.empty_cone.get());
+    call_buffers_.capsule_body.end_sync(ps_, res.shapes.capsule_body.get());
+    call_buffers_.capsule_cap.end_sync(ps_, res.shapes.capsule_cap.get());
   }
 
   void draw_line(Framebuffer &framebuffer, Manager &manager, View &view) final

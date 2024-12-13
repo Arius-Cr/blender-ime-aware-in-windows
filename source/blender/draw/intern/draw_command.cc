@@ -179,10 +179,12 @@ void Draw::execute(RecordingState &state) const
 
   if (is_primitive_expansion()) {
     /* Expanded drawcall. */
-    IndexRange vert_range = GPU_batch_draw_expanded_parameter_get(
-        batch, GPUPrimType(expand_prim_type), vertex_len, vertex_first);
-    IndexRange expanded_range = {vert_range.start() * expand_prim_len,
-                                 vert_range.size() * expand_prim_len};
+    IndexRange expanded_range = GPU_batch_draw_expanded_parameter_get(
+        batch->prim_type,
+        GPUPrimType(expand_prim_type),
+        vertex_len,
+        vertex_first,
+        expand_prim_len);
 
     if (expanded_range.is_empty()) {
       /* Nothing to draw, and can lead to asserts in GPU_batch_bind_as_resources. */
@@ -288,22 +290,12 @@ void ClearMulti::execute() const
 
 void StateSet::execute(RecordingState &recording_state) const
 {
-  /**
-   * Does not support locked state for the moment and never should.
-   * Better implement a less hacky selection!
-   */
-  BLI_assert(DST.state_lock == 0);
-
   bool state_changed = assign_if_different(recording_state.pipeline_state, new_state);
   bool clip_changed = assign_if_different(recording_state.clip_plane_count, clip_plane_count);
 
   if (!state_changed && !clip_changed) {
     return;
   }
-
-  /* Keep old API working. Keep the state tracking in sync. */
-  /* TODO(fclem): Move at the end of a pass. */
-  DST.state = new_state;
 
   GPU_state_set(to_write_mask(new_state),
                 to_blend(new_state),
@@ -340,6 +332,25 @@ void StateSet::execute(RecordingState &recording_state) const
   else {
     GPU_program_point_size(false);
   }
+}
+
+/* Set state of the GPU module manually. */
+void StateSet::set(DRWState state)
+{
+  RecordingState recording_state;
+  StateSet{state, 0}.execute(recording_state);
+
+  /* This function is used for cleaning the state for the viewport drawing.
+   * Make sure to reset textures resources to avoid feedback loop when rendering (see #131652). */
+  GPU_texture_unbind_all();
+  GPU_texture_image_unbind_all();
+  GPU_uniformbuf_debug_unbind_all();
+  GPU_storagebuf_debug_unbind_all();
+
+  /* Remained of legacy draw manager. Kept it to avoid regression, but might become uneeded. */
+  GPU_point_size(5);
+  GPU_line_smooth(false);
+  GPU_line_width(0.0f);
 }
 
 void StencilSet::execute() const
@@ -803,13 +814,14 @@ void DrawMultiBuf::generate_commands(Vector<Header, 0> & /*headers*/,
     if (group.desc.expand_prim_type != GPU_PRIM_NONE) {
       /* Expanded drawcall. */
       IndexRange vert_range = GPU_batch_draw_expanded_parameter_get(
-          group.desc.gpu_batch,
+          group.desc.gpu_batch->prim_type,
           GPUPrimType(group.desc.expand_prim_type),
           group.vertex_len,
-          group.vertex_first);
+          group.vertex_first,
+          group.desc.expand_prim_len);
 
-      group.vertex_first = vert_range.start() * group.desc.expand_prim_len;
-      group.vertex_len = vert_range.size() * group.desc.expand_prim_len;
+      group.vertex_first = vert_range.start();
+      group.vertex_len = vert_range.size();
       /* Override base index to -1 as the generated drawcall will not use an index buffer and do
        * the indirection manually inside the shader. */
       group.base_index = -1;

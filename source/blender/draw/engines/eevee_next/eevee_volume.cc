@@ -348,7 +348,7 @@ void VolumeModule::draw_prepass(View &main_view)
      * artifacts on lights because of voxels stretched in Z or anisotropy. */
     exponential_frame_count = 8;
   }
-  else if (inst_.sampling.is_reset()) {
+  else if (inst_.is_viewport() && inst_.sampling.is_reset()) {
     /* If we are not falling in any cases above, this usually means there is a scene or object
      * parameter update. Reset accumulation completely. */
     exponential_frame_count = 0;
@@ -385,7 +385,7 @@ void VolumeModule::draw_prepass(View &main_view)
 
   float4x4 winmat_infinite, winmat_finite;
   /* Create an infinite projection matrix to avoid far clipping plane clipping the object. This
-   * way, surfaces that are further away than the far clip plane will still be voxelized.*/
+   * way, surfaces that are further away than the far clip plane will still be voxelized. */
   winmat_infinite = main_view.is_persp() ?
                         math::projection::perspective_infinite(left, right, bottom, top, near) :
                         math::projection::orthographic_infinite(left, right, bottom, top, near);

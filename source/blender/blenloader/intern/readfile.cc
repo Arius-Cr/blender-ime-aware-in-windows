@@ -83,6 +83,7 @@
 #include "BKE_mesh.hh"
 #include "BKE_modifier.hh"
 #include "BKE_node.hh" /* for tree type defines */
+#include "BKE_node_tree_update.hh"
 #include "BKE_object.hh"
 #include "BKE_packedFile.hh"
 #include "BKE_preferences.h"
@@ -1145,7 +1146,7 @@ static FileData *filedata_new(BlendFileReadReport *reports)
 {
   BLI_assert(reports != nullptr);
 
-  FileData *fd = static_cast<FileData *>(MEM_callocN(sizeof(FileData), "FileData"));
+  FileData *fd = MEM_new<FileData>(__func__);
 
   fd->memsdna = DNA_sdna_current_get();
 
@@ -1458,7 +1459,7 @@ void blo_filedata_free(FileData *fd)
   }
 #endif
 
-  MEM_freeN(fd);
+  MEM_delete(fd);
 }
 
 /** \} */
@@ -3870,6 +3871,9 @@ BlendFileData *blo_read_file_internal(FileData *fd, const char *filepath)
        * `BKE_lib_override_library_main_update`, see #103062.
        * Proper fix involves first addressing #90610. */
       BKE_main_collections_parent_relations_rebuild(bfd->main);
+
+      /* Update node trees after re-generating overrides. */
+      BKE_ntree_update_main(bfd->main, nullptr);
 
       fd->reports->duration.lib_overrides = BLI_time_now_seconds() -
                                             fd->reports->duration.lib_overrides;

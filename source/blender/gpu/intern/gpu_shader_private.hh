@@ -44,6 +44,8 @@ class Shader {
  public:
   /** Uniform & attribute locations for shader. */
   ShaderInterface *interface = nullptr;
+  /** Bit-set indicating the frame-buffer color attachments that this shader writes to. */
+  uint16_t fragment_output_bits = 0;
 
   /**
    * Specialization constants as a Struct-of-Arrays. Allow simpler comparison and reset.
@@ -63,6 +65,10 @@ class Shader {
      */
     bool is_dirty;
   } constants;
+
+  /* WORKAROUND: True if this shader is a polyline shader and needs an appropriate setup to render.
+   * Eventually, in the future, we should modify the user code instead of relying on such hacks. */
+  bool is_polyline = false;
 
  protected:
   /** For debugging purpose. */
@@ -117,10 +123,6 @@ class Shader {
 
   /* DEPRECATED: Kept only because of BGL API. */
   virtual int program_handle_get() const = 0;
-
-  /* Only used by SSBO Vertex fetch. */
-  virtual bool get_uses_ssbo_vertex_fetch() const = 0;
-  virtual int get_ssbo_vertex_fetch_output_num_verts() const = 0;
 
   inline StringRefNull name_get() const
   {
@@ -184,7 +186,7 @@ class ShaderCompiler {
   virtual SpecializationBatchHandle precompile_specializations(
       Span<ShaderSpecialization> /*specializations*/)
   {
-    /* No-op.*/
+    /* No-op. */
     return 0;
   };
 

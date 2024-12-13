@@ -2464,7 +2464,8 @@ static void bevel_harden_normals(BevelParams *bp, BMesh *bm)
   /* I suspect this is not necessary. TODO: test that guess. */
   BM_mesh_normals_update(bm);
 
-  int cd_clnors_offset = CustomData_get_offset(&bm->ldata, CD_CUSTOMLOOPNORMAL);
+  int cd_clnors_offset = CustomData_get_offset_named(
+      &bm->ldata, CD_PROP_INT16_2D, "custom_normal");
 
   /* If there is not already a custom split normal layer then making one
    * (with #BM_lnorspace_update) will not respect the auto-smooth angle between smooth faces.
@@ -2479,7 +2480,7 @@ static void bevel_harden_normals(BevelParams *bp, BMesh *bm)
   BM_lnorspace_update(bm);
 
   if (cd_clnors_offset == -1) {
-    cd_clnors_offset = CustomData_get_offset(&bm->ldata, CD_CUSTOMLOOPNORMAL);
+    cd_clnors_offset = CustomData_get_offset_named(&bm->ldata, CD_PROP_INT16_2D, "custom_normal");
   }
 
   BMIter fiter;
@@ -7549,15 +7550,15 @@ static float geometry_collide_offset(BevelParams *bp, EdgeHalf *eb)
   float th2 = angle_v3v3v3(vb->co, vc->co, vd->co);
 
   /* First calculate offset at which edge B collapses, which happens
-   * when advancing clones of A, B, C all meet at a point.*/
+   * when advancing clones of A, B, C all meet at a point. */
   float sin1 = sinf(th1);
   float sin2 = sinf(th2);
   float cos1 = cosf(th1);
   float cos2 = cosf(th2);
-  /*the side offsets, overlap at the two corners, to create two corner vectors.
-   *the intersection of these two corner vectors is the collapse point.
-   *The length of edge B divided by the projection of these vectors onto edge B
-   *is the number of 'offsets' that can be accomodated*/
+  /* The side offsets, overlap at the two corners, to create two corner vectors.
+   * The intersection of these two corner vectors is the collapse point.
+   * The length of edge B divided by the projection of these vectors onto edge B
+   * is the number of 'offsets' that can be accommodated. */
   float offsets_projected_on_B = (ka + cos1 * kb) / sin1 + (kc + cos2 * kb) / sin2;
   if (offsets_projected_on_B > BEVEL_EPSILON) {
     offsets_projected_on_B = bp->offset * (len_v3v3(vb->co, vc->co) / offsets_projected_on_B);
@@ -7570,7 +7571,7 @@ static float geometry_collide_offset(BevelParams *bp, EdgeHalf *eb)
    * where side edges are in line with edge B and are not beveled, we should continue
    * iterating until we find a return edge (not in line with B) to provide a minimum offset
    * to the far side of the N-gon. This is not perfect, but is simpler and will catch many
-   * more overlap issues*/
+   * more overlap issues. */
   if (ka == 0.0f && kb > FLT_EPSILON) {
     BMLoop *la = BM_face_edge_share_loop(eb->fnext, ea->e);
     if (la) {

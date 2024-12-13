@@ -19,9 +19,9 @@
 
 #include "vk_batch.hh"
 #include "vk_context.hh"
-#include "vk_drawlist.hh"
 #include "vk_fence.hh"
 #include "vk_framebuffer.hh"
+#include "vk_ghost_api.hh"
 #include "vk_index_buffer.hh"
 #include "vk_pixel_buffer.hh"
 #include "vk_query.hh"
@@ -37,11 +37,59 @@
 static CLG_LogRef LOG = {"gpu.vulkan"};
 
 namespace blender::gpu {
-static const char *KNOWN_CRASHING_DRIVER = "unstable driver";
 
 static const char *vk_extension_get(int index)
 {
   return VKBackend::get().device.extension_name_get(index);
+}
+
+bool GPU_vulkan_is_supported_driver(VkPhysicalDevice vk_physical_device)
+{
+  /* Check for known faulty drivers. */
+  VkPhysicalDeviceProperties2 vk_physical_device_properties = {};
+  VkPhysicalDeviceDriverProperties vk_physical_device_driver_properties = {};
+  vk_physical_device_properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+  vk_physical_device_driver_properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
+  vk_physical_device_properties.pNext = &vk_physical_device_driver_properties;
+  vkGetPhysicalDeviceProperties2(vk_physical_device, &vk_physical_device_properties);
+  uint32_t conformance_version = VK_MAKE_API_VERSION(
+      vk_physical_device_driver_properties.conformanceVersion.major,
+      vk_physical_device_driver_properties.conformanceVersion.minor,
+      vk_physical_device_driver_properties.conformanceVersion.subminor,
+      vk_physical_device_driver_properties.conformanceVersion.patch);
+
+  /* Intel IRIS on 10th gen CPU (and older) crashes due to multiple driver issues.
+   *
+   * 1) Workbench is working, but EEVEE pipelines are failing. Calling vkCreateGraphicsPipelines
+   * for certain EEVEE shaders (Shadow, Deferred rendering) would return with VK_SUCCESS, but
+   * without a created VkPipeline handle.
+   *
+   * 2) When vkCmdBeginRendering is called some requirements need to be met, that can only be met
+   * when actually calling a vkCmdDraw* command. According to the Vulkan specs the requirements
+   * should only be met when calling a vkCmdDraw* command.
+   */
+  if (vk_physical_device_driver_properties.driverID == VK_DRIVER_ID_INTEL_PROPRIETARY_WINDOWS &&
+      vk_physical_device_properties.properties.deviceType ==
+          VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU &&
+      conformance_version < VK_MAKE_API_VERSION(1, 3, 2, 0))
+  {
+    return false;
+  }
+
+#ifndef _WIN32
+  /* NVIDIA drivers below 550 don't work on Linux. When sending command to the GPU there is not
+   * always a reply back when they are finished. The issue is reported on the Internet many times,
+   * but there is no mention of a solution. This means that on Linux we can only support GTX900 and
+   * or use MesaNVK.
+   */
+  if (vk_physical_device_driver_properties.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY &&
+      conformance_version < VK_MAKE_API_VERSION(1, 3, 7, 2))
+  {
+    return false;
+  }
+#endif
+
+  return true;
 }
 
 static Vector<StringRefNull> missing_capabilities_get(VkPhysicalDevice vk_physical_device)
@@ -97,48 +145,8 @@ static Vector<StringRefNull> missing_capabilities_get(VkPhysicalDevice vk_physic
   if (!extensions.contains(VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
     missing_capabilities.append(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
   }
-
-  /* Check for known faulty drivers. */
-  VkPhysicalDeviceProperties2 vk_physical_device_properties = {};
-  VkPhysicalDeviceDriverProperties vk_physical_device_driver_properties = {};
-  vk_physical_device_properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-  vk_physical_device_driver_properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
-  vk_physical_device_properties.pNext = &vk_physical_device_driver_properties;
-  vkGetPhysicalDeviceProperties2(vk_physical_device, &vk_physical_device_properties);
-  uint32_t conformance_version = VK_MAKE_API_VERSION(
-      vk_physical_device_driver_properties.conformanceVersion.major,
-      vk_physical_device_driver_properties.conformanceVersion.minor,
-      vk_physical_device_driver_properties.conformanceVersion.subminor,
-      vk_physical_device_driver_properties.conformanceVersion.patch);
-
-  /* Intel IRIS on 10th gen CPU (and older) crashes due to multiple driver issues.
-   *
-   * 1) Workbench is working, but EEVEE pipelines are failing. Calling vkCreateGraphicsPipelines
-   * for certain EEVEE shaders (Shadow, Deferred rendering) would return with VK_SUCCESS, but
-   * without a created VkPipeline handle.
-   *
-   * 2) When vkCmdBeginRendering is called some requirements need to be met, that can only be met
-   * when actually calling a vkCmdDraw* command. According to the Vulkan specs the requirements
-   * should only be met when calling a vkCmdDraw* command.
-   */
-  if (vk_physical_device_driver_properties.driverID == VK_DRIVER_ID_INTEL_PROPRIETARY_WINDOWS &&
-      vk_physical_device_properties.properties.deviceType ==
-          VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU &&
-      conformance_version < VK_MAKE_API_VERSION(1, 3, 2, 0))
-  {
-    missing_capabilities.append(KNOWN_CRASHING_DRIVER);
-  }
-
-  /* NVIDIA drivers below 550 don't work. When sending command to the GPU there is no reply back
-   * when they are finished. Driver 550 should support GTX 700 and above GPUs.
-   *
-   * NOTE: We should retest later after fixing other issues. Allowing more drivers is always
-   * better as reporting to the user is quite limited.
-   */
-  if (vk_physical_device_driver_properties.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY &&
-      conformance_version < VK_MAKE_API_VERSION(1, 3, 7, 2))
-  {
-    missing_capabilities.append(KNOWN_CRASHING_DRIVER);
+  if (!extensions.contains(VK_EXT_PROVOKING_VERTEX_EXTENSION_NAME)) {
+    missing_capabilities.append(VK_EXT_PROVOKING_VERTEX_EXTENSION_NAME);
   }
 
   return missing_capabilities;
@@ -173,10 +181,17 @@ bool VKBackend::is_supported()
   vkEnumeratePhysicalDevices(vk_instance, &physical_devices_count, vk_physical_devices.data());
 
   for (VkPhysicalDevice vk_physical_device : vk_physical_devices) {
-    Vector<StringRefNull> missing_capabilities = missing_capabilities_get(vk_physical_device);
-
     VkPhysicalDeviceProperties vk_properties = {};
     vkGetPhysicalDeviceProperties(vk_physical_device, &vk_properties);
+
+    if (!GPU_vulkan_is_supported_driver(vk_physical_device)) {
+      CLOG_WARN(&LOG,
+                "Installed driver for device [%s] has known issues and will not be used. Updating "
+                "driver might improve compatibility.",
+                vk_properties.deviceName);
+      continue;
+    }
+    Vector<StringRefNull> missing_capabilities = missing_capabilities_get(vk_physical_device);
 
     /* Report result. */
     if (missing_capabilities.is_empty()) {
@@ -255,7 +270,9 @@ void VKBackend::platform_init()
   vkEnumeratePhysicalDevices(vk_instance, &physical_devices_count, vk_physical_devices.data());
   int index = 0;
   for (VkPhysicalDevice vk_physical_device : vk_physical_devices) {
-    if (missing_capabilities_get(vk_physical_device).is_empty()) {
+    if (missing_capabilities_get(vk_physical_device).is_empty() &&
+        GPU_vulkan_is_supported_driver(vk_physical_device))
+    {
       VkPhysicalDeviceProperties vk_properties = {};
       vkGetPhysicalDeviceProperties(vk_physical_device, &vk_properties);
       std::stringstream identifier;
@@ -348,6 +365,7 @@ void VKBackend::detect_workarounds(VKDevice &device)
       VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
   workarounds.dynamic_rendering_unused_attachments = !device.supports_extension(
       VK_EXT_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_EXTENSION_NAME);
+  workarounds.logic_ops = !device.physical_device_features_get().logicOp;
 
   /* AMD GPUs don't support texture formats that use are aligned to 24 or 48 bits. */
   if (GPU_type_matches(GPU_DEVICE_ATI, GPU_OS_ANY, GPU_DRIVER_ANY) ||
@@ -442,11 +460,6 @@ Batch *VKBackend::batch_alloc()
   return new VKBatch();
 }
 
-DrawList *VKBackend::drawlist_alloc(int list_length)
-{
-  return new VKDrawList(list_length);
-}
-
 Fence *VKBackend::fence_alloc()
 {
   return new VKFence();
@@ -510,13 +523,16 @@ void VKBackend::render_end()
   thread_data.rendering_depth -= 1;
   BLI_assert_msg(thread_data.rendering_depth >= 0, "Unbalanced `GPU_render_begin/end`");
   if (G.background) {
-    /* Garbage collection when performing background rendering. In this case the rendering is
-     * already 'thread-safe'. We move the resources to the device discard list and we destroy it
-     * the next frame. */
+    /* Garbage collection when performing background rendering. */
     if (thread_data.rendering_depth == 0) {
+      VKContext *context = VKContext::get();
+      if (context != nullptr) {
+        context->flush_render_graph();
+      }
+
+      thread_data.resource_pool_next();
       VKResourcePool &resource_pool = thread_data.resource_pool_get();
-      device.orphaned_data.destroy_discarded_resources(device);
-      device.orphaned_data.move_data(resource_pool.discard_pool);
+      resource_pool.discard_pool.destroy_discarded_resources(device);
       resource_pool.reset();
     }
   }
@@ -532,7 +548,7 @@ void VKBackend::render_end()
   }
 }
 
-void VKBackend::render_step() {}
+void VKBackend::render_step(bool /*force_resource_release*/) {}
 
 void VKBackend::capabilities_init(VKDevice &device)
 {
@@ -569,6 +585,7 @@ void VKBackend::capabilities_init(VKDevice &device)
   GCaps.max_shader_storage_buffer_bindings = GCaps.max_compute_shader_storage_blocks = min_uu(
       limits.maxPerStageDescriptorStorageBuffers, INT_MAX);
   GCaps.max_storage_buffer_size = size_t(limits.maxStorageBufferRange);
+  GCaps.storage_buffer_alignment = limits.minStorageBufferOffsetAlignment;
 
   GCaps.max_parallel_compilations = BLI_system_thread_count();
   GCaps.mem_stats_support = true;

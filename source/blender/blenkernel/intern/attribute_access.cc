@@ -323,12 +323,6 @@ static bool add_custom_data_layer_from_attribute_init(const StringRef attribute_
   return old_layer_num < custom_data.totlayer;
 }
 
-static bool custom_data_layer_matches_attribute_id(const CustomDataLayer &layer,
-                                                   const StringRef attribute_id)
-{
-  return layer.name == attribute_id;
-}
-
 bool BuiltinCustomDataLayerProvider::layer_exists(const CustomData &custom_data) const
 {
   return CustomData_get_named_layer_index(&custom_data, data_type_, name_) != -1;
@@ -425,8 +419,9 @@ bool BuiltinCustomDataLayerProvider::try_create(void *owner,
           name_, *custom_data, data_type_, element_num, initializer, default_value_))
   {
     if (initializer.type != AttributeInit::Type::Construct) {
-      /* Avoid calling update function when values are not initialized. In that case
-       * values must be set elsewhere anyway, which will cause a separate update tag. */
+      /* Avoid calling update function when values are not default-initialized. Without default
+       * initialization or otherwise meaningful initial values, they should be set elsewhere
+       * anyway, which will cause a separate update tag. */
       if (update_on_change_ != nullptr) {
         update_on_change_(owner);
       }
@@ -454,10 +449,10 @@ GAttributeReader CustomDataAttributeProvider::try_get_for_read(const void *owner
   }
   const int element_num = custom_data_access_.get_element_num(owner);
   for (const CustomDataLayer &layer : Span(custom_data->layers, custom_data->totlayer)) {
-    if (!custom_data_layer_matches_attribute_id(layer, attribute_id)) {
+    if (layer.name != attribute_id) {
       continue;
     }
-    const CPPType *type = custom_data_type_to_cpp_type((eCustomDataType)layer.type);
+    const CPPType *type = custom_data_type_to_cpp_type(eCustomDataType(layer.type));
     if (type == nullptr) {
       continue;
     }
@@ -476,7 +471,7 @@ GAttributeWriter CustomDataAttributeProvider::try_get_for_write(void *owner,
   }
   const int element_num = custom_data_access_.get_element_num(owner);
   for (CustomDataLayer &layer : MutableSpan(custom_data->layers, custom_data->totlayer)) {
-    if (!custom_data_layer_matches_attribute_id(layer, attribute_id)) {
+    if (layer.name != attribute_id) {
       continue;
     }
     CustomData_get_layer_named_for_write(
@@ -486,8 +481,12 @@ GAttributeWriter CustomDataAttributeProvider::try_get_for_write(void *owner,
     if (type == nullptr) {
       continue;
     }
+    std::function<void()> tag_modified_fn;
+    if (custom_data_access_.get_tag_modified_function != nullptr) {
+      tag_modified_fn = custom_data_access_.get_tag_modified_function(owner, attribute_id);
+    }
     GMutableSpan data{*type, layer.data, element_num};
-    return {GVMutableArray::ForSpan(data), domain_};
+    return {GVMutableArray::ForSpan(data), domain_, tag_modified_fn};
   }
   return {};
 }
@@ -501,10 +500,15 @@ bool CustomDataAttributeProvider::try_delete(void *owner, const StringRef attrib
   const int element_num = custom_data_access_.get_element_num(owner);
   for (const int i : IndexRange(custom_data->totlayer)) {
     const CustomDataLayer &layer = custom_data->layers[i];
-    if (this->type_is_supported((eCustomDataType)layer.type) &&
-        custom_data_layer_matches_attribute_id(layer, attribute_id))
-    {
+    if (this->type_is_supported(eCustomDataType(layer.type)) && layer.name == attribute_id) {
       CustomData_free_layer(custom_data, eCustomDataType(layer.type), element_num, i);
+      if (custom_data_access_.get_tag_modified_function != nullptr) {
+        if (const std::function<void()> fn = custom_data_access_.get_tag_modified_function(
+                owner, attribute_id))
+        {
+          fn();
+        }
+      }
       return true;
     }
   }
@@ -528,13 +532,25 @@ bool CustomDataAttributeProvider::try_create(void *owner,
     return false;
   }
   for (const CustomDataLayer &layer : Span(custom_data->layers, custom_data->totlayer)) {
-    if (custom_data_layer_matches_attribute_id(layer, attribute_id)) {
+    if (layer.name == attribute_id) {
       return false;
     }
   }
   const int element_num = custom_data_access_.get_element_num(owner);
   add_custom_data_layer_from_attribute_init(
       attribute_id, *custom_data, data_type, element_num, initializer, {});
+  if (initializer.type != AttributeInit::Type::Construct) {
+    /* Avoid calling update function when values are not default-initialized. Without default
+     * initialization or otherwise meaningful initial values, they should be set elsewhere
+     * anyway, which will cause a separate update tag. */
+    if (custom_data_access_.get_tag_modified_function != nullptr) {
+      if (const std::function<void()> fn = custom_data_access_.get_tag_modified_function(
+              owner, attribute_id))
+      {
+        fn();
+      }
+    }
+  }
   return true;
 }
 
@@ -546,7 +562,7 @@ bool CustomDataAttributeProvider::foreach_attribute(
     return true;
   }
   for (const CustomDataLayer &layer : Span(custom_data->layers, custom_data->totlayer)) {
-    const eCustomDataType data_type = (eCustomDataType)layer.type;
+    const eCustomDataType data_type = eCustomDataType(layer.type);
     if (this->type_is_supported(data_type)) {
       const auto get_fn = [&]() {
         const CPPType *type = custom_data_type_to_cpp_type(data_type);
