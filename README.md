@@ -13,11 +13,11 @@ Blender 输入法增强版
 
 ---
 
-ime-aware-in-windows
+ime-aware-in-windows-4.3.1
 
-    输入法增强版分支。
+    输入法增强版分支。基于 Blender 4.3.1 修改而来。
 
-    名称类似的分支，如“ime-aware-in-windows-4.2”，则为基于 4.2.X 的输入法增强版。
+    为了减少维护的工作量，仅以 Blender 4.3.1 为基础进行修改。
 
 ime-aware-in-windows-docs
 
