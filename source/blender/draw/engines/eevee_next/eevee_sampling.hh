@@ -78,16 +78,10 @@ class Sampling {
 
   /* Viewport Only: Function to call to notify something in the scene changed.
    * This will reset accumulation. Do not call after end_sync() or during sample rendering. */
-  void reset()
-  {
-    reset_ = true;
-  }
+  void reset();
 
   /* Viewport Only: true if an update happened in the scene and accumulation needs reset. */
-  bool is_reset() const
-  {
-    return reset_;
-  }
+  bool is_reset() const;
 
   template<typename PassType> void bind_resources(PassType &pass)
   {
@@ -216,7 +210,16 @@ class Sampling {
   }
 
   /* Cumulative Distribution Function Utils. */
+
+  /**
+   * Creates a discrete cumulative distribution function table from a given curvemapping.
+   * Output cdf vector is expected to already be sized according to the wanted resolution.
+   */
   static void cdf_from_curvemapping(const CurveMapping &curve, Vector<float> &cdf);
+  /**
+   * Inverts a cumulative distribution function.
+   * Output vector is expected to already be sized according to the wanted resolution.
+   */
   static void cdf_invert(Vector<float> &cdf, Vector<float> &inverted_cdf);
 };
 

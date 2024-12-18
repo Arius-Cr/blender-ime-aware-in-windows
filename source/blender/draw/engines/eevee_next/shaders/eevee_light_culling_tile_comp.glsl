@@ -8,9 +8,14 @@
  * Dispatch one thread per word.
  */
 
-#pragma BLENDER_REQUIRE(draw_view_lib.glsl)
-#pragma BLENDER_REQUIRE(common_intersect_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_light_iter_lib.glsl)
+#include "infos/eevee_light_culling_info.hh"
+
+COMPUTE_SHADER_CREATE_INFO(eevee_light_culling_tile)
+
+#include "common_intersect_lib.glsl"
+#include "draw_view_lib.glsl"
+#include "eevee_light_iter_lib.glsl"
+#include "gpu_shader_math_matrix_lib.glsl"
 
 /* ---------------------------------------------------------------------- */
 /** \name Culling shapes extraction
@@ -42,7 +47,6 @@ vec4 tile_bound_cone(vec3 v00, vec3 v01, vec3 v10, vec3 v11)
 vec4 tile_bound_cylinder(vec3 v00, vec3 v01, vec3 v10, vec3 v11)
 {
   vec3 center = (v00 + v01 + v10 + v11) * 0.25;
-  vec4 corners_dist;
   float dist_sqr = distance_squared(center, v00);
   dist_sqr = max(dist_sqr, distance_squared(center, v01));
   dist_sqr = max(dist_sqr, distance_squared(center, v10));

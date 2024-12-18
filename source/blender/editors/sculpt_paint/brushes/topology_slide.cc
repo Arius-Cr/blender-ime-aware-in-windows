@@ -9,22 +9,22 @@
 #include "DNA_object_types.h"
 #include "DNA_scene_types.h"
 
-#include "BKE_key.hh"
 #include "BKE_mesh.hh"
 #include "BKE_paint.hh"
-#include "BKE_pbvh.hh"
+#include "BKE_paint_bvh.hh"
 #include "BKE_subdiv_ccg.hh"
 
 #include "BLI_array.hh"
 #include "BLI_enumerable_thread_specific.hh"
 #include "BLI_math_matrix.hh"
 #include "BLI_math_vector.hh"
-#include "BLI_task.h"
 #include "BLI_task.hh"
 
 #include "editors/sculpt_paint/mesh_brush_common.hh"
 #include "editors/sculpt_paint/sculpt_automask.hh"
 #include "editors/sculpt_paint/sculpt_intern.hh"
+
+#include "bmesh.hh"
 
 namespace blender::ed::sculpt_paint {
 
@@ -34,7 +34,8 @@ struct LocalData {
   Vector<float3> positions;
   Vector<float> factors;
   Vector<float> distances;
-  Vector<Vector<int>> vert_neighbors;
+  Vector<int> neighbor_offsets;
+  Vector<int> neighbor_data;
   Vector<float3> translations;
 };
 
@@ -75,7 +76,7 @@ static inline void add_neighbor_influence(const float3 &position,
 
 BLI_NOINLINE static void calc_neighbor_influence(const Span<float3> vert_positions,
                                                  const Span<float3> positions,
-                                                 const Span<Vector<int>> vert_neighbors,
+                                                 const GroupedSpan<int> vert_neighbors,
                                                  const MutableSpan<float3> translations)
 {
   for (const int i : positions.index_range()) {
@@ -181,15 +182,18 @@ static void calc_faces(const Depsgraph &depsgraph,
 
   scale_factors(tls.factors, cache.bstrength);
 
-  tls.vert_neighbors.resize(verts.size());
-  calc_vert_neighbors(
-      faces, corner_verts, vert_to_face_map, attribute_data.hide_poly, verts, tls.vert_neighbors);
-  const Span<Vector<int>> vert_neighbors = tls.vert_neighbors;
+  const GroupedSpan<int> neighbors = calc_vert_neighbors(faces,
+                                                         corner_verts,
+                                                         vert_to_face_map,
+                                                         attribute_data.hide_poly,
+                                                         verts,
+                                                         tls.neighbor_offsets,
+                                                         tls.neighbor_data);
 
   tls.translations.resize(verts.size());
   const MutableSpan<float3> translations = tls.translations;
   calc_translation_directions(brush, cache, positions, translations);
-  calc_neighbor_influence(position_data.eval, positions, vert_neighbors, translations);
+  calc_neighbor_influence(position_data.eval, positions, neighbors, translations);
   scale_translations(translations, tls.factors);
 
   clip_and_lock_translations(sd, ss, position_data.eval, verts, translations);

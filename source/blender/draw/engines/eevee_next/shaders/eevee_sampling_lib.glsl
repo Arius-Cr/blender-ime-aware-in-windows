@@ -2,12 +2,18 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
+#pragma once
+
 /**
  * Sampling data accessors and random number generators.
  * Also contains some sample mapping functions.
  */
 
-#pragma BLENDER_REQUIRE(gpu_shader_math_base_lib.glsl)
+#include "infos/eevee_common_info.hh"
+
+SHADER_LIBRARY_CREATE_INFO(eevee_sampling_data)
+
+#include "gpu_shader_math_base_lib.glsl"
 
 /* -------------------------------------------------------------------- */
 /** \name Sampling data.

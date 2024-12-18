@@ -221,6 +221,12 @@ template<typename MatT, typename RotationT, int ScaleDim>
                                       const VecBase<typename MatT::base_type, ScaleDim> &scale);
 
 /**
+ * Create a rotation matrix with the angle that the given direction makes with the x axis. Assumes
+ * the direction vector is normalized.
+ */
+template<typename T> [[nodiscard]] MatBase<T, 2, 2> from_direction(const VecBase<T, 2> &direction);
+
+/**
  * Create a rotation matrix from 2 basis vectors.
  * The matrix determinant is given to be positive and it can be converted to other rotation types.
  * \note `forward` and `up` must be normalized.
@@ -918,6 +924,21 @@ template<typename T> QuaternionBase<T> normalized_to_quat_fast(const MatBase<T, 
   }
 
   BLI_assert(!(q.w < 0.0f));
+
+  /* Sometimes normalization is necessary due to round-off errors in the above
+   * calculations. The comparison here uses tighter tolerances than
+   * BLI_ASSERT_UNIT_QUAT(), so it's likely that even after a few more
+   * transformations the quaternion will still be considered unit-ish. */
+  const T q_len_squared = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
+  const T threshold = 0.0002f /* #BLI_ASSERT_UNIT_EPSILON */ * 3;
+  if (math::abs(q_len_squared - 1.0f) >= threshold) {
+    const T q_len_inv = 1.0 / math::sqrt(q_len_squared);
+    q.x *= q_len_inv;
+    q.y *= q_len_inv;
+    q.z *= q_len_inv;
+    q.w *= q_len_inv;
+  }
+
   BLI_assert(math::is_unit_scale(VecBase<T, 4>(q)));
   return q;
 }
@@ -1423,6 +1444,13 @@ template<typename MatT, int ScaleDim>
   MatT mat = MatT(from_scale<MatT>(scale));
   mat.location() = location;
   return mat;
+}
+
+template<typename T> MatBase<T, 2, 2> from_direction(const VecBase<T, 2> &direction)
+{
+  BLI_assert(is_unit_scale(direction));
+  return MatBase<T, 2, 2>(direction,
+                          VecBase<T, 2>(direction.y, direction.x) * VecBase<T, 2>(-1, 1));
 }
 
 template<typename MatT, typename VectorT>

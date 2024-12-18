@@ -26,6 +26,7 @@
 #include "BKE_context.hh"
 #include "BKE_fcurve.hh"
 #include "BKE_global.hh"
+#include "BKE_screen.hh"
 #include "BKE_sound.h"
 
 #include "ED_anim_api.hh"
@@ -190,6 +191,16 @@ static void strip_draw_context_set_strip_content_visibility(TimelineDrawContext 
                                       threshold;
 }
 
+static void strip_draw_context_set_retiming_overlay_visibility(TimelineDrawContext *ctx,
+                                                               StripDrawContext *strip_ctx)
+{
+  float2 threshold{15 * UI_SCALE_FAC, 25 * UI_SCALE_FAC};
+  strip_ctx->can_draw_retiming_overlay = (strip_ctx->top - strip_ctx->bottom) / ctx->pixely >=
+                                         threshold.y;
+  strip_ctx->can_draw_retiming_overlay &= strip_ctx->strip_length / ctx->pixelx >= threshold.x;
+  strip_ctx->can_draw_retiming_overlay &= retiming_keys_can_be_displayed(ctx->sseq);
+}
+
 static StripDrawContext strip_draw_context_get(TimelineDrawContext *ctx, Sequence *seq)
 {
   using namespace seq;
@@ -219,6 +230,7 @@ static StripDrawContext strip_draw_context_get(TimelineDrawContext *ctx, Sequenc
 
   strip_draw_context_set_text_overlay_visibility(ctx, &strip_ctx);
   strip_draw_context_set_strip_content_visibility(ctx, &strip_ctx);
+  strip_draw_context_set_retiming_overlay_visibility(ctx, &strip_ctx);
   strip_ctx.strip_is_too_small = (!strip_ctx.can_draw_text_overlay &&
                                   !strip_ctx.can_draw_strip_content);
   strip_ctx.is_active_strip = seq == SEQ_select_active_get(scene);
@@ -1910,7 +1922,7 @@ static void draw_timeline_gizmos(TimelineDrawContext *ctx)
     return;
   }
 
-  WM_gizmomap_draw(ctx->region->gizmo_map, ctx->C, WM_GIZMOMAP_DRAWSTEP_2D);
+  WM_gizmomap_draw(ctx->region->runtime->gizmo_map, ctx->C, WM_GIZMOMAP_DRAWSTEP_2D);
 }
 
 static void draw_timeline_pre_view_callbacks(TimelineDrawContext *ctx)
@@ -1973,6 +1985,10 @@ void draw_timeline_seq_display(const bContext *C, ARegion *region)
     const ListBase *seqbase = SEQ_active_seqbase_get(SEQ_editing_get(scene));
     SEQ_timeline_boundbox(scene, seqbase, &v2d->tot);
     const rcti scroller_mask = ED_time_scrub_clamp_scroller_mask(v2d->mask);
+    region->v2d.scroll |= V2D_SCROLL_BOTTOM;
     UI_view2d_scrollers_draw(v2d, &scroller_mask);
+  }
+  else {
+    region->v2d.scroll &= ~V2D_SCROLL_BOTTOM;
   }
 }

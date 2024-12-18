@@ -20,7 +20,8 @@
 #include "BLT_translation.hh"
 
 #include "BKE_context.hh"
-#include "BKE_image.h"
+#include "BKE_image.hh"
+#include "BKE_screen.hh"
 
 #include "BLF_api.hh"
 
@@ -453,7 +454,7 @@ tSlider *ED_slider_create(bContext *C)
       if (region->regiontype == RGN_TYPE_HEADER) {
         slider->region_header = region;
         slider->draw_handle = ED_region_draw_cb_activate(
-            region->type, slider_draw, slider, REGION_DRAW_POST_PIXEL);
+            region->runtime->type, slider_draw, slider, REGION_DRAW_POST_PIXEL);
       }
     }
   }
@@ -554,7 +555,7 @@ void ED_slider_destroy(bContext *C, tSlider *slider)
 {
   /* Remove draw callback. */
   if (slider->draw_handle) {
-    ED_region_draw_cb_exit(slider->region_header->type, slider->draw_handle);
+    ED_region_draw_cb_exit(slider->region_header->runtime->type, slider->draw_handle);
   }
   ED_area_status_text(slider->area, nullptr);
   ED_workspace_status_text(C, nullptr);
@@ -904,7 +905,6 @@ void ED_region_image_metadata_draw(
     GPUVertFormat *format = immVertexFormat();
     uint pos = GPU_vertformat_attr_add(format, "pos", GPU_COMP_F32, 2, GPU_FETCH_FLOAT);
     immBindBuiltinProgram(GPU_SHADER_3D_UNIFORM_COLOR);
-    GPU_blend(GPU_BLEND_ALPHA);
     immUniformThemeColorAlpha(TH_METADATA_BG, 1.0f);
     immRectf(pos, rect.xmin, rect.ymin, rect.xmax, rect.ymax);
     immUnbindProgram();
@@ -916,7 +916,6 @@ void ED_region_image_metadata_draw(
     metadata_draw_imbuf(ibuf, &rect, blf_mono_font, true);
 
     BLF_disable(blf_mono_font, BLF_CLIPPING);
-    GPU_blend(GPU_BLEND_NONE);
   }
 
   /* *** lower box*** */
@@ -931,7 +930,6 @@ void ED_region_image_metadata_draw(
     GPUVertFormat *format = immVertexFormat();
     uint pos = GPU_vertformat_attr_add(format, "pos", GPU_COMP_F32, 2, GPU_FETCH_FLOAT);
     immBindBuiltinProgram(GPU_SHADER_3D_UNIFORM_COLOR);
-    GPU_blend(GPU_BLEND_ALPHA);
     immUniformThemeColorAlpha(TH_METADATA_BG, 1.0f);
     immRectf(pos, rect.xmin, rect.ymin, rect.xmax, rect.ymax);
     immUnbindProgram();
@@ -943,7 +941,6 @@ void ED_region_image_metadata_draw(
     metadata_draw_imbuf(ibuf, &rect, blf_mono_font, false);
 
     BLF_disable(blf_mono_font, BLF_CLIPPING);
-    GPU_blend(GPU_BLEND_NONE);
   }
 
   GPU_matrix_pop();

@@ -110,9 +110,10 @@ static void deform_drawing(const ModifierData &md,
 {
   const GreasePencilLengthModifierData &mmd =
       reinterpret_cast<const GreasePencilLengthModifierData &>(md);
+  modifier::greasepencil::ensure_no_bezier_curves(drawing);
   bke::CurvesGeometry &curves = drawing.strokes_for_write();
 
-  if (curves.points_num() == 0) {
+  if (curves.is_empty()) {
     return;
   }
 
@@ -215,7 +216,7 @@ static void deform_drawing(const ModifierData &md,
         float length = curves.evaluated_length_total_for_curve(curve, false);
         if (mmd.mode & GP_LENGTH_ABSOLUTE) {
           starts[curve] = -math::min(use_starts[curve], 0.0f);
-          ends[curve] = length - (-math::min(use_ends[curve], 0.0f));
+          ends[curve] = length - -math::min(use_ends[curve], 0.0f);
         }
         else {
           starts[curve] = -math::min(use_starts[curve], 0.0f) * length;
@@ -276,7 +277,7 @@ static void panel_draw(const bContext *C, Panel *panel)
   PointerRNA *ptr = modifier_panel_get_property_pointers(panel, nullptr);
 
   uiLayoutSetPropSep(layout, true);
-  uiItemR(layout, ptr, "mode", UI_ITEM_NONE, nullptr, ICON_NONE);
+  uiItemR(layout, ptr, "mode", UI_ITEM_NONE, std::nullopt, ICON_NONE);
 
   uiLayout *col = uiLayoutColumn(layout, true);
 
@@ -292,7 +293,7 @@ static void panel_draw(const bContext *C, Panel *panel)
   uiItemR(layout, ptr, "overshoot_factor", UI_ITEM_R_SLIDER, IFACE_("Used Length"), ICON_NONE);
 
   if (uiLayout *random_layout = uiLayoutPanelProp(
-          C, layout, ptr, "open_random_panel", "Randomize"))
+          C, layout, ptr, "open_random_panel", IFACE_("Randomize")))
   {
     uiItemR(random_layout, ptr, "use_random", UI_ITEM_NONE, IFACE_("Randomize"), ICON_NONE);
 
@@ -300,16 +301,16 @@ static void panel_draw(const bContext *C, Panel *panel)
     uiLayoutSetPropSep(subcol, true);
     uiLayoutSetActive(subcol, RNA_boolean_get(ptr, "use_random"));
 
-    uiItemR(subcol, ptr, "step", UI_ITEM_NONE, nullptr, ICON_NONE);
+    uiItemR(subcol, ptr, "step", UI_ITEM_NONE, std::nullopt, ICON_NONE);
 
     uiItemR(subcol, ptr, "random_start_factor", UI_ITEM_NONE, IFACE_("Offset Start"), ICON_NONE);
     uiItemR(subcol, ptr, "random_end_factor", UI_ITEM_NONE, IFACE_("End"), ICON_NONE);
     uiItemR(subcol, ptr, "random_offset", UI_ITEM_NONE, IFACE_("Noise Offset"), ICON_NONE);
-    uiItemR(subcol, ptr, "seed", UI_ITEM_NONE, nullptr, ICON_NONE);
+    uiItemR(subcol, ptr, "seed", UI_ITEM_NONE, std::nullopt, ICON_NONE);
   }
 
   if (uiLayout *curvature_layout = uiLayoutPanelProp(
-          C, layout, ptr, "open_curvature_panel", "Curvature"))
+          C, layout, ptr, "open_curvature_panel", IFACE_("Curvature")))
   {
     uiItemR(curvature_layout, ptr, "use_curvature", UI_ITEM_NONE, IFACE_("Curvature"), ICON_NONE);
 
@@ -317,14 +318,14 @@ static void panel_draw(const bContext *C, Panel *panel)
     uiLayoutSetPropSep(subcol, true);
     uiLayoutSetActive(subcol, RNA_boolean_get(ptr, "use_curvature"));
 
-    uiItemR(subcol, ptr, "point_density", UI_ITEM_NONE, nullptr, ICON_NONE);
-    uiItemR(subcol, ptr, "segment_influence", UI_ITEM_NONE, nullptr, ICON_NONE);
-    uiItemR(subcol, ptr, "max_angle", UI_ITEM_NONE, nullptr, ICON_NONE);
+    uiItemR(subcol, ptr, "point_density", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+    uiItemR(subcol, ptr, "segment_influence", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+    uiItemR(subcol, ptr, "max_angle", UI_ITEM_NONE, std::nullopt, ICON_NONE);
     uiItemR(subcol, ptr, "invert_curvature", UI_ITEM_NONE, IFACE_("Invert"), ICON_NONE);
   }
 
   if (uiLayout *influence_panel = uiLayoutPanelProp(
-          C, layout, ptr, "open_influence_panel", "Influence"))
+          C, layout, ptr, "open_influence_panel", IFACE_("Influence")))
   {
     modifier::greasepencil::draw_layer_filter_settings(C, influence_panel, ptr);
     modifier::greasepencil::draw_material_filter_settings(C, influence_panel, ptr);

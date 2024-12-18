@@ -7,8 +7,12 @@
  * Outputs the largest intersecting motion vector in the neighborhood.
  */
 
-#pragma BLENDER_REQUIRE(draw_math_geom_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_motion_blur_lib.glsl)
+#include "infos/eevee_motion_blur_info.hh"
+
+COMPUTE_SHADER_CREATE_INFO(eevee_motion_blur_tiles_dilate)
+
+#include "draw_math_geom_lib.glsl"
+#include "eevee_motion_blur_lib.glsl"
 
 #define DEBUG_BYPASS_DILATION 0
 
@@ -102,8 +106,6 @@ void main()
   }
 
   if (true) {
-    MotionPayload payload = motion_blur_tile_indirection_pack_payload(max_motion.zw,
-                                                                      uvec2(src_tile));
     /* Rectangular area (in tiles) where the motion vector spreads. */
     MotionRect motion_rect = compute_motion_rect(src_tile, max_motion.zw);
     MotionLine motion_line = compute_motion_line(src_tile, max_motion.zw);

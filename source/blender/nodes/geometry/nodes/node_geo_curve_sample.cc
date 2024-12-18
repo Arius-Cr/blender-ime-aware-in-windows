@@ -70,8 +70,8 @@ static void node_declare(NodeDeclarationBuilder &b)
 static void node_layout(uiLayout *layout, bContext * /*C*/, PointerRNA *ptr)
 {
   uiItemR(layout, ptr, "data_type", UI_ITEM_NONE, "", ICON_NONE);
-  uiItemR(layout, ptr, "mode", UI_ITEM_R_EXPAND, nullptr, ICON_NONE);
-  uiItemR(layout, ptr, "use_all_curves", UI_ITEM_NONE, nullptr, ICON_NONE);
+  uiItemR(layout, ptr, "mode", UI_ITEM_R_EXPAND, std::nullopt, ICON_NONE);
+  uiItemR(layout, ptr, "use_all_curves", UI_ITEM_NONE, std::nullopt, ICON_NONE);
 }
 
 static void node_init(bNodeTree * /*tree*/, bNode *node)
@@ -267,7 +267,7 @@ class SampleCurveFunction : public mf::MultiFunction {
 
     const Curves &curves_id = *geometry_set_.get_curves();
     const bke::CurvesGeometry &curves = curves_id.geometry.wrap();
-    if (curves.points_num() == 0) {
+    if (curves.is_empty()) {
       return return_default();
     }
     curves.ensure_can_interpolate_to_evaluated();
@@ -441,7 +441,7 @@ static void node_geo_exec(GeoNodeExecParams params)
 
   const Curves &curves_id = *geometry_set.get_curves();
   const bke::CurvesGeometry &curves = curves_id.geometry.wrap();
-  if (curves.points_num() == 0) {
+  if (curves.is_empty()) {
     params.set_default_remaining_outputs();
     return;
   }

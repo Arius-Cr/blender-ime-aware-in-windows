@@ -361,6 +361,14 @@ int IMB_anim_get_image_width(ImBufAnim *anim);
 int IMB_anim_get_image_height(ImBufAnim *anim);
 bool IMB_get_gop_decode_time(ImBufAnim *anim);
 
+/**
+ * Fetches a frame from a movie at given frame position.
+ *
+ * Movies that are <= 8 bits/color channel are returned as byte images;
+ * higher bit depth movies are returned as float images. Note that the
+ * color space is returned as-is, i.e. a float image might not be in
+ * linear space.
+ */
 ImBuf *IMB_anim_absolute(ImBufAnim *anim,
                          int position,
                          IMB_Timecode_Type tc /* = 1 = IMB_TC_RECORD_RUN */,
@@ -424,6 +432,16 @@ bool IMB_scale(ImBuf *ibuf,
                unsigned int newy,
                IMBScaleFilter filter,
                bool threaded = true);
+
+/**
+ * Scale/resize image to new dimensions, into a newly created result image.
+ * Metadata of input image (if any) is copied into the result image.
+ */
+ImBuf *IMB_scale_into_new(const ImBuf *ibuf,
+                          unsigned int newx,
+                          unsigned int newy,
+                          IMBScaleFilter filter,
+                          bool threaded = true);
 
 bool IMB_saveiff(ImBuf *ibuf, const char *filepath, int flags);
 

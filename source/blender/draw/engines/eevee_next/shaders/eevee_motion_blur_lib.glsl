@@ -2,6 +2,10 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
+#pragma once
+
+#include "infos/eevee_common_info.hh"
+
 /* -------------------------------------------------------------------- */
 /** \name Tile indirection packing
  * \{ */

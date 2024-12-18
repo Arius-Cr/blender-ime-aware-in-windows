@@ -445,12 +445,8 @@ bool ANIM_animdata_can_have_greasepencil(const eAnimCont_Types type)
 #define ANIMDATA_HAS_ACTION_LEGACY(id) \
   ((id)->adt && (id)->adt->action && (id)->adt->action->wrap().is_action_legacy())
 
-#ifdef WITH_ANIM_BAKLAVA
-#  define ANIMDATA_HAS_ACTION_LAYERED(id) \
-    ((id)->adt && (id)->adt->action && (id)->adt->action->wrap().is_action_layered())
-#else
-#  define ANIMDATA_HAS_ACTION_LAYERED(id) false
-#endif
+#define ANIMDATA_HAS_ACTION_LAYERED(id) \
+  ((id)->adt && (id)->adt->action && (id)->adt->action->wrap().is_action_layered())
 
 /* quick macro to test if AnimData is usable for drivers */
 #define ANIMDATA_HAS_DRIVERS(id) ((id)->adt && (id)->adt->drivers.first)
@@ -1516,7 +1512,7 @@ static size_t animfilter_act_group(bAnimContext *ac,
                 ac, &tmp_data, first_fcu, ANIMTYPE_FCURVE, filter_mode, agrp, owner_id, &act->id);
           }
           else {
-            BLI_assert(agrp->channel_bag != nullptr);
+            BLI_assert(agrp->channelbag != nullptr);
             Span<FCurve *> fcurves = agrp->wrap().fcurves();
             tmp_items += animfilter_fcurves_span(
                 ac, &tmp_data, fcurves, slot_handle, filter_mode, owner_id, &act->id);
@@ -1598,8 +1594,8 @@ static size_t animfilter_action_slot(bAnimContext *ac,
   const bool visible_only = (filter_mode & ANIMFILTER_LIST_VISIBLE);
   const bool expansion_is_ok = !visible_only || !show_slot_channel || slot.is_expanded();
 
-  animrig::ChannelBag *channel_bag = animrig::channelbag_for_action_slot(action, slot.handle);
-  if (channel_bag == nullptr) {
+  animrig::Channelbag *channelbag = animrig::channelbag_for_action_slot(action, slot.handle);
+  if (channelbag == nullptr) {
     return items;
   }
 
@@ -1608,7 +1604,7 @@ static size_t animfilter_action_slot(bAnimContext *ac,
   }
 
   /* Add channel groups and their member channels. */
-  for (bActionGroup *group : channel_bag->channel_groups()) {
+  for (bActionGroup *group : channelbag->channel_groups()) {
     items += animfilter_act_group(
         ac, anim_data, &action, slot.handle, group, filter_mode, animated_id);
   }
@@ -1616,13 +1612,13 @@ static size_t animfilter_action_slot(bAnimContext *ac,
   /* Add ungrouped channels. */
   if (!show_active_group_only) {
     int first_ungrouped_fcurve_index = 0;
-    if (!channel_bag->channel_groups().is_empty()) {
-      const bActionGroup *last_group = channel_bag->channel_groups().last();
+    if (!channelbag->channel_groups().is_empty()) {
+      const bActionGroup *last_group = channelbag->channel_groups().last();
       first_ungrouped_fcurve_index = last_group->fcurve_range_start +
                                      last_group->fcurve_range_length;
     }
 
-    Span<FCurve *> fcurves = channel_bag->fcurves().drop_front(first_ungrouped_fcurve_index);
+    Span<FCurve *> fcurves = channelbag->fcurves().drop_front(first_ungrouped_fcurve_index);
     items += animfilter_fcurves_span(
         ac, anim_data, fcurves, slot.handle, filter_mode, animated_id, &action.id);
   }
@@ -1721,8 +1717,8 @@ static size_t animfilter_action(bAnimContext *ac,
    * underneath their animated ID anyway. */
   const bool is_action_mode = (ac->spacetype == SPACE_ACTION &&
                                ac->dopesheet_mode == SACTCONT_ACTION);
-  const bool show_all_slots = (ac->ads->filterflag & ADS_FILTER_ALL_SLOTS);
-  if (is_action_mode && show_all_slots) {
+  const bool show_active_only = (ac->ads->filterflag & ADS_FILTER_ONLY_SLOTS_OF_ACTIVE);
+  if (is_action_mode && !show_active_only) {
     return animfilter_action_slots(ac, anim_data, action, filter_mode, owner_id);
   }
 
@@ -2104,7 +2100,7 @@ static size_t animdata_filter_grease_pencil_layer_node_recursive(
     size_t tmp_items = 0;
 
     /* Add grease pencil layer channels. */
-    BEGIN_ANIMFILTER_SUBCHANNELS (layer_group.base.flag &GP_LAYER_TREE_NODE_EXPANDED) {
+    BEGIN_ANIMFILTER_SUBCHANNELS (layer_group.is_expanded()) {
       LISTBASE_FOREACH_BACKWARD (GreasePencilLayerTreeNode *, node_, &layer_group.children) {
         tmp_items += animdata_filter_grease_pencil_layer_node_recursive(
             ac, &tmp_data, grease_pencil, node_->wrap(), filter_mode);
@@ -2206,27 +2202,38 @@ static size_t animdata_filter_grease_pencil_data(bAnimContext *ac,
 
   size_t items = 0;
 
+  /* The Grease Pencil mode is not supposed to show channels for regular F-Curves from regular
+   * Actions. At some point this might be desirable, but it would also require changing the
+   * filtering flags for pretty much all operators running there.  */
+  const bool show_animdata = grease_pencil->adt && (ac->datatype != ANIMCONT_GPENCIL);
+
   /* When asked from "AnimData" blocks (i.e. the top-level containers for normal animation),
    * for convenience, this will return grease pencil data-blocks instead.
    * This may cause issues down the track, but for now, this will do.
    */
   if (filter_mode & ANIMFILTER_ANIMDATA) {
-    /* Just add data block container. */
-    ANIMCHANNEL_NEW_CHANNEL(
-        ac->bmain, grease_pencil, ANIMTYPE_GREASE_PENCIL_DATABLOCK, grease_pencil, nullptr);
+    if (show_animdata) {
+      items += animfilter_block_data(ac, anim_data, (ID *)grease_pencil, filter_mode);
+      ANIMCHANNEL_NEW_CHANNEL(
+          ac->bmain, grease_pencil, ANIMTYPE_GREASE_PENCIL_DATABLOCK, grease_pencil, nullptr);
+    }
   }
   else {
     ListBase tmp_data = {nullptr, nullptr};
     size_t tmp_items = 0;
 
-    if (!(filter_mode & ANIMFILTER_FCURVESONLY)) {
-      /* Add grease pencil layer channels. */
-      BEGIN_ANIMFILTER_SUBCHANNELS (grease_pencil->flag &GREASE_PENCIL_ANIM_CHANNEL_EXPANDED) {
+    /* Add grease pencil layer channels. */
+    BEGIN_ANIMFILTER_SUBCHANNELS (grease_pencil->flag &GREASE_PENCIL_ANIM_CHANNEL_EXPANDED) {
+      if (show_animdata) {
+        tmp_items += animfilter_block_data(ac, &tmp_data, (ID *)grease_pencil, filter_mode);
+      }
+
+      if (!(filter_mode & ANIMFILTER_FCURVESONLY)) {
         tmp_items += animdata_filter_grease_pencil_layers_data(
             ac, &tmp_data, grease_pencil, filter_mode);
       }
-      END_ANIMFILTER_SUBCHANNELS;
     }
+    END_ANIMFILTER_SUBCHANNELS;
 
     if (tmp_items == 0) {
       /* If no sub-channels, return early. */
@@ -2822,7 +2829,7 @@ static size_t animdata_filter_ds_modifiers(bAnimContext *ac,
    *    use to walk through the dependencies of the modifiers
    *
    * Assumes that all other unspecified values (i.e. accumulation buffers)
-   * are zero'd out properly!
+   * are zeroed out properly!
    */
   afm.ac = ac;
   afm.ads = ac->ads; /* TODO: Remove this pointer from the struct and just use afm.ac->ads. */
@@ -3226,7 +3233,7 @@ static size_t animdata_filter_dopesheet_ob(bAnimContext *ac,
     }
 
     /* object data */
-    if ((ob->data) && (ob->type != OB_GPENCIL_LEGACY)) {
+    if (ob->data) {
       tmp_items += animdata_filter_ds_obdata(ac, &tmp_data, ob, filter_mode);
     }
 
@@ -3236,13 +3243,9 @@ static size_t animdata_filter_dopesheet_ob(bAnimContext *ac,
     }
 
     /* grease pencil */
-    if ((ELEM(ob->type, OB_GREASE_PENCIL, OB_GPENCIL_LEGACY)) && (ob->data) &&
-        !(ads_filterflag & ADS_FILTER_NOGPENCIL))
-    {
-      if (ob->type == OB_GREASE_PENCIL) {
-        tmp_items += animdata_filter_grease_pencil_data(
-            ac, &tmp_data, static_cast<GreasePencil *>(ob->data), filter_mode);
-      }
+    if (ob->type == OB_GREASE_PENCIL && (ob->data) && !(ads_filterflag & ADS_FILTER_NOGPENCIL)) {
+      tmp_items += animdata_filter_grease_pencil_data(
+          ac, &tmp_data, static_cast<GreasePencil *>(ob->data), filter_mode);
     }
   }
   END_ANIMFILTER_SUBCHANNELS;

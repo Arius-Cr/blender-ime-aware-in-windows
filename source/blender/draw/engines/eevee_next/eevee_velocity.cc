@@ -82,16 +82,18 @@ static void step_object_sync_render(void *instance,
   ObjectHandle &ob_handle = inst.sync.sync_object(ob_ref);
 
   if (partsys_is_visible) {
-    auto sync_hair =
-        [&](ObjectHandle hair_handle, ModifierData &md, ParticleSystem &particle_sys) {
-          inst.velocity.step_object_sync(
-              ob, hair_handle.object_key, resource_handle, hair_handle.recalc, &md, &particle_sys);
-        };
+    auto sync_hair = [&](ObjectHandle hair_handle,
+                         ModifierData &md,
+                         ParticleSystem &particle_sys) {
+      inst.velocity.step_object_sync(
+          hair_handle.object_key, ob_ref, hair_handle.recalc, resource_handle, &md, &particle_sys);
+    };
     foreach_hair_particle_handle(ob, ob_handle, sync_hair);
   };
 
   if (object_is_visible) {
-    inst.velocity.step_object_sync(ob, ob_handle.object_key, resource_handle, ob_handle.recalc);
+    inst.velocity.step_object_sync(
+        ob_handle.object_key, ob_ref, ob_handle.recalc, resource_handle);
   }
 }
 
@@ -128,13 +130,14 @@ void VelocityModule::step_camera_sync()
   }
 }
 
-bool VelocityModule::step_object_sync(Object *ob,
-                                      ObjectKey &object_key,
-                                      ResourceHandle resource_handle,
+bool VelocityModule::step_object_sync(ObjectKey &object_key,
+                                      const ObjectRef &object_ref,
                                       int /*IDRecalcFlag*/ recalc,
+                                      ResourceHandle resource_handle,
                                       ModifierData *modifier_data /*=nullptr*/,
                                       ParticleSystem *particle_sys /*=nullptr*/)
 {
+  Object *ob = object_ref.object;
   bool has_motion = object_has_velocity(ob) || (recalc & ID_RECALC_TRANSFORM);
   /* NOTE: Fragile. This will only work with 1 frame of lag since we can't record every geometry
    * just in case there might be an update the next frame. */
@@ -165,8 +168,14 @@ bool VelocityModule::step_object_sync(Object *ob,
           vel.obj.ofs[STEP_PREVIOUS]) = ob->object_to_world();
     }
     if (vel.obj.ofs[STEP_NEXT] == -1) {
-      vel.obj.ofs[STEP_NEXT] = object_steps_usage[STEP_NEXT]++;
-      object_steps[STEP_NEXT]->get_or_resize(vel.obj.ofs[STEP_NEXT]) = ob->object_to_world();
+      if (inst_.is_viewport()) {
+        /* Just set it to 0. motion.next is not meant to be valid in the viewport. */
+        vel.obj.ofs[STEP_NEXT] = 0;
+      }
+      else {
+        vel.obj.ofs[STEP_NEXT] = object_steps_usage[STEP_NEXT]++;
+        object_steps[STEP_NEXT]->get_or_resize(vel.obj.ofs[STEP_NEXT]) = ob->object_to_world();
+      }
     }
   }
 
@@ -213,11 +222,11 @@ bool VelocityModule::step_object_sync(Object *ob,
   if (step_ == STEP_CURRENT && has_motion == true && has_deform == false) {
     const float4x4 &obmat_curr = (*object_steps[STEP_CURRENT])[vel.obj.ofs[STEP_CURRENT]];
     const float4x4 &obmat_prev = (*object_steps[STEP_PREVIOUS])[vel.obj.ofs[STEP_PREVIOUS]];
-    const float4x4 &obmat_next = (*object_steps[STEP_NEXT])[vel.obj.ofs[STEP_NEXT]];
     if (inst_.is_viewport()) {
       has_motion = (obmat_curr != obmat_prev);
     }
     else {
+      const float4x4 &obmat_next = (*object_steps[STEP_NEXT])[vel.obj.ofs[STEP_NEXT]];
       has_motion = (obmat_curr != obmat_prev || obmat_curr != obmat_next);
     }
   }
@@ -303,10 +312,6 @@ void VelocityModule::geometry_steps_fill()
   geometry_map.clear();
 }
 
-/**
- * In Render, moves the next frame data to previous frame data. Nullify next frame data.
- * In Viewport, the current frame data will be used as previous frame data in the next frame.
- */
 void VelocityModule::step_swap()
 {
   auto swap_steps = [&](eVelocityStep step_a, eVelocityStep step_b) {
@@ -314,6 +319,7 @@ void VelocityModule::step_swap()
     std::swap(geometry_steps[step_a], geometry_steps[step_b]);
     std::swap(camera_steps[step_a], camera_steps[step_b]);
     std::swap(step_time[step_a], step_time[step_b]);
+    std::swap(object_steps_usage[step_a], object_steps_usage[step_b]);
 
     for (VelocityObjectData &vel : velocity_map.values()) {
       vel.obj.ofs[step_a] = vel.obj.ofs[step_b];
@@ -344,9 +350,11 @@ void VelocityModule::begin_sync()
   step_ = STEP_CURRENT;
   step_camera_sync();
   object_steps_usage[step_] = 0;
+
+  /* STEP_NEXT is not used for viewport. (See #131134) */
+  BLI_assert(!inst_.is_viewport() || object_steps_usage[STEP_NEXT] == 0);
 }
 
-/* This is the end of the current frame sync. Not the step_sync. */
 void VelocityModule::end_sync()
 {
   Vector<ObjectKey, 0> deleted_obj;
@@ -425,21 +433,6 @@ bool VelocityModule::object_is_deform(const Object *ob)
                          (has_rigidbody && (rbo->flag & RBO_FLAG_USE_DEFORM) != 0);
 
   return is_deform;
-}
-
-void VelocityModule::bind_resources(DRWShadingGroup *grp)
-{
-  /* For viewport, only previous motion is supported.
-   * Still bind previous step to avoid undefined behavior. */
-  eVelocityStep next = inst_.is_viewport() ? STEP_PREVIOUS : STEP_NEXT;
-  DRW_shgroup_storage_block_ref(grp, "velocity_obj_prev_buf", &(*object_steps[STEP_PREVIOUS]));
-  DRW_shgroup_storage_block_ref(grp, "velocity_obj_next_buf", &(*object_steps[next]));
-  DRW_shgroup_storage_block_ref(grp, "velocity_geo_prev_buf", &(*geometry_steps[STEP_PREVIOUS]));
-  DRW_shgroup_storage_block_ref(grp, "velocity_geo_next_buf", &(*geometry_steps[next]));
-  DRW_shgroup_uniform_block_ref(grp, "camera_prev", &(*camera_steps[STEP_PREVIOUS]));
-  DRW_shgroup_uniform_block_ref(grp, "camera_curr", &(*camera_steps[STEP_CURRENT]));
-  DRW_shgroup_uniform_block_ref(grp, "camera_next", &(*camera_steps[next]));
-  DRW_shgroup_storage_block_ref(grp, "velocity_indirection_buf", &indirection_buf);
 }
 
 bool VelocityModule::camera_has_motion() const

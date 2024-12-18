@@ -67,9 +67,10 @@ struct SnapObjectContext {
     /* Read/write. */
     uint object_index;
 
+    eSnapOcclusionTest occlusion_test_edit;
+
     bool has_occlusion_plane;
     bool has_occlusion_plane_in_front;
-    bool use_occlusion_test_edit;
   } runtime;
 
   /* Output. */
@@ -180,7 +181,7 @@ void cb_snap_edge(void *userdata,
                   BVHTreeNearest *nearest);
 
 bool nearest_world_tree(SnapObjectContext *sctx,
-                        BVHTree *tree,
+                        const BVHTree *tree,
                         BVHTree_NearestPointCallback nearest_cb,
                         const blender::float4x4 &obmat,
                         void *treedata,

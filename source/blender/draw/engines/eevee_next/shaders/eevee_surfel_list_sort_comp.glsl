@@ -12,7 +12,11 @@
  * Dispatched as 1 thread per list.
  */
 
-#pragma BLENDER_REQUIRE(gpu_shader_utildefines_lib.glsl)
+#include "infos/eevee_lightprobe_volume_info.hh"
+
+COMPUTE_SHADER_CREATE_INFO(eevee_surfel_list_sort)
+
+#include "gpu_shader_utildefines_lib.glsl"
 
 /**
  * A doubly-linked list implementation.

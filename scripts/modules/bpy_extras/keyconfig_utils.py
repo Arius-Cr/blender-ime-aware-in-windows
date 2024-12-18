@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 
+__all__ = (
+    "addon_keymap_register",
+    "addon_keymap_unregister",
+    "keyconfig_test",
+)
+
 
 # -----------------------------------------------------------------------------
 # Add-on helpers to properly (un)register their own keymaps.
@@ -70,6 +76,14 @@ def addon_keymap_unregister(keymap_data):
 # Utility Functions
 
 def keyconfig_test(kc):
+    from bl_keymap_utils.io import kmi_args_as_data
+
+    def _kmistr(kmi, is_modal):
+        if is_modal:
+            kmi_id = kmi.propvalue
+        else:
+            kmi_id = kmi.idname
+        return "{:s}({:s})".format(kmi_id, kmi_args_as_data(kmi))
 
     def testEntry(kc, entry, src=None, parent=None):
         result = False
@@ -86,9 +100,9 @@ def keyconfig_test(kc):
                 for item in km.keymap_items:
                     if src.compare(item):
                         print("===========")
-                        print(parent.name)
+                        print(parent.name, "[parent]")
                         print(_kmistr(src, is_modal).strip())
-                        print(km.name)
+                        print(km.name, "[child]")
                         print(_kmistr(item, is_modal).strip())
                         result = True
 
@@ -105,7 +119,7 @@ def keyconfig_test(kc):
                         item = km.keymap_items[j + i + 1]
                         if src.compare(item):
                             print("===========")
-                            print(km.name)
+                            print(km.name, "[self confict]")
                             print(_kmistr(src, is_modal).strip())
                             print(_kmistr(item, is_modal).strip())
                             result = True

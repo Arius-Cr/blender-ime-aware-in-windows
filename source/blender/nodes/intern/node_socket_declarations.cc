@@ -62,8 +62,8 @@ static bool basic_types_can_connect(const SocketDeclaration & /*socket_decl*/,
 
 static void modify_subtype_except_for_storage(bNodeSocket &socket, int new_subtype)
 {
-  const char *idname = bke::node_static_socket_type(socket.type, new_subtype);
-  STRNCPY(socket.idname, idname);
+  const StringRefNull idname = *bke::node_static_socket_type(socket.type, new_subtype);
+  STRNCPY(socket.idname, idname.c_str());
   bke::bNodeSocketType *socktype = bke::node_socket_type_find(idname);
   socket.typeinfo = socktype;
 }
@@ -828,15 +828,6 @@ bNodeSocket &Custom::update_or_build(bNodeTree &ntree, bNode &node, bNodeSocket 
   }
   this->set_common_flags(socket);
   return socket;
-}
-
-SocketDeclarationPtr create_extend_declaration(const eNodeSocketInOut in_out)
-{
-  std::unique_ptr<decl::Extend> decl = std::make_unique<decl::Extend>();
-  decl->name = "";
-  decl->identifier = "__extend__";
-  decl->in_out = in_out;
-  return decl;
 }
 
 /** \} */

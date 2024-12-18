@@ -7,7 +7,11 @@
  * lighting complexity.
  */
 
-#pragma BLENDER_REQUIRE(eevee_gbuffer_lib.glsl)
+#include "infos/eevee_deferred_info.hh"
+
+FRAGMENT_SHADER_CREATE_INFO(eevee_deferred_tile_classify)
+
+#include "eevee_gbuffer_lib.glsl"
 
 void main()
 {

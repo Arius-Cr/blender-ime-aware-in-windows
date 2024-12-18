@@ -1058,14 +1058,10 @@ static blender::Vector<Sequence *> mouseover_strips_sorted_get(const Scene *scen
     strips.append(seq);
   }
 
-  BLI_assert(strips.size() <= 2);
-
-  /* Ensure that `strips[0]` is the strip closest to the mouse cursor. */
-  if (strips.size() == 2 && strip_to_frame_distance(scene, v2d, strips[0], mouse_co[0]) >
-                                strip_to_frame_distance(scene, v2d, strips[1], mouse_co[0]))
-  {
-    std::swap(strips[0], strips[1]);
-  }
+  std::sort(strips.begin(), strips.end(), [&](const Sequence *seq1, const Sequence *seq2) {
+    return strip_to_frame_distance(scene, v2d, seq1, mouse_co[0]) <
+           strip_to_frame_distance(scene, v2d, seq2, mouse_co[0]);
+  });
 
   return strips;
 }
@@ -1406,11 +1402,6 @@ static int sequencer_select_handle_exec(bContext *C, wmOperator *op)
     return OPERATOR_CANCELLED | OPERATOR_PASS_THROUGH;
   }
 
-  if (sequencer_retiming_mode_is_active(C) && retiming_keys_can_be_displayed(CTX_wm_space_seq(C)))
-  {
-    return OPERATOR_CANCELLED | OPERATOR_PASS_THROUGH;
-  }
-
   MouseCoords mouse_co(v2d, RNA_int_get(op->ptr, "mouse_x"), RNA_int_get(op->ptr, "mouse_y"));
 
   StripSelection selection = ED_sequencer_pick_strip_and_handle(scene, v2d, mouse_co.view);
@@ -1449,6 +1440,7 @@ static int sequencer_select_handle_exec(bContext *C, wmOperator *op)
     sequencer_select_connected_strips(selection);
   }
 
+  SEQ_retiming_selection_clear(ed);
   sequencer_select_do_updates(C, scene);
   sequencer_select_set_active(scene, selection.seq1);
   return OPERATOR_FINISHED | OPERATOR_PASS_THROUGH;
@@ -2194,19 +2186,6 @@ static int sequencer_box_select_invoke(bContext *C, wmOperator *op, const wmEven
     StripSelection selection = ED_sequencer_pick_strip_and_handle(scene, v2d, mouse_co);
 
     if (selection.seq1 != nullptr) {
-      if (selection.handle != SEQ_HANDLE_NONE) {
-        SpaceSeq *sseq = CTX_wm_space_seq(C);
-        sseq->flag |= SPACE_SEQ_DESELECT_STRIP_HANDLE;
-        ED_sequencer_deselect_all(scene);
-
-        selection.seq1->flag |= (SELECT) | ((selection.handle == SEQ_HANDLE_RIGHT) ? SEQ_RIGHTSEL :
-                                                                                     SEQ_LEFTSEL);
-        if (selection.seq2 != nullptr) {
-          selection.seq2->flag |= (SELECT) |
-                                  ((selection.handle == SEQ_HANDLE_RIGHT) ? SEQ_LEFTSEL :
-                                                                            SEQ_RIGHTSEL);
-        }
-      }
       return OPERATOR_CANCELLED | OPERATOR_PASS_THROUGH;
     }
   }
@@ -2239,8 +2218,13 @@ void SEQUENCER_OT_select_box(wmOperatorType *ot)
   WM_operator_properties_select_operation_simple(ot);
 
   prop = RNA_def_boolean(
-      ot->srna, "tweak", false, "Tweak", "Operator has been activated using a click-drag event");
+      ot->srna,
+      "tweak",
+      false,
+      "Tweak",
+      "Make box select pass through to sequence slide when the cursor is hovering on a strip");
   RNA_def_property_flag(prop, PROP_SKIP_SAVE);
+
   prop = RNA_def_boolean(
       ot->srna, "include_handles", false, "Select Handles", "Select the strips and their handles");
   RNA_def_property_flag(prop, PROP_SKIP_SAVE);

@@ -9,9 +9,13 @@
  * This pass scans all volume froxels and tags tiles needed for shadowing.
  */
 
-#pragma BLENDER_REQUIRE(eevee_volume_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_sampling_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_shadow_tag_usage_lib.glsl)
+#include "infos/eevee_shadow_info.hh"
+
+COMPUTE_SHADER_CREATE_INFO(eevee_shadow_tag_usage_volume)
+
+#include "eevee_sampling_lib.glsl"
+#include "eevee_shadow_tag_usage_lib.glsl"
+#include "eevee_volume_lib.glsl"
 
 void main()
 {
@@ -21,8 +25,8 @@ void main()
     return;
   }
 
-  vec3 extinction = imageLoad(in_extinction_img, froxel).rgb;
-  vec3 scattering = imageLoad(in_scattering_img, froxel).rgb;
+  vec3 extinction = imageLoadFast(in_extinction_img, froxel).rgb;
+  vec3 scattering = imageLoadFast(in_scattering_img, froxel).rgb;
 
   if (is_zero(extinction) || is_zero(scattering)) {
     return;

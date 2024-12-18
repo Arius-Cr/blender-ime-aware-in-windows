@@ -1208,7 +1208,7 @@ static void widgetbase_draw(uiWidgetBase *wtb, const uiWidgetColors *wcol)
 
 #define UI_TEXT_CLIP_MARGIN (0.25f * U.widget_unit / but->block->aspect)
 
-#define PREVIEW_PAD 4
+#define PREVIEW_PAD (0.15f * UI_UNIT_X)
 
 static float widget_alpha_factor(const uiWidgetStateInfo *state)
 {
@@ -4386,6 +4386,11 @@ static void widget_box(uiBut *but,
   widgetbase_draw(&wtb, wcol);
 
   copy_v3_v3_uchar(wcol->inner, old_col);
+
+  /* Flush the cache so that we don't draw over contents. #125035 */
+  GPU_blend(GPU_BLEND_ALPHA);
+  UI_widgetbase_draw_cache_flush();
+  GPU_blend(GPU_BLEND_NONE);
 }
 
 static void widget_but(uiWidgetColors *wcol,
@@ -4509,8 +4514,7 @@ static void widget_draw_extra_mask(const bContext *C, uiBut *but, uiWidgetType *
 
   if (but->block->drawextra) {
     /* NOTE: drawextra can change rect +1 or -1, to match round errors of existing previews. */
-    but->block->drawextra(
-        C, but->poin, but->block->drawextra_arg1, but->block->drawextra_arg2, rect);
+    but->block->drawextra(C, rect);
 
     const uint pos = GPU_vertformat_attr_add(
         immVertexFormat(), "pos", GPU_COMP_F32, 2, GPU_FETCH_FLOAT);
@@ -5297,7 +5301,7 @@ static void draw_disk_shaded(float start,
   GPUVertFormat *format = immVertexFormat();
   const uint pos = GPU_vertformat_attr_add(format, "pos", GPU_COMP_F32, 2, GPU_FETCH_FLOAT);
   if (shaded) {
-    col = GPU_vertformat_attr_add(format, "color", GPU_COMP_U8, 4, GPU_FETCH_INT_TO_FLOAT_UNIT);
+    col = GPU_vertformat_attr_add(format, "color", GPU_COMP_F32, 4, GPU_FETCH_FLOAT);
     immBindBuiltinProgram(GPU_SHADER_3D_SMOOTH_COLOR);
   }
   else {
@@ -5317,7 +5321,9 @@ static void draw_disk_shaded(float start,
       uchar r_col[4];
       const float fac = (y1 + radius_ext) * radius_ext_scale;
       color_blend_v4_v4v4(r_col, col1, col2, fac);
-      immAttr4ubv(col, r_col);
+      float f_col[4];
+      rgba_uchar_to_float(f_col, r_col);
+      immAttr4fv(col, f_col);
     }
     immVertex2f(pos, c * radius_int, s * radius_int);
 
@@ -5325,7 +5331,9 @@ static void draw_disk_shaded(float start,
       uchar r_col[4];
       const float fac = (y2 + radius_ext) * radius_ext_scale;
       color_blend_v4_v4v4(r_col, col1, col2, fac);
-      immAttr4ubv(col, r_col);
+      float f_col[4];
+      rgba_uchar_to_float(f_col, r_col);
+      immAttr4fv(col, f_col);
     }
     immVertex2f(pos, c * radius_ext, s * radius_ext);
   }

@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 
+__all__ = (
+    "autocomplete",
+    "banner",
+    "execute",
+    "language_id",
+)
+
 import sys
 import bpy
 
@@ -24,7 +31,7 @@ class _TempModuleOverride:
         self.module = sys.modules.get(self.module_name)
         sys.modules[self.module_name] = self.module_override
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, _type, _value, _traceback):
         if self.module is None:
             # Account for removal of `module_override` (albeit unlikely).
             sys.modules.pop(self.module_name, None)
@@ -33,8 +40,11 @@ class _TempModuleOverride:
 
 
 def add_scrollback(text, text_type):
-    for l in text.split("\n"):
-        bpy.ops.console.scrollback_append(text=l, type=text_type)
+    for line in text.split("\n"):
+        bpy.ops.console.scrollback_append(
+            text=line,
+            type=text_type,
+        )
 
 
 def replace_help(namespace):

@@ -916,7 +916,10 @@ static void blf_font_boundbox_ex(FontBLF *font,
     const ft_pix pen_x_next = pen_x + g->advance_x;
 
     const ft_pix gbox_xmin = std::min(pen_x, pen_x + g->box_xmin);
-    const ft_pix gbox_xmax = std::max(pen_x_next, pen_x + g->box_xmax);
+    /* Mono-spaced characters should only use advance. See #130385. */
+    const ft_pix gbox_xmax = (font->flags & BLF_MONOSPACED) ?
+                                 pen_x_next :
+                                 std::max(pen_x_next, pen_x + g->box_xmax);
     const ft_pix gbox_ymin = g->box_ymin + pen_y;
     const ft_pix gbox_ymax = g->box_ymax + pen_y;
 
@@ -1039,6 +1042,23 @@ float blf_font_fixed_width(FontBLF *font)
   float width = (gc) ? float(gc->fixed_width) : font->size / 2.0f;
   blf_glyph_cache_release(font);
   return width;
+}
+
+int blf_font_glyph_advance(FontBLF *font, const char *str)
+{
+  GlyphCacheBLF *gc = blf_glyph_cache_acquire(font);
+  const uint charcode = BLI_str_utf8_as_unicode_safe(str);
+  const GlyphBLF *g = blf_glyph_ensure(font, gc, charcode);
+
+  if (UNLIKELY(g == nullptr)) {
+    blf_glyph_cache_release(font);
+    return 0;
+  }
+
+  const int glyph_advance = ft_pix_to_int(g->advance_x);
+
+  blf_glyph_cache_release(font);
+  return glyph_advance;
 }
 
 void blf_font_boundbox_foreach_glyph(FontBLF *font,

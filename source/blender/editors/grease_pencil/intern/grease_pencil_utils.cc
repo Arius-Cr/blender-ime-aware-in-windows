@@ -16,6 +16,7 @@
 #include "BKE_report.hh"
 #include "BKE_scene.hh"
 
+#include "BLI_array_utils.hh"
 #include "BLI_math_geom.h"
 #include "BLI_math_numbers.hh"
 #include "BLI_math_vector.hh"
@@ -26,6 +27,8 @@
 #include "DNA_object_types.h"
 #include "DNA_scene_types.h"
 #include "DNA_view3d_types.h"
+
+#include "RNA_prototypes.hh"
 
 #include "ED_curves.hh"
 #include "ED_grease_pencil.hh"
@@ -282,10 +285,10 @@ void DrawingPlacement::cache_viewport_depths(Depsgraph *depsgraph, ARegion *regi
       mode = V3D_DEPTH_SELECTED_ONLY;
     }
     else {
-      mode = V3D_DEPTH_NO_OVERLAYS;
+      mode = V3D_DEPTH_NO_GPENCIL;
     }
   }
-  ED_view3d_depth_override(depsgraph, region, view3d, nullptr, mode, &this->depth_cache_);
+  ED_view3d_depth_override(depsgraph, region, view3d, nullptr, mode, false, &this->depth_cache_);
 }
 
 void DrawingPlacement::set_origin_to_nearest_stroke(const float2 co)
@@ -311,9 +314,9 @@ float3 DrawingPlacement::project_depth(const float2 co) const
   float depth;
   if (depth_cache_ != nullptr && ED_view3d_depth_read_cached(depth_cache_, int2(co), 4, &depth)) {
     ED_view3d_depth_unproject_v3(region_, int2(co), depth, proj_point);
-    float3 normal;
-    ED_view3d_depth_read_cached_normal(region_, depth_cache_, int2(co), normal);
-    proj_point += normal * surface_offset_;
+    float3 view_normal;
+    ED_view3d_win_to_vector(region_, co, view_normal);
+    proj_point -= view_normal * surface_offset_;
   }
   else {
     /* Fallback to `View` placement. */
@@ -332,6 +335,24 @@ float3 DrawingPlacement::project(const float2 co) const
   else {
     if (plane_ == DrawingPlacementPlane::View) {
       ED_view3d_win_to_3d(view3d_, region_, placement_loc_, co, proj_point);
+    }
+    else {
+      ED_view3d_win_to_3d_on_plane(region_, placement_plane_, co, false, proj_point);
+    }
+  }
+  return math::transform_point(world_space_to_layer_space_, proj_point);
+}
+
+float3 DrawingPlacement::project_with_shift(const float2 co) const
+{
+  float3 proj_point;
+  if (depth_ == DrawingPlacementDepth::Surface) {
+    /* Project using the viewport depth cache. */
+    proj_point = this->project_depth(co);
+  }
+  else {
+    if (plane_ == DrawingPlacementPlane::View) {
+      ED_view3d_win_to_3d_with_shift(view3d_, region_, placement_loc_, co, proj_point);
     }
     else {
       ED_view3d_win_to_3d_on_plane(region_, placement_plane_, co, false, proj_point);
@@ -1578,6 +1599,20 @@ float4x2 calculate_texture_space(const Scene *scene,
 
   return math::transpose(float2x4(float4(u_dir, -math::dot(u_dir, origin)),
                                   float4(v_dir, -math::dot(v_dir, origin))));
+}
+
+GreasePencil *from_context(bContext &C)
+{
+  GreasePencil *grease_pencil = static_cast<GreasePencil *>(
+      CTX_data_pointer_get_type(&C, "grease_pencil", &RNA_GreasePencilv3).data);
+
+  if (grease_pencil == nullptr) {
+    Object *object = CTX_data_active_object(&C);
+    if (object && object->type == OB_GREASE_PENCIL) {
+      grease_pencil = static_cast<GreasePencil *>(object->data);
+    }
+  }
+  return grease_pencil;
 }
 
 }  // namespace blender::ed::greasepencil

@@ -141,13 +141,26 @@ static std::optional<GreasePencil *> separate_grease_pencil_layer_selection(
     return nullptr;
   }
 
+  const int dst_layers_num = selection.size();
+
   GreasePencil *dst_grease_pencil = BKE_grease_pencil_new_nomain();
-  BKE_grease_pencil_duplicate_drawing_array(&src_grease_pencil, dst_grease_pencil);
-  selection.foreach_index([&](const int index) {
-    const bke::greasepencil::Layer &src_layer = src_grease_pencil.layer(index);
-    dst_grease_pencil->duplicate_layer(src_layer);
+  BKE_grease_pencil_copy_parameters(src_grease_pencil, *dst_grease_pencil);
+  dst_grease_pencil->add_layers_with_empty_drawings_for_eval(dst_layers_num);
+
+  selection.foreach_index([&](const int src_layer_i, const int dst_layer_i) {
+    const bke::greasepencil::Layer &src_layer = src_grease_pencil.layer(src_layer_i);
+    const bke::greasepencil::Drawing *src_drawing = src_grease_pencil.get_eval_drawing(src_layer);
+
+    bke::greasepencil::Layer &dst_layer = dst_grease_pencil->layer(dst_layer_i);
+    bke::greasepencil::Drawing &dst_drawing = *dst_grease_pencil->get_eval_drawing(dst_layer);
+
+    BKE_grease_pencil_copy_layer_parameters(src_layer, dst_layer);
+    dst_layer.set_name(src_layer.name());
+
+    if (src_drawing) {
+      dst_drawing = *src_drawing;
+    }
   });
-  dst_grease_pencil->remove_drawings_with_no_users();
 
   bke::gather_attributes(src_grease_pencil.attributes(),
                          AttrDomain::Layer,
@@ -215,7 +228,7 @@ void separate_geometry(bke::GeometrySet &geometry_set,
       std::optional<bke::CurvesGeometry> dst_curves = separate_curves_selection(
           src_curves, field_context, selection, domain, attribute_filter);
       if (dst_curves) {
-        if (dst_curves->points_num() == 0) {
+        if (dst_curves->is_empty()) {
           geometry_set.remove<bke::CurveComponent>();
         }
         else {

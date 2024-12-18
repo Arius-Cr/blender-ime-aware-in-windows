@@ -155,7 +155,8 @@ static ColorGeometry4f apply_gradient_tint(const GreasePencilTintModifierData &t
   const float3 input_rgb = {input_color.r, input_color.g, input_color.b};
   /* GP2 compatibility: ignore vertex group factor and use the plain modifier setting for
    * RGB mixing. */
-  const float3 rgb = math::interpolate(input_rgb, gradient_color.xyz(), tmd.factor);
+  const float3 rgb = math::interpolate(
+      input_rgb, gradient_color.xyz(), tmd.factor * gradient_color.w);
   /* GP2 compatibility: use vertex group factor for alpha. */
   return ColorGeometry4f(rgb[0], rgb[1], rgb[2], factor);
 }
@@ -404,30 +405,30 @@ static void panel_draw(const bContext *C, Panel *panel)
       RNA_enum_get(ptr, "tint_mode"));
   const bool use_weight_as_factor = RNA_boolean_get(ptr, "use_weight_as_factor");
 
-  uiItemR(layout, ptr, "color_mode", UI_ITEM_NONE, nullptr, ICON_NONE);
+  uiItemR(layout, ptr, "color_mode", UI_ITEM_NONE, std::nullopt, ICON_NONE);
 
   uiLayout *row = uiLayoutRow(layout, true);
   uiLayoutSetActive(row, !use_weight_as_factor);
-  uiItemR(row, ptr, "factor", UI_ITEM_NONE, nullptr, ICON_NONE);
+  uiItemR(row, ptr, "factor", UI_ITEM_NONE, std::nullopt, ICON_NONE);
   uiItemR(row, ptr, "use_weight_as_factor", UI_ITEM_NONE, "", ICON_MOD_VERTEX_WEIGHT);
 
-  uiItemR(layout, ptr, "tint_mode", UI_ITEM_R_EXPAND, nullptr, ICON_NONE);
+  uiItemR(layout, ptr, "tint_mode", UI_ITEM_R_EXPAND, std::nullopt, ICON_NONE);
   switch (tint_mode) {
     case MOD_GREASE_PENCIL_TINT_UNIFORM:
-      uiItemR(layout, ptr, "color", UI_ITEM_NONE, nullptr, ICON_NONE);
+      uiItemR(layout, ptr, "color", UI_ITEM_NONE, std::nullopt, ICON_NONE);
       break;
     case MOD_GREASE_PENCIL_TINT_GRADIENT:
       uiLayout *col = uiLayoutColumn(layout, false);
       uiLayoutSetPropSep(col, false);
       uiTemplateColorRamp(col, ptr, "color_ramp", true);
       uiItemS(layout);
-      uiItemR(layout, ptr, "object", UI_ITEM_NONE, nullptr, ICON_NONE);
-      uiItemR(layout, ptr, "radius", UI_ITEM_NONE, nullptr, ICON_NONE);
+      uiItemR(layout, ptr, "object", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+      uiItemR(layout, ptr, "radius", UI_ITEM_NONE, std::nullopt, ICON_NONE);
       break;
   }
 
   if (uiLayout *influence_panel = uiLayoutPanelProp(
-          C, layout, ptr, "open_influence_panel", "Influence"))
+          C, layout, ptr, "open_influence_panel", IFACE_("Influence")))
   {
     modifier::greasepencil::draw_layer_filter_settings(C, influence_panel, ptr);
     modifier::greasepencil::draw_material_filter_settings(C, influence_panel, ptr);

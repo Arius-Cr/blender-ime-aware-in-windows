@@ -10,7 +10,11 @@
  * as it is way more complex and expensive to do.
  */
 
-#pragma BLENDER_REQUIRE(eevee_depth_of_field_lib.glsl)
+#include "infos/eevee_depth_of_field_info.hh"
+
+COMPUTE_SHADER_CREATE_INFO(eevee_depth_of_field_bokeh_lut)
+
+#include "eevee_depth_of_field_lib.glsl"
 
 void main()
 {
@@ -25,7 +29,6 @@ void main()
   if (dof_buf.bokeh_blades > 0.0) {
     /* NOTE: atan(y,x) has output range [-M_PI..M_PI], so add 2pi to avoid negative angles. */
     float theta = atan(gather_uv.y, gather_uv.x) + M_TAU;
-    float r = length(gather_uv);
 
     radius /= circle_to_polygon_radius(dof_buf.bokeh_blades, theta - dof_buf.bokeh_rotation);
 
@@ -50,9 +53,9 @@ void main()
 
   ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
   /* For gather store the normalized UV. */
-  imageStore(out_gather_lut_img, texel, gather_uv.xyxy);
+  imageStoreFast(out_gather_lut_img, texel, gather_uv.xyxy);
   /* For scatter store distance. LUT will be scaled by COC. */
-  imageStore(out_scatter_lut_img, texel, vec4(radius));
+  imageStoreFast(out_scatter_lut_img, texel, vec4(radius));
   /* For slight focus gather store pixel perfect distance. */
   imageStore(out_resolve_lut_img, texel, vec4(length(slight_focus_texel)));
 }

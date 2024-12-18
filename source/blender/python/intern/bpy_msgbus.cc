@@ -37,10 +37,12 @@
   "   :arg key: Represents the type of data being subscribed to\n" \
   "\n" \
   "      Arguments include\n" \
-  "      - :class:`bpy.types.Property` instance.\n" \
-  "      - :class:`bpy.types.Struct` type.\n" \
-  "      - (:class:`bpy.types.Struct`, str) type and property name.\n" \
-  "   :type key: Multiple\n"
+  "      - A property instance.\n" \
+  "      - A struct type.\n" \
+  "      - A tuple representing a (struct, property name) pair.\n" \
+  "   :type key: :class:`bpy.types.Property` | " \
+  ":class:`bpy.types.Struct` | " \
+  "tuple[:class:`bpy.types.Struct`, str]\n"
 
 /**
  * There are multiple ways we can get RNA from Python,
@@ -71,14 +73,14 @@ static int py_msgbus_rna_key_from_py(PyObject *py_sub,
   if (BPy_PropertyRNA_Check(py_sub)) {
     BPy_PropertyRNA *data_prop = (BPy_PropertyRNA *)py_sub;
     PYRNA_PROP_CHECK_INT(data_prop);
-    msg_key_params->ptr = data_prop->ptr;
+    msg_key_params->ptr = *data_prop->ptr;
     msg_key_params->prop = data_prop->prop;
   }
   else if (BPy_StructRNA_Check(py_sub)) {
     /* NOTE: this isn't typically used since we don't edit structs directly. */
     BPy_StructRNA *data_srna = (BPy_StructRNA *)py_sub;
     PYRNA_STRUCT_CHECK_INT(data_srna);
-    msg_key_params->ptr = data_srna->ptr;
+    msg_key_params->ptr = *data_srna->ptr;
   }
   /* TODO: property / type, not instance. */
   else if (PyType_Check(py_sub)) {
@@ -198,12 +200,12 @@ PyDoc_STRVAR(
     "   loaded, or can be cleared explicitly via :func:`bpy.msgbus.clear_by_owner`.\n"
     "\n" BPY_MSGBUS_RNA_MSGKEY_DOC
     "   :arg owner: Handle for this subscription (compared by identity).\n"
-    "   :type owner: Any type.\n"
+    "   :type owner: Any\n"
     "   :arg options: Change the behavior of the subscriber.\n"
     "\n"
     "      - ``PERSISTENT`` when set, the subscriber will be kept when remapping ID data.\n"
     "\n"
-    "   :type options: set of str.\n"
+    "   :type options: set[str]\n"
     "\n"
     ".. note::\n"
     "\n"
@@ -274,7 +276,7 @@ static PyObject *bpy_msgbus_subscribe_rna(PyObject * /*self*/, PyObject *args, P
   /* NOTE: we may want to have a way to pass this in. */
   bContext *C = BPY_context_get();
   wmMsgBus *mbus = CTX_wm_message_bus(C);
-  wmMsgParams_RNA msg_key_params = {{nullptr}};
+  wmMsgParams_RNA msg_key_params = {{}};
 
   wmMsgSubscribeValue msg_val_params = {nullptr};
 
@@ -303,7 +305,7 @@ static PyObject *bpy_msgbus_subscribe_rna(PyObject * /*self*/, PyObject *args, P
 
   {
     PyObject *user_data = PyTuple_New(2);
-    PyTuple_SET_ITEMS(user_data, Py_INCREF_RET(callback_args), Py_INCREF_RET(callback_notify));
+    PyTuple_SET_ITEMS(user_data, Py_NewRef(callback_args), Py_NewRef(callback_notify));
     msg_val_params.user_data = user_data;
   }
 
@@ -356,7 +358,7 @@ static PyObject *bpy_msgbus_publish_rna(PyObject * /*self*/, PyObject *args, PyO
   /* NOTE: we may want to have a way to pass this in. */
   bContext *C = BPY_context_get();
   wmMsgBus *mbus = CTX_wm_message_bus(C);
-  wmMsgParams_RNA msg_key_params = {{nullptr}};
+  wmMsgParams_RNA msg_key_params = {{}};
 
   if (py_msgbus_rna_key_from_py(py_sub, &msg_key_params, error_prefix) == -1) {
     return nullptr;

@@ -11,11 +11,20 @@
  * the destination texel.
  */
 
-#pragma BLENDER_REQUIRE(draw_view_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_surf_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_nodetree_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_sampling_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_shadow_tilemap_lib.glsl)
+#include "infos/eevee_material_info.hh"
+
+FRAGMENT_SHADER_CREATE_INFO(eevee_geom_mesh)
+FRAGMENT_SHADER_CREATE_INFO(eevee_surf_shadow_atomic)
+
+#ifdef GLSL_CPP_STUBS
+#  define MAT_SHADOW
+#endif
+
+#include "draw_view_lib.glsl"
+#include "eevee_nodetree_lib.glsl"
+#include "eevee_sampling_lib.glsl"
+#include "eevee_shadow_tilemap_lib.glsl"
+#include "eevee_surf_lib.glsl"
 
 vec4 closure_to_rgba(Closure cl)
 {
@@ -24,10 +33,10 @@ vec4 closure_to_rgba(Closure cl)
 
 void main()
 {
-  float ndc_depth = gl_FragCoord.z;
   float linear_depth = length(shadow_clip.position);
 
 #ifdef SHADOW_UPDATE_TBDR
+  float ndc_depth = gl_FragCoord.z;
 /* We need to write to `gl_FragDepth` un-conditionally. So we cannot early exit or use discard. */
 #  define discard_result \
     linear_depth = FLT_MAX; \

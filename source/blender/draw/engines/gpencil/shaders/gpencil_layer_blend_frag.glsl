@@ -2,7 +2,11 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
-#pragma BLENDER_REQUIRE(gpencil_common_lib.glsl)
+#include "infos/gpencil_info.hh"
+
+FRAGMENT_SHADER_CREATE_INFO(gpencil_layer_blend)
+
+#include "gpencil_common_lib.glsl"
 
 void main()
 {

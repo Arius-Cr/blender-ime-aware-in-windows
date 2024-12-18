@@ -6,6 +6,7 @@
 #include "BKE_bake_items_serialize.hh"
 #include "BKE_curves.hh"
 #include "BKE_customdata.hh"
+#include "BKE_deform.hh"
 #include "BKE_grease_pencil.hh"
 #include "BKE_instances.hh"
 #include "BKE_lib_id.hh"
@@ -17,6 +18,7 @@
 #include "BLI_endian_switch.h"
 #include "BLI_math_matrix_types.hh"
 #include "BLI_path_utils.hh"
+#include "BLI_string.h"
 
 #include "DNA_material_types.h"
 #include "DNA_modifier_types.h"
@@ -856,6 +858,19 @@ static Mesh *try_load_mesh(const DictionaryValue &io_geometry,
     }
   }
 
+  /* Create the vertex group name list, then later on when processing generic attributes, these
+   * names will be stored as vertex groups. */
+  if (const auto *io_attributes = io_mesh->lookup_array("vertex_group_names")) {
+    for (const std::shared_ptr<Value> &value : io_attributes->elements()) {
+      if (value->type() != io::serialize::eValueType::String) {
+        return cancel();
+      }
+      bDeformGroup *defgroup = MEM_cnew<bDeformGroup>(__func__);
+      STRNCPY(defgroup->name, value->as_string_value()->value().c_str());
+      BLI_addtail(&mesh->vertex_group_names, defgroup);
+    }
+  }
+
   MutableAttributeAccessor attributes = mesh->attributes_for_write();
   if (!load_attributes(*io_attributes, attributes, blob_reader, blob_sharing)) {
     return cancel();
@@ -1107,6 +1122,13 @@ static std::shared_ptr<DictionaryValue> serialize_geometry_set(const GeometrySet
     auto io_materials = serialize_materials(mesh.runtime->bake_materials);
     io_mesh->append("materials", io_materials);
 
+    if (!BLI_listbase_is_empty(&mesh.vertex_group_names)) {
+      auto io_vertex_group_names = io_mesh->append_array("vertex_group_names");
+      LISTBASE_FOREACH (bDeformGroup *, defgroup, &mesh.vertex_group_names) {
+        io_vertex_group_names->append_str(defgroup->name);
+      }
+    }
+
     auto io_attributes = serialize_attributes(mesh.attributes(), blob_writer, blob_sharing, {});
     io_mesh->append("attributes", io_attributes);
   }
@@ -1271,6 +1293,10 @@ static std::shared_ptr<io::serialize::Value> serialize_primitive_value(
       const int value = *static_cast<const int *>(value_ptr);
       return std::make_shared<io::serialize::IntValue>(value);
     }
+    case CD_PROP_INT16_2D: {
+      const int2 value = int2(*static_cast<const short2 *>(value_ptr));
+      return serialize_int_array({&value.x, 2});
+    }
     case CD_PROP_INT32_2D: {
       const int2 value = *static_cast<const int2 *>(value_ptr);
       return serialize_int_array({&value.x, 2});
@@ -1397,6 +1423,9 @@ template<typename T>
       }
       *static_cast<int *>(r_value) = *value;
       return true;
+    }
+    case CD_PROP_INT16_2D: {
+      return deserialize_int_array<int16_t>(io_value, {static_cast<int16_t *>(r_value), 2});
     }
     case CD_PROP_INT32_2D: {
       return deserialize_int_array<int>(io_value, {static_cast<int *>(r_value), 2});

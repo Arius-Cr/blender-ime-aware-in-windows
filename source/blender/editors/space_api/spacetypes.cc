@@ -166,7 +166,6 @@ void ED_spacemacros_init()
   ED_operatormacros_mask();
   ED_operatormacros_sequencer();
   ED_operatormacros_paint();
-  ED_operatormacros_gpencil();
   ED_operatormacros_grease_pencil();
   ED_operatormacros_nla();
 
@@ -270,7 +269,7 @@ static void ed_region_draw_cb_draw(const bContext *C, ARegion *region, ARegionTy
 
 void ED_region_draw_cb_draw(const bContext *C, ARegion *region, int type)
 {
-  ed_region_draw_cb_draw(C, region, region->type, type);
+  ed_region_draw_cb_draw(C, region, region->runtime->type, type);
 }
 
 void ED_region_surface_draw_cb_draw(ARegionType *art, int type)

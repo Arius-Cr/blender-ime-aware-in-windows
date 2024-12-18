@@ -17,6 +17,7 @@
 #include "MEM_guardedalloc.h"
 
 #include "DNA_anim_types.h"
+#include "DNA_brush_types.h"
 #include "DNA_collection_types.h"
 #include "DNA_curveprofile_types.h"
 #include "DNA_defaults.h"
@@ -66,8 +67,8 @@
 #include "BKE_fcurve.hh"
 #include "BKE_idprop.hh"
 #include "BKE_idtype.hh"
-#include "BKE_image.h"
-#include "BKE_image_format.h"
+#include "BKE_image.hh"
+#include "BKE_image_format.hh"
 #include "BKE_layer.hh"
 #include "BKE_lib_id.hh"
 #include "BKE_lib_query.hh"
@@ -1006,8 +1007,6 @@ static void scene_blend_write(BlendWriter *writer, ID *id, const void *id_addres
 {
   Scene *sce = (Scene *)id;
 
-  BLO_Write_IDBuffer *temp_embedded_id_buffer = BLO_write_allocate_id_buffer();
-
   if (BLO_write_is_undo(writer)) {
     /* Clean up, important in undo case to reduce false detection of changed data-blocks. */
     /* XXX This UI data should not be stored in Scene at all... */
@@ -1121,10 +1120,8 @@ static void scene_blend_write(BlendWriter *writer, ID *id, const void *id_addres
   }
 
   if (sce->nodetree) {
-    BLO_write_init_id_buffer_from_id(
-        temp_embedded_id_buffer, &sce->nodetree->id, BLO_write_is_undo(writer));
-    bNodeTree *temp_nodetree = reinterpret_cast<bNodeTree *>(
-        BLO_write_get_id_buffer_temp_id(temp_embedded_id_buffer));
+    BLO_Write_IDBuffer temp_embedded_id_buffer{sce->nodetree->id, writer};
+    bNodeTree *temp_nodetree = reinterpret_cast<bNodeTree *>(temp_embedded_id_buffer.get());
     /* Set deprecated chunksize for forward compatibility. */
     temp_nodetree->chunksize = 256;
     BLO_write_struct_at_address(writer, bNodeTree, sce->nodetree, temp_nodetree);
@@ -1155,26 +1152,17 @@ static void scene_blend_write(BlendWriter *writer, ID *id, const void *id_addres
   }
 
   if (sce->master_collection) {
-    BLO_write_init_id_buffer_from_id(
-        temp_embedded_id_buffer, &sce->master_collection->id, BLO_write_is_undo(writer));
-    BKE_collection_blend_write_prepare_nolib(
-        writer,
-        reinterpret_cast<Collection *>(BLO_write_get_id_buffer_temp_id(temp_embedded_id_buffer)));
-    BLO_write_struct_at_address(writer,
-                                Collection,
-                                sce->master_collection,
-                                BLO_write_get_id_buffer_temp_id(temp_embedded_id_buffer));
-    BKE_collection_blend_write_nolib(
-        writer,
-        reinterpret_cast<Collection *>(BLO_write_get_id_buffer_temp_id(temp_embedded_id_buffer)));
+    BLO_Write_IDBuffer temp_embedded_id_buffer{sce->master_collection->id, writer};
+    Collection *temp_collection = reinterpret_cast<Collection *>(temp_embedded_id_buffer.get());
+    BKE_collection_blend_write_prepare_nolib(writer, temp_collection);
+    BLO_write_struct_at_address(writer, Collection, sce->master_collection, temp_collection);
+    BKE_collection_blend_write_nolib(writer, temp_collection);
   }
 
   BKE_screen_view3d_shading_blend_write(writer, &sce->display.shading);
 
   /* Freed on `do_versions()`. */
   BLI_assert(sce->layer_properties == nullptr);
-
-  BLO_write_destroy_id_buffer(&temp_embedded_id_buffer);
 }
 
 static void direct_link_paint_helper(BlendDataReader *reader, const Scene *scene, Paint **paint)
@@ -1327,14 +1315,22 @@ static void scene_blend_read_data(BlendDataReader *reader, ID *id)
     /* link metastack, slight abuse of structs here,
      * have to restore pointer to internal part in struct */
     {
-      Sequence temp;
       void *seqbase_poin;
       void *channels_poin;
-      intptr_t seqbase_offset;
-      intptr_t channels_offset;
-
-      seqbase_offset = intptr_t(&(temp).seqbase) - intptr_t(&temp);
-      channels_offset = intptr_t(&(temp).channels) - intptr_t(&temp);
+      /* This whole thing with seqbasep offsets is really not good
+       * and prevents changes to the Sequence struct. A more correct approach
+       * would be to calculate offset using sDNA from the file (NOT from the
+       * current Blender). Even better would be having some sort of dedicated
+       * map of seqbase pointers to avoid this offset magic. */
+      constexpr intptr_t seqbase_offset = offsetof(Sequence, seqbase);
+      constexpr intptr_t channels_offset = offsetof(Sequence, channels);
+#if ARCH_CPU_64_BITS
+      static_assert(seqbase_offset == 264, "Sequence seqbase member offset cannot be changed");
+      static_assert(channels_offset == 280, "Sequence channels member offset cannot be changed");
+#else
+      static_assert(seqbase_offset == 204, "Sequence seqbase member offset cannot be changed");
+      static_assert(channels_offset == 212, "Sequence channels member offset cannot be changed");
+#endif
 
       /* seqbase root pointer */
       if (ed->seqbasep == old_seqbasep) {
@@ -2872,8 +2868,12 @@ void BKE_render_resolution(const RenderData *r, const bool use_crop, int *r_widt
   *r_height = (r->ysch * r->size) / 100;
 
   if (use_crop && (r->mode & R_BORDER) && (r->mode & R_CROP)) {
-    *r_width *= BLI_rctf_size_x(&r->border);
-    *r_height *= BLI_rctf_size_y(&r->border);
+    /* Compute the difference between the integer bounds instead of multiplying by the float
+     * border size directly to be consistent with how the render pipeline computes render size, see
+     * for instance render_init_from_main. That's because difference in rounding and imprecisions
+     * can cause off by one errors. */
+    *r_width = int(r->border.xmax * *r_width) - int(r->border.xmin * *r_width);
+    *r_height = int(r->border.ymax * *r_height) - int(r->border.ymin * *r_height);
   }
 }
 

@@ -53,6 +53,13 @@ void Operation::map_input_to_result(StringRef identifier, Result *result)
   results_mapped_to_inputs_.add_new(identifier, result);
 }
 
+void Operation::free_results()
+{
+  for (Result &result : results_.values()) {
+    result.free();
+  }
+}
+
 Domain Operation::compute_domain()
 {
   /* Default to an identity domain in case no domain input was found, most likely because all
@@ -166,6 +173,15 @@ InputDescriptor &Operation::get_input_descriptor(StringRef identifier)
   return input_descriptors_.lookup(identifier);
 }
 
+void Operation::release_unneeded_results()
+{
+  for (Result &result : results_.values()) {
+    if (!result.should_compute() && result.is_allocated()) {
+      result.release();
+    }
+  }
+}
+
 Context &Operation::context() const
 {
   return context_;
@@ -202,15 +218,6 @@ void Operation::release_inputs()
 {
   for (Result *result : results_mapped_to_inputs_.values()) {
     result->release();
-  }
-}
-
-void Operation::release_unneeded_results()
-{
-  for (Result &result : results_.values()) {
-    if (!result.should_compute() && result.is_allocated()) {
-      result.release();
-    }
   }
 }
 

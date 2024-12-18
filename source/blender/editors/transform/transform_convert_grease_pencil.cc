@@ -48,7 +48,7 @@ static void createTransGreasePencilVerts(bContext *C, TransInfo *t)
     GreasePencil &grease_pencil = *static_cast<GreasePencil *>(tc.obedit->data);
 
     Vector<ed::greasepencil::MutableDrawingInfo> drawings =
-        ed::greasepencil::retrieve_editable_drawings(*scene, grease_pencil);
+        ed::greasepencil::retrieve_editable_drawings_with_falloff(*scene, grease_pencil);
 
     if (blender::animrig::is_autokey_on(scene)) {
       for (const int info_i : drawings.index_range()) {
@@ -61,7 +61,7 @@ static void createTransGreasePencilVerts(bContext *C, TransInfo *t)
               target_layer, *target_layer.start_frame_at(current_frame), current_frame, false);
         }
       }
-      drawings = ed::greasepencil::retrieve_editable_drawings(*scene, grease_pencil);
+      drawings = ed::greasepencil::retrieve_editable_drawings_with_falloff(*scene, grease_pencil);
     }
 
     all_drawings.append(drawings);
@@ -80,6 +80,7 @@ static void createTransGreasePencilVerts(bContext *C, TransInfo *t)
     tc.data_len = 0;
 
     const Vector<ed::greasepencil::MutableDrawingInfo> drawings = all_drawings[i];
+    curves_transform_data->grease_pencil_falloffs.reinitialize(drawings.size());
     for (ed::greasepencil::MutableDrawingInfo info : drawings) {
       const bke::CurvesGeometry &curves = info.drawing.strokes();
       Span<StringRef> selection_attribute_names = ed::curves::get_curves_selection_attribute_names(
@@ -88,9 +89,8 @@ static void createTransGreasePencilVerts(bContext *C, TransInfo *t)
 
       const IndexMask editable_points = ed::greasepencil::retrieve_editable_points(
           *object, info.drawing, info.layer_index, curves_transform_data->memory);
-      const IndexMask selected_editable_strokes =
-          ed::greasepencil::retrieve_editable_and_selected_strokes(
-              *object, info.drawing, info.layer_index, curves_transform_data->memory);
+      const IndexMask editable_strokes = ed::greasepencil::retrieve_editable_strokes(
+          *object, info.drawing, info.layer_index, curves_transform_data->memory);
 
       for (const int attribute_i : selection_attribute_names.index_range()) {
         const StringRef &selection_name = selection_attribute_names[attribute_i];
@@ -105,7 +105,7 @@ static void createTransGreasePencilVerts(bContext *C, TransInfo *t)
       bezier_curves[layer_offset] = bke::curves::indices_for_type(curves.curve_types(),
                                                                   curves.curve_type_counts(),
                                                                   CURVE_TYPE_BEZIER,
-                                                                  selected_editable_strokes,
+                                                                  editable_strokes,
                                                                   curves_transform_data->memory);
       /* Alter selection as in legacy curves bezt_select_to_transform_triple_flag(). */
       if (!bezier_curves[layer_offset].is_empty()) {
@@ -140,22 +140,13 @@ static void createTransGreasePencilVerts(bContext *C, TransInfo *t)
       }
 
       if (use_proportional_edit) {
-        Array<int> bezier_point_offset_data(bezier_curves[layer_offset].size() + 1);
-        const OffsetIndices<int> bezier_offsets = offset_indices::gather_selected_offsets(
-            curves.points_by_curve(), bezier_curves[layer_offset], bezier_point_offset_data);
+        const IndexMask bezier_points = bke::curves::curve_to_point_selection(
+            curves.points_by_curve(), bezier_curves[layer_offset], curves_transform_data->memory);
 
-        const int bezier_point_count = bezier_offsets.total_size();
-        tc.data_len += curves.points_num() + 2 * bezier_point_count;
+        tc.data_len += curves.points_num() + 2 * bezier_points.size();
         points_to_transform_per_attribute[layer_offset].append(curves.points_range());
 
-        if (bezier_point_count > 0) {
-          Vector<index_mask::IndexMask::Initializer> bezier_point_ranges;
-          const OffsetIndices<int> points_by_curve = curves.points_by_curve();
-          bezier_curves[layer_offset].foreach_index(GrainSize(512), [&](const int bezier_curve_i) {
-            bezier_point_ranges.append(points_by_curve[bezier_curve_i]);
-          });
-          IndexMask bezier_points = IndexMask::from_initializers(bezier_point_ranges,
-                                                                 curves_transform_data->memory);
+        if (selection_attribute_names.size() > 1) {
           points_to_transform_per_attribute[layer_offset].append(bezier_points);
           points_to_transform_per_attribute[layer_offset].append(bezier_points);
         }
@@ -195,10 +186,14 @@ static void createTransGreasePencilVerts(bContext *C, TransInfo *t)
     Span<const bke::greasepencil::Layer *> layers = grease_pencil.layers();
 
     const Vector<ed::greasepencil::MutableDrawingInfo> drawings = all_drawings[i];
-    for (ed::greasepencil::MutableDrawingInfo info : drawings) {
+    for (const int drawing : drawings.index_range()) {
+      ed::greasepencil::MutableDrawingInfo info = drawings[drawing];
       const bke::greasepencil::Layer &layer = *layers[info.layer_index];
       const float4x4 layer_space_to_world_space = layer.to_world_space(*object_eval);
       bke::CurvesGeometry &curves = info.drawing.strokes_for_write();
+      const bke::crazyspace::GeometryDeformation deformation =
+          bke::crazyspace::get_evaluated_grease_pencil_drawing_deformation(
+              *CTX_data_depsgraph_pointer(C), *object, info.layer_index, info.frame_number);
 
       std::optional<MutableSpan<float>> value_attribute;
       if (is_scale_thickness) {
@@ -214,14 +209,21 @@ static void createTransGreasePencilVerts(bContext *C, TransInfo *t)
                                              ed::greasepencil::retrieve_editable_strokes(
                                                  *object, info.drawing, info.layer_index, memory) :
                                              IndexMask();
+
+      CurvesTransformData &curves_transform_data = *static_cast<CurvesTransformData *>(
+          tc.custom.type.data);
+      curves_transform_data.grease_pencil_falloffs[drawing] = info.multi_frame_falloff;
+      float &drawing_falloff = curves_transform_data.grease_pencil_falloffs[drawing];
       curve_populate_trans_data_structs(tc,
                                         curves,
                                         layer_space_to_world_space,
+                                        deformation,
                                         value_attribute,
                                         points_to_transform_per_attribute[layer_offset],
                                         affected_strokes,
                                         use_connected_only,
-                                        bezier_curves[layer_offset]);
+                                        bezier_curves[layer_offset],
+                                        &drawing_falloff);
       layer_offset++;
     }
   }
@@ -251,15 +253,10 @@ static void recalcData_grease_pencil(TransInfo *t)
         /* No cache to update currently. */
       }
       else {
-        const std::array<MutableSpan<float3>, 3> positions_per_selection_attr = {
-            curves.positions_for_write(),
-            curves.handle_positions_left_for_write(),
-            curves.handle_positions_right_for_write()};
-        for (const int selection_i :
-             ed::curves::get_curves_selection_attribute_names(curves).index_range())
-        {
-          copy_positions_from_curves_transform_custom_data(
-              tc.custom.type, layer_i++, positions_per_selection_attr[selection_i]);
+        const Vector<MutableSpan<float3>> positions_per_selection_attr =
+            ed::curves::get_curves_positions_for_write(curves);
+        for (MutableSpan<float3> positions : positions_per_selection_attr) {
+          copy_positions_from_curves_transform_custom_data(tc.custom.type, layer_i++, positions);
         }
         curves.tag_positions_changed();
         curves.calculate_bezier_auto_handles();

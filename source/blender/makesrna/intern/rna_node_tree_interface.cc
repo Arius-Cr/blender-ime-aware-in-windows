@@ -30,6 +30,8 @@ static const EnumPropertyItem node_tree_interface_socket_in_out_items[] = {
 
 #  include <fmt/format.h>
 
+#  include "BLI_string_ref.hh"
+
 #  include "BKE_attribute.hh"
 #  include "BKE_node.hh"
 #  include "BKE_node_enum.hh"
@@ -71,10 +73,12 @@ static StructRNA *rna_NodeTreeInterfaceItem_refine(PointerRNA *ptr)
     case NODE_INTERFACE_SOCKET: {
       bNodeTreeInterfaceSocket &socket = node_interface::get_item_as<bNodeTreeInterfaceSocket>(
           *item);
-      blender::bke::bNodeSocketType *socket_typeinfo = blender::bke::node_socket_type_find(
-          socket.socket_type);
-      if (socket_typeinfo && socket_typeinfo->ext_interface.srna) {
-        return socket_typeinfo->ext_interface.srna;
+      if (socket.socket_type) {
+        blender::bke::bNodeSocketType *socket_typeinfo = blender::bke::node_socket_type_find(
+            socket.socket_type);
+        if (socket_typeinfo && socket_typeinfo->ext_interface.srna) {
+          return socket_typeinfo->ext_interface.srna;
+        }
       }
       return &RNA_NodeTreeInterfaceSocket;
     }
@@ -195,7 +199,7 @@ static void rna_NodeTreeInterfaceSocket_init_socket_custom(
     const bNodeTreeInterfaceSocket *interface_socket,
     bNode *node,
     bNodeSocket *socket,
-    const char *data_path)
+    const blender::StringRefNull data_path)
 {
   blender::bke::bNodeSocketType *typeinfo = blender::bke::node_socket_type_find(
       interface_socket->socket_type);
@@ -587,12 +591,6 @@ static bNodeTreeInterfaceItem *rna_NodeTreeInterfaceItems_copy_to_parent(
       BKE_report(reports, RPT_ERROR_INVALID_INPUT, "Parent is not part of the interface");
       return nullptr;
     }
-    if (item->item_type == NODE_INTERFACE_PANEL &&
-        !(parent->flag & NODE_INTERFACE_PANEL_ALLOW_CHILD_PANELS))
-    {
-      BKE_report(reports, RPT_WARNING, "Parent panel does not allow child panels");
-      return nullptr;
-    }
   }
 
   if (parent == nullptr) {
@@ -666,18 +664,11 @@ static void rna_NodeTreeInterfaceItems_move(ID *id,
 static void rna_NodeTreeInterfaceItems_move_to_parent(ID *id,
                                                       bNodeTreeInterface *interface,
                                                       Main *bmain,
-                                                      ReportList *reports,
+                                                      ReportList * /*reports*/,
                                                       bNodeTreeInterfaceItem *item,
                                                       bNodeTreeInterfacePanel *parent,
                                                       int to_position)
 {
-  if (item->item_type == NODE_INTERFACE_PANEL && parent &&
-      !(parent->flag & NODE_INTERFACE_PANEL_ALLOW_CHILD_PANELS))
-  {
-    BKE_report(reports, RPT_WARNING, "Parent panel does not allow child panels");
-    return;
-  }
-
   interface->move_item_to_parent(*item, parent, to_position);
 
   bNodeTree *ntree = reinterpret_cast<bNodeTree *>(id);

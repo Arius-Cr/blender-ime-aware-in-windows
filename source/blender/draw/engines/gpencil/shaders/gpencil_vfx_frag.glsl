@@ -2,7 +2,11 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
-#pragma BLENDER_REQUIRE(gpencil_common_lib.glsl)
+#include "infos/gpencil_vfx_info.hh"
+
+FRAGMENT_SHADER_CREATE_INFO(gpencil_fx_composite)
+
+#include "gpencil_common_lib.glsl"
 
 float gaussian_weight(float x)
 {
@@ -28,8 +32,8 @@ void main()
 
 #elif defined(COLORIZE)
 
-const mat3 sepia_mat = mat3(
-    vec3(0.393, 0.349, 0.272), vec3(0.769, 0.686, 0.534), vec3(0.189, 0.168, 0.131));
+#  define sepia_mat \
+    mat3(vec3(0.393, 0.349, 0.272), vec3(0.769, 0.686, 0.534), vec3(0.189, 0.168, 0.131))
 
 #  define MODE_GRAYSCALE 0
 #  define MODE_SEPIA 1

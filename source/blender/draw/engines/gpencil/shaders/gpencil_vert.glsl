@@ -2,7 +2,11 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
-#pragma BLENDER_REQUIRE(common_gpencil_lib.glsl)
+#include "infos/gpencil_info.hh"
+
+VERTEX_SHADER_CREATE_INFO(gpencil_geometry)
+
+#include "draw_grease_pencil_lib.glsl"
 
 void gpencil_color_output(vec4 stroke_col, vec4 vert_col, float vert_strength, float mix_tex)
 {
@@ -36,7 +40,7 @@ void main()
 
   ivec4 ma1 = floatBitsToInt(texelFetch(gp_pos_tx, gpencil_stroke_point_id() * 3 + 1));
   gpMaterial gp_mat = gp_materials[ma1.x + gpMaterialOffset];
-  gpMaterialFlag gp_flag = floatBitsToUint(gp_mat._flag);
+  gpMaterialFlag gp_flag = gpMaterialFlag(floatBitsToUint(gp_mat._flag));
 
   gl_Position = gpencil_vertex(vec4(viewportSize, 1.0 / viewportSize),
                                gp_flag,

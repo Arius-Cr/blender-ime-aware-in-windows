@@ -10,11 +10,14 @@
 
 #include "DNA_lightprobe_types.h"
 
-#include "overlay_next_private.hh"
+#include "overlay_next_base.hh"
 
 namespace blender::draw::overlay {
 
-class LightProbes {
+/**
+ * Draw light probe objects.
+ */
+class LightProbes : Overlay {
   using LightProbeInstanceBuf = ShapeInstanceBuf<ExtraInstanceData>;
   using GroundLineInstanceBuf = ShapeInstanceBuf<float4>;
   using DotsInstanceBuf = ShapeInstanceBuf<float4x4>;
@@ -42,8 +45,13 @@ class LightProbes {
  public:
   LightProbes(const SelectionType selection_type) : selection_type_(selection_type){};
 
-  void begin_sync(Resources &res, const State &state)
+  void begin_sync(Resources &res, const State &state) final
   {
+    enabled_ = state.is_space_v3d() && state.show_extras();
+    if (!enabled_) {
+      return;
+    }
+
     call_buffers_.ground_line_buf.clear();
     call_buffers_.probe_cube_buf.clear();
     call_buffers_.probe_planar_buf.clear();
@@ -56,26 +64,32 @@ class LightProbes {
     ps_dots_.init();
     ps_dots_.state_set(DRW_STATE_WRITE_COLOR, state.clipping_plane_count);
     ps_dots_.shader_set(res.shaders.extra_grid.get());
-    ps_dots_.bind_ubo("globalsBlock", &res.globals_buf);
+    ps_dots_.bind_ubo(OVERLAY_GLOBALS_SLOT, &res.globals_buf);
     ps_dots_.bind_texture("depthBuffer", &res.depth_tx);
     ps_dots_.push_constant("isTransform", (G.moving & G_TRANSFORM_OBJ) != 0);
     res.select_bind(ps_dots_);
   }
 
-  void object_sync(const ObjectRef &ob_ref, Resources &res, const State &state)
+  void object_sync(Manager & /*manager*/,
+                   const ObjectRef &ob_ref,
+                   Resources &res,
+                   const State &state) final
   {
+    if (!enabled_) {
+      return;
+    }
+
     const Object *ob = ob_ref.object;
     const LightProbe *prb = static_cast<LightProbe *>(ob_ref.object->data);
     const bool show_clipping = (prb->flag & LIGHTPROBE_FLAG_SHOW_CLIP_DIST) != 0;
     const bool show_parallax = (prb->flag & LIGHTPROBE_FLAG_SHOW_PARALLAX) != 0;
     const bool show_influence = (prb->flag & LIGHTPROBE_FLAG_SHOW_INFLUENCE) != 0;
-    const bool is_select = selection_type_ == SelectionType::ENABLED;
-    const bool show_data = (ob_ref.object->base_flag & BASE_SELECTED) || is_select;
+    const bool show_data = (ob_ref.object->base_flag & BASE_SELECTED) || res.is_selection();
 
     const select::ID select_id = res.select_id(ob_ref);
     const float4 color = res.object_wire_color(ob_ref, state);
     ExtraInstanceData data(ob->object_to_world(), color, 1.0f);
-    float4x4 &matrix = data.object_to_world_;
+    float4x4 &matrix = data.object_to_world;
     float &clip_start = matrix[2].w;
     float &clip_end = matrix[3].w;
     float &draw_size = matrix[3].w;
@@ -95,7 +109,7 @@ class LightProbes {
           const float f = 1.0f - prb->falloff;
           ExtraInstanceData data(ob->object_to_world(), color, prb->distinf);
           attenuation.append(data, select_id);
-          data.object_to_world_[3].w = prb->distinf * f;
+          data.object_to_world[3].w = prb->distinf * f;
           attenuation.append(data, select_id);
         }
 
@@ -150,7 +164,7 @@ class LightProbes {
       case LIGHTPROBE_TYPE_PLANE:
         call_buffers_.probe_planar_buf.append(data, select_id);
 
-        if (is_select && (prb->flag & LIGHTPROBE_FLAG_SHOW_DATA)) {
+        if (res.is_selection() && (prb->flag & LIGHTPROBE_FLAG_SHOW_DATA)) {
           call_buffers_.quad_solid_buf.append(data, select_id);
         }
 
@@ -171,9 +185,14 @@ class LightProbes {
     }
   }
 
-  void end_sync(Resources &res, ShapeCache &shapes, const State &state)
+  void end_sync(Resources &res, const State &state) final
   {
+    if (!enabled_) {
+      return;
+    }
+
     ps_.init();
+    ps_.bind_ubo(OVERLAY_GLOBALS_SLOT, &res.globals_buf);
     res.select_bind(ps_);
 
     DRWState pass_state = DRW_STATE_WRITE_COLOR | DRW_STATE_WRITE_DEPTH |
@@ -182,34 +201,49 @@ class LightProbes {
       PassSimple::Sub &sub_pass = ps_.sub("empties");
       sub_pass.state_set(pass_state, state.clipping_plane_count);
       sub_pass.shader_set(res.shaders.extra_shape.get());
-      sub_pass.bind_ubo("globalsBlock", &res.globals_buf);
-      call_buffers_.probe_cube_buf.end_sync(sub_pass, shapes.lightprobe_cube.get());
-      call_buffers_.probe_planar_buf.end_sync(sub_pass, shapes.lightprobe_planar.get());
-      call_buffers_.probe_grid_buf.end_sync(sub_pass, shapes.lightprobe_grid.get());
-      call_buffers_.quad_solid_buf.end_sync(sub_pass, shapes.quad_solid.get());
-      call_buffers_.cube_buf.end_sync(sub_pass, shapes.cube.get());
-      call_buffers_.sphere_buf.end_sync(sub_pass, shapes.empty_sphere.get());
-      call_buffers_.single_arrow_buf.end_sync(sub_pass, shapes.single_arrow.get());
+      call_buffers_.probe_cube_buf.end_sync(sub_pass, res.shapes.lightprobe_cube.get());
+      call_buffers_.probe_planar_buf.end_sync(sub_pass, res.shapes.lightprobe_planar.get());
+      call_buffers_.probe_grid_buf.end_sync(sub_pass, res.shapes.lightprobe_grid.get());
+      call_buffers_.quad_solid_buf.end_sync(sub_pass, res.shapes.quad_solid.get());
+      call_buffers_.cube_buf.end_sync(sub_pass, res.shapes.cube.get());
+      call_buffers_.sphere_buf.end_sync(sub_pass, res.shapes.empty_sphere.get());
+      call_buffers_.single_arrow_buf.end_sync(sub_pass, res.shapes.single_arrow.get());
     }
     {
       PassSimple::Sub &sub_pass = ps_.sub("ground_line");
       sub_pass.state_set(pass_state | DRW_STATE_BLEND_ALPHA, state.clipping_plane_count);
       sub_pass.shader_set(res.shaders.extra_ground_line.get());
-      sub_pass.bind_ubo("globalsBlock", &res.globals_buf);
-      call_buffers_.ground_line_buf.end_sync(sub_pass, shapes.ground_line.get());
+      call_buffers_.ground_line_buf.end_sync(sub_pass, res.shapes.ground_line.get());
     }
   }
 
-  void draw(Framebuffer &framebuffer, Manager &manager, View &view)
+  void pre_draw(Manager &manager, View &view) final
   {
+    if (!enabled_) {
+      return;
+    }
+
+    manager.generate_commands(ps_dots_, view);
+  }
+
+  void draw_line(Framebuffer &framebuffer, Manager &manager, View &view) final
+  {
+    if (!enabled_) {
+      return;
+    }
+
     GPU_framebuffer_bind(framebuffer);
     manager.submit(ps_, view);
   }
 
-  void draw_color_only(Framebuffer &framebuffer, Manager &manager, View &view)
+  void draw_color_only(Framebuffer &framebuffer, Manager &manager, View &view) final
   {
+    if (!enabled_) {
+      return;
+    }
+
     GPU_framebuffer_bind(framebuffer);
-    manager.submit(ps_dots_, view);
+    manager.submit_only(ps_dots_, view);
   }
 };
 

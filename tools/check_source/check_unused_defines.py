@@ -29,9 +29,9 @@ SOURCE_EXT = (
     ".glsl",
 )
 
-words = set()
-words_multi = set()
-defines = {}
+words: set[str] = set()
+words_multi: set[str] = set()
+defines: dict[str, str] = {}
 
 import re
 re_words = re.compile("[A-Za-z_][A-Za-z_0-9]*")
@@ -41,23 +41,24 @@ re_defines = re.compile("^\\s*#define\\s+([A-Za-z_][A-Za-z_0-9]*)", re.MULTILINE
 # https://stackoverflow.com/a/18381470/432509
 
 
-def remove_comments(string):
+def remove_comments(string: str) -> str:
     pattern = r"(\".*?\"|\'.*?\')|(/\*.*?\*/|//[^\r\n]*$)"
     # first group captures quoted strings (double or single)
     # second group captures comments (//single-line or /* multi-line */)
     regex = re.compile(pattern, re.MULTILINE | re.DOTALL)
 
-    def _replacer(match):
-        # if the 2nd group (capturing comments) is not None,
-        # it means we have captured a non-quoted (real) comment string.
-        if match.group(2) is not None:
-            return ""  # so we will return empty to remove the comment
-        else:  # otherwise, we will return the 1st group
-            return match.group(1)  # capture
+    def _replacer(m: re.Match[str]) -> str:
+        # If the 2nd group (capturing comments) is not None,
+        # It means we have captured a non-quoted (real) comment string.
+        if m.group(2) is not None:
+            # So we will return empty to remove the comment.
+            return ""
+        # Otherwise, we will return the 1st group.
+        return m.group(1)  # capture
     return regex.sub(_replacer, string)
 
 
-def extract_terms(fn, data_src):
+def extract_terms(fn: str, data_src: str) -> None:
     data_src_nocomments = remove_comments(data_src)
     for m in re_words.finditer(data_src_nocomments):
         words_len = len(words)
@@ -69,19 +70,25 @@ def extract_terms(fn, data_src):
     for m in re_defines.finditer(data_src_nocomments):
         defines[m.group(1)] = fn
 
-    # Don't edit the file.
-    return None
+    # Returning None indicates the file is not edited.
 
 
-run(
-    directories=[os.path.join(SOURCE_DIR, d) for d in SOURCE_DIRS],
-    is_text=lambda fn: fn.endswith(SOURCE_EXT),
-    text_operation=extract_terms,
-    # Can't be used if we want to accumulate in a global variable.
-    use_multiprocess=False,
-)
+def main() -> int:
+    run(
+        directories=[os.path.join(SOURCE_DIR, d) for d in SOURCE_DIRS],
+        is_text=lambda fn: fn.endswith(SOURCE_EXT),
+        text_operation=extract_terms,
+        # Can't be used if we want to accumulate in a global variable.
+        use_multiprocess=False,
+    )
 
-print("Found", len(defines), "defines, searching", len(words_multi), "terms...")
-for fn, define in sorted([(fn, define) for define, fn in defines.items()]):
-    if define not in words_multi:
-        print(define, "->", fn)
+    print("Found", len(defines), "defines, searching", len(words_multi), "terms...")
+    for fn, define in sorted([(fn, define) for define, fn in defines.items()]):
+        if define not in words_multi:
+            print(define, "->", fn)
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

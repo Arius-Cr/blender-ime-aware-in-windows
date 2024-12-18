@@ -28,7 +28,7 @@
 #include "BKE_context.hh"
 #include "BKE_curve.hh"
 #include "BKE_grease_pencil.hh"
-#include "BKE_image.h"
+#include "BKE_image.hh"
 #include "BKE_node_runtime.hh"
 #include "BKE_object.hh"
 #include "BKE_paint.hh"
@@ -61,6 +61,11 @@
  * removed eventually (TODO) */
 #include "sculpt_intern.hh"
 #include "sculpt_pose.hh"
+
+#include "bmesh.hh"
+
+/* Needed for determining tool material/vertex-color pinning. */
+#include "grease_pencil_intern.hh"
 
 /* TODOs:
  *
@@ -1524,17 +1529,16 @@ static void grease_pencil_brush_cursor_draw(PaintCursorContext *pcontext)
     return;
   }
 
-  /* Hide the cursor while drawing. */
-  if (grease_pencil->runtime->is_drawing_stroke) {
-    return;
-  }
-
   float3 color(1.0f);
   const int x = pcontext->x;
   const int y = pcontext->y;
 
-  /* for paint use paint brush size and color */
   if (pcontext->mode == PaintMode::GPencil) {
+    /* Hide the cursor while drawing. */
+    if (grease_pencil->runtime->is_drawing_stroke) {
+      return;
+    }
+
     /* Eraser has a special shape and uses a different shader program. */
     if (brush->gpencil_brush_type == GPAINT_BRUSH_TYPE_ERASE ||
         grease_pencil->runtime->temp_use_eraser)
@@ -1551,20 +1555,30 @@ static void grease_pencil_brush_cursor_draw(PaintCursorContext *pcontext)
       return;
     }
 
-    /* Hide the cursor while drawing. */
-    if (grease_pencil->runtime->is_drawing_stroke) {
-      return;
+    if (brush->gpencil_brush_type == GPAINT_BRUSH_TYPE_FILL) {
+      /* The fill tool doesn't use a brush size currently, but not showing any brush means that it
+       * can be hard to see where the cursor is. Use a fixed size that's not too big (10px). By
+       * disabling the "Display Cursor" option, this can still be turned off. */
+      pcontext->pixel_radius = 10;
     }
 
-    if (brush->gpencil_brush_type == GPAINT_BRUSH_TYPE_DRAW &&
-        (brush->flag & BRUSH_LOCK_SIZE) != 0)
-    {
-      const bke::greasepencil::Layer *layer = grease_pencil->get_active_layer();
-      const ed::greasepencil::DrawingPlacement placement(
-          *pcontext->scene, *pcontext->region, *pcontext->vc.v3d, *object, layer);
-      const float3 location = placement.project(float2(pcontext->x, pcontext->y));
-      pcontext->pixel_radius = project_brush_radius(
-          &pcontext->vc, brush->unprojected_radius, location);
+    if (brush->gpencil_brush_type == GPAINT_BRUSH_TYPE_TINT) {
+      pcontext->pixel_radius = brush->size;
+    }
+
+    if (brush->gpencil_brush_type == GPAINT_BRUSH_TYPE_DRAW) {
+      if ((brush->flag & BRUSH_LOCK_SIZE) != 0) {
+        const bke::greasepencil::Layer *layer = grease_pencil->get_active_layer();
+        const ed::greasepencil::DrawingPlacement placement(
+            *pcontext->scene, *pcontext->region, *pcontext->vc.v3d, *object, layer);
+        const float3 location = placement.project(float2(pcontext->x, pcontext->y));
+        pcontext->pixel_radius = project_brush_radius(
+            &pcontext->vc, brush->unprojected_radius, location);
+        brush->size = std::max(pcontext->pixel_radius, 1);
+      }
+      else {
+        pcontext->pixel_radius = brush->size;
+      }
     }
 
     /* Get current drawing material. */
@@ -1579,8 +1593,8 @@ static void grease_pencil_brush_cursor_draw(PaintCursorContext *pcontext)
           (brush->gpencil_brush_type == GPAINT_BRUSH_TYPE_DRAW))
       {
 
-        const bool use_vertex_color = (pcontext->scene->toolsettings->gp_paint->mode ==
-                                       GPPAINT_FLAG_USE_VERTEXCOLOR);
+        const bool use_vertex_color = ed::sculpt_paint::greasepencil::brush_using_vertex_color(
+            pcontext->scene->toolsettings->gp_paint, brush);
         const bool use_vertex_color_stroke = use_vertex_color &&
                                              ELEM(brush->gpencil_settings->vertex_mode,
                                                   GPPAINT_MODE_STROKE,
@@ -1596,7 +1610,7 @@ static void grease_pencil_brush_cursor_draw(PaintCursorContext *pcontext)
   }
   else if (pcontext->mode == PaintMode::VertexGPencil) {
     pcontext->pixel_radius = BKE_brush_size_get(pcontext->vc.scene, brush);
-    color = BKE_brush_color_get(pcontext->vc.scene, brush);
+    color = BKE_brush_color_get(pcontext->vc.scene, paint, brush);
   }
 
   GPU_line_width(1.0f);
@@ -1644,11 +1658,13 @@ static void paint_draw_3D_view_inactive_brush_cursor(PaintCursorContext *pcontex
                           pcontext->final_radius,
                           80);
   immUniformColor3fvAlpha(pcontext->outline_col, pcontext->outline_alpha * 0.35f);
-  imm_draw_circle_wire_3d(pcontext->pos,
-                          pcontext->translation[0],
-                          pcontext->translation[1],
-                          pcontext->final_radius * clamp_f(pcontext->brush->alpha, 0.0f, 1.0f),
-                          80);
+  imm_draw_circle_wire_3d(
+      pcontext->pos,
+      pcontext->translation[0],
+      pcontext->translation[1],
+      pcontext->final_radius *
+          clamp_f(BKE_brush_alpha_get(pcontext->scene, pcontext->brush), 0.0f, 1.0f),
+      80);
 }
 
 static void paint_cursor_update_object_space_radius(PaintCursorContext *pcontext)
@@ -1684,7 +1700,12 @@ static void paint_cursor_draw_main_inactive_cursor(PaintCursorContext *pcontext)
   GPU_line_width(1.0f);
   immUniformColor3fvAlpha(pcontext->outline_col, pcontext->outline_alpha * 0.5f);
   imm_draw_circle_wire_3d(
-      pcontext->pos, 0, 0, pcontext->radius * clamp_f(pcontext->brush->alpha, 0.0f, 1.0f), 80);
+      pcontext->pos,
+      0,
+      0,
+      pcontext->radius *
+          clamp_f(BKE_brush_alpha_get(pcontext->scene, pcontext->brush), 0.0f, 1.0f),
+      80);
 }
 
 static void paint_cursor_pose_brush_segments_draw(PaintCursorContext *pcontext)
@@ -2124,6 +2145,12 @@ static void paint_draw_cursor(bContext *C, int x, int y, void * /*unused*/)
   }
 
   if (!paint_cursor_is_brush_cursor_enabled(&pcontext)) {
+    /* For Grease Pencil draw mode, we want to we only render a small mouse cursor (dot) if the
+     * paint cursor is disabled so that the default mouse cursor doesn't get in the way of tablet
+     * users. See #130089. */
+    if (pcontext.mode == PaintMode::GPencil) {
+      WM_cursor_set(pcontext.win, WM_CURSOR_DOT);
+    }
     return;
   }
   if (paint_cursor_is_3d_view_navigating(&pcontext)) {

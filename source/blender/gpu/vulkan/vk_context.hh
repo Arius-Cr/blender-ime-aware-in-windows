@@ -36,12 +36,14 @@ class VKContext : public Context, NonCopyable {
   /* Reusable data. Stored inside context to limit reallocations. */
   render_graph::VKResourceAccessInfo access_info_ = {};
 
-  VKThreadData &thread_data_;
+  std::optional<std::reference_wrapper<VKThreadData>> thread_data_;
 
  public:
-  render_graph::VKRenderGraph &render_graph;
+  render_graph::VKRenderGraph render_graph;
 
-  VKContext(void *ghost_window, void *ghost_context, VKThreadData &thread_data);
+  VKContext(void *ghost_window,
+            void *ghost_context,
+            render_graph::VKResourceStateTracker &resources);
   virtual ~VKContext();
 
   void activate() override;
@@ -90,7 +92,7 @@ class VKContext : public Context, NonCopyable {
                             VKVertexAttributeObject &vao,
                             render_graph::VKPipelineData &r_pipeline_data);
 
-  void sync_backbuffer();
+  void sync_backbuffer(bool cycle_resource_pool);
 
   static VKContext *get()
   {

@@ -2,7 +2,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
-#ifndef GPU_SHADER
+#if !defined(GPU_SHADER) && !defined(GLSL_CPP_STUBS)
 #  pragma once
 
 #  include "GPU_shader_shared_utils.hh"
@@ -70,6 +70,7 @@ BLI_STATIC_ASSERT_ALIGN(OVERLAY_GridData, 16)
 #  define EDIT_CURVES_NURBS_CONTROL_POINT (1u)
 #  define EDIT_CURVES_BEZIER_HANDLE (1u << 1)
 #  define EDIT_CURVES_ACTIVE_HANDLE (1u << 2)
+#  define EDIT_CURVES_BEZIER_KNOT (1u << 3)
 #  define EDIT_CURVES_HANDLE_TYPES_SHIFT (4u)
 /* Keep the same values as in `draw_cache_imp_curve.c` */
 #  define ACTIVE_NURB (1u << 2)
@@ -80,6 +81,7 @@ BLI_STATIC_ASSERT_ALIGN(OVERLAY_GridData, 16)
 /* Keep the same value in `handle_display` in `DNA_view3d_types.h` */
 #  define CURVE_HANDLE_SELECTED 0u
 #  define CURVE_HANDLE_ALL 1u
+#  define CURVE_HANDLE_NONE 2u
 
 #  define GP_EDIT_POINT_SELECTED 1u  /* 1 << 0 */
 #  define GP_EDIT_STROKE_SELECTED 2u /* 1 << 1 */
@@ -211,14 +213,14 @@ BLI_STATIC_ASSERT_ALIGN(ThemeColorData, 16)
 
 struct ExtraInstanceData {
   float4 color_;
-  float4x4 object_to_world_;
+  float4x4 object_to_world;
 
 #if !defined(GPU_SHADER) && defined(__cplusplus)
   ExtraInstanceData(const float4x4 &object_to_world, const float4 &color, float draw_size)
   {
     this->color_ = color;
-    this->object_to_world_ = object_to_world;
-    this->object_to_world_[3][3] = draw_size;
+    this->object_to_world = object_to_world;
+    this->object_to_world[3][3] = draw_size;
   };
 
   ExtraInstanceData with_color(const float4 &color) const
@@ -237,11 +239,11 @@ struct ExtraInstanceData {
                     float angle_max_z)
   {
     this->color_ = color;
-    this->object_to_world_ = object_to_world;
-    this->object_to_world_[0][3] = angle_min_x;
-    this->object_to_world_[1][3] = angle_min_z;
-    this->object_to_world_[2][3] = angle_max_x;
-    this->object_to_world_[3][3] = angle_max_z;
+    this->object_to_world = object_to_world;
+    this->object_to_world[0][3] = angle_min_x;
+    this->object_to_world[1][3] = angle_min_z;
+    this->object_to_world[2][3] = angle_max_x;
+    this->object_to_world[3][3] = angle_max_z;
   };
 #endif
 };
@@ -274,6 +276,7 @@ BLI_STATIC_ASSERT_ALIGN(ParticlePointData, 16)
 struct BoneEnvelopeData {
   float4 head_sphere;
   float4 tail_sphere;
+  /* TODO(pragma37): wire width is never used in the shader. */
   float4 bone_color_and_wire_width;
   float4 state_color;
   float4 x_axis;

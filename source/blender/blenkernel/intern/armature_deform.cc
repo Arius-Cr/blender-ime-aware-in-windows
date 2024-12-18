@@ -637,7 +637,7 @@ void BKE_armature_deform_coords_with_curves(
     const Object &ob_target,
     const ListBase *defbase,
     blender::MutableSpan<blender::float3> vert_coords,
-    std::optional<blender::MutableSpan<blender::float3>> vert_coords_prev,
+    std::optional<blender::Span<blender::float3>> vert_coords_prev,
     std::optional<blender::MutableSpan<blender::float3x3>> vert_deform_mats,
     blender::Span<MDeformVert> dverts,
     int deformflag,
@@ -647,6 +647,9 @@ void BKE_armature_deform_coords_with_curves(
    * used for Grease Pencil layers as well. */
   BLI_assert(dverts.size() == vert_coords.size());
 
+  /* const_cast for old positions for the C API, these are not actually written. */
+  blender::float3 *vert_coords_prev_data = const_cast<blender::float3 *>(vert_coords_prev->data());
+
   armature_deform_coords_impl(
       &ob_arm,
       &ob_target,
@@ -655,7 +658,7 @@ void BKE_armature_deform_coords_with_curves(
       vert_deform_mats ? reinterpret_cast<float(*)[3][3]>(vert_deform_mats->data()) : nullptr,
       vert_coords.size(),
       deformflag,
-      vert_coords_prev ? reinterpret_cast<float(*)[3]>(vert_coords_prev->data()) : nullptr,
+      vert_coords_prev ? reinterpret_cast<float(*)[3]>(vert_coords_prev_data) : nullptr,
       defgrp_name.c_str(),
       dverts,
       nullptr,
@@ -672,7 +675,12 @@ void BKE_armature_deform_coords_with_mesh(const Object *ob_arm,
                                           const char *defgrp_name,
                                           const Mesh *me_target)
 {
-  const ListBase *defbase = BKE_id_defgroup_list_get(static_cast<const ID *>(ob_target->data));
+  /* Note armature modifier on legacy curves calls this, so vertex groups are not guaranteed to
+   * exist. */
+  const ID *id_target = static_cast<const ID *>(ob_target->data);
+  const ListBase *defbase = BKE_id_supports_vertex_groups(id_target) ?
+                                BKE_id_defgroup_list_get(id_target) :
+                                nullptr;
   blender::Span<MDeformVert> dverts;
   if (ob_target->type == OB_MESH) {
     if (me_target == nullptr) {

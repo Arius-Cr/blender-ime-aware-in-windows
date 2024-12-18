@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include "overlay_next_private.hh"
+#include "overlay_next_base.hh"
 
 namespace blender::draw::overlay {
 
-class Lights {
+class Lights : Overlay {
   using LightInstanceBuf = ShapeInstanceBuf<ExtraInstanceData>;
   using GroundLineInstanceBuf = ShapeInstanceBuf<float4>;
 
@@ -39,8 +39,13 @@ class Lights {
  public:
   Lights(const SelectionType selection_type) : selection_type_(selection_type){};
 
-  void begin_sync()
+  void begin_sync(Resources & /*res*/, const State &state) final
   {
+    enabled_ = state.is_space_v3d() && state.show_extras();
+    if (!enabled_) {
+      return;
+    }
+
     call_buffers_.ground_line_buf.clear();
     call_buffers_.icon_inner_buf.clear();
     call_buffers_.icon_outer_buf.clear();
@@ -54,15 +59,22 @@ class Lights {
     call_buffers_.area_square_buf.clear();
   }
 
-  void object_sync(const ObjectRef &ob_ref, Resources &res, const State &state)
+  void object_sync(Manager & /*manager*/,
+                   const ObjectRef &ob_ref,
+                   Resources &res,
+                   const State &state) final
   {
+    if (!enabled_) {
+      return;
+    }
+
     ExtraInstanceData data(ob_ref.object->object_to_world(),
                            float4(res.object_wire_color(ob_ref, state).xyz(), 1.0f),
                            1.0f);
     float4 &theme_color = data.color_;
 
     /* Pack render data into object matrix. */
-    float4x4 &matrix = data.object_to_world_;
+    float4x4 &matrix = data.object_to_world;
     float &area_size_x = matrix[0].w;
     float &area_size_y = matrix[1].w;
     float &spot_cosine = matrix[0].w;
@@ -83,7 +95,7 @@ class Lights {
     call_buffers_.ground_line_buf.append(float4(matrix.location()), select_id);
 
     const float4 light_color = {la.r, la.g, la.b, 1.0f};
-    const bool show_light_colors = state.overlay.flag & V3D_OVERLAY_SHOW_LIGHT_COLORS;
+    const bool show_light_colors = state.show_light_colors();
 
     /* Draw the outer ring of the light icon and the sun rays in `light_color`, if required. */
     call_buffers_.icon_outer_buf.append(data, select_id);
@@ -121,7 +133,7 @@ class Lights {
         /* HACK: We pack the area size in alpha color. This is decoded by the shader. */
         theme_color[3] = -max_ff(la.radius, FLT_MIN);
         call_buffers_.spot_buf.append(data, select_id);
-        if ((la.mode & LA_SHOW_CONE) && selection_type_ == SelectionType::DISABLED) {
+        if ((la.mode & LA_SHOW_CONE) && !res.is_selection()) {
           const float4 color_inside{0.0f, 0.0f, 0.0f, 0.5f};
           const float4 color_outside{1.0f, 1.0f, 1.0f, 0.3f};
           call_buffers_.spot_cone_front_buf.append(data.with_color(color_inside), select_id);
@@ -141,55 +153,61 @@ class Lights {
     }
   }
 
-  void end_sync(Resources &res, ShapeCache &shapes, const State &state)
+  void end_sync(Resources &res, const State &state) final
   {
+    if (!enabled_) {
+      return;
+    }
+
     const DRWState pass_state = DRW_STATE_WRITE_COLOR | DRW_STATE_WRITE_DEPTH |
                                 DRW_STATE_DEPTH_LESS_EQUAL;
     ps_.init();
+    ps_.bind_ubo(OVERLAY_GLOBALS_SLOT, &res.globals_buf);
     res.select_bind(ps_);
 
     {
       PassSimple::Sub &sub_pass = ps_.sub("spot_cone_front");
-      sub_pass.state_set(DRW_STATE_WRITE_COLOR | DRW_STATE_BLEND_ALPHA | DRW_STATE_CULL_FRONT,
+      sub_pass.state_set(DRW_STATE_WRITE_COLOR | DRW_STATE_BLEND_ALPHA |
+                             DRW_STATE_DEPTH_LESS_EQUAL | DRW_STATE_CULL_FRONT,
                          state.clipping_plane_count);
-      sub_pass.shader_set(res.shaders.extra_shape.get());
-      sub_pass.bind_ubo("globalsBlock", &res.globals_buf);
-      call_buffers_.spot_cone_front_buf.end_sync(sub_pass, shapes.light_spot_volume.get());
+      sub_pass.shader_set(res.shaders.light_spot_cone.get());
+      call_buffers_.spot_cone_front_buf.end_sync(sub_pass, res.shapes.light_spot_volume.get());
     }
     {
       PassSimple::Sub &sub_pass = ps_.sub("spot_cone_back");
       sub_pass.state_set(DRW_STATE_WRITE_COLOR | DRW_STATE_BLEND_ALPHA |
                              DRW_STATE_DEPTH_LESS_EQUAL | DRW_STATE_CULL_BACK,
                          state.clipping_plane_count);
-      sub_pass.shader_set(res.shaders.extra_shape.get());
-      sub_pass.bind_ubo("globalsBlock", &res.globals_buf);
-      call_buffers_.spot_cone_back_buf.end_sync(sub_pass, shapes.light_spot_volume.get());
+      sub_pass.shader_set(res.shaders.light_spot_cone.get());
+      call_buffers_.spot_cone_back_buf.end_sync(sub_pass, res.shapes.light_spot_volume.get());
     }
     {
       PassSimple::Sub &sub_pass = ps_.sub("light_shapes");
       sub_pass.state_set(pass_state, state.clipping_plane_count);
       sub_pass.shader_set(res.shaders.extra_shape.get());
-      sub_pass.bind_ubo("globalsBlock", &res.globals_buf);
-      call_buffers_.icon_inner_buf.end_sync(sub_pass, shapes.light_icon_outer_lines.get());
-      call_buffers_.icon_outer_buf.end_sync(sub_pass, shapes.light_icon_inner_lines.get());
-      call_buffers_.icon_sun_rays_buf.end_sync(sub_pass, shapes.light_icon_sun_rays.get());
-      call_buffers_.point_buf.end_sync(sub_pass, shapes.light_point_lines.get());
-      call_buffers_.sun_buf.end_sync(sub_pass, shapes.light_sun_lines.get());
-      call_buffers_.spot_buf.end_sync(sub_pass, shapes.light_spot_lines.get());
-      call_buffers_.area_disk_buf.end_sync(sub_pass, shapes.light_area_disk_lines.get());
-      call_buffers_.area_square_buf.end_sync(sub_pass, shapes.light_area_square_lines.get());
+      call_buffers_.icon_inner_buf.end_sync(sub_pass, res.shapes.light_icon_outer_lines.get());
+      call_buffers_.icon_outer_buf.end_sync(sub_pass, res.shapes.light_icon_inner_lines.get());
+      call_buffers_.icon_sun_rays_buf.end_sync(sub_pass, res.shapes.light_icon_sun_rays.get());
+      call_buffers_.point_buf.end_sync(sub_pass, res.shapes.light_point_lines.get());
+      call_buffers_.sun_buf.end_sync(sub_pass, res.shapes.light_sun_lines.get());
+      call_buffers_.spot_buf.end_sync(sub_pass, res.shapes.light_spot_lines.get());
+      call_buffers_.area_disk_buf.end_sync(sub_pass, res.shapes.light_area_disk_lines.get());
+      call_buffers_.area_square_buf.end_sync(sub_pass, res.shapes.light_area_square_lines.get());
     }
     {
       PassSimple::Sub &sub_pass = ps_.sub("ground_line");
       sub_pass.state_set(pass_state | DRW_STATE_BLEND_ALPHA, state.clipping_plane_count);
       sub_pass.shader_set(res.shaders.extra_ground_line.get());
-      sub_pass.bind_ubo("globalsBlock", &res.globals_buf);
-      call_buffers_.ground_line_buf.end_sync(sub_pass, shapes.ground_line.get());
+      call_buffers_.ground_line_buf.end_sync(sub_pass, res.shapes.ground_line.get());
     }
   }
 
-  void draw(Framebuffer &framebuffer, Manager &manager, View &view)
+  void draw_line(Framebuffer &framebuffer, Manager &manager, View &view) final
   {
+    if (!enabled_) {
+      return;
+    }
+
     GPU_framebuffer_bind(framebuffer);
     manager.submit(ps_, view);
   }

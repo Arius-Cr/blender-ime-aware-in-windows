@@ -78,7 +78,7 @@ static void node_composit_buts_keyingscreen(uiLayout *layout, bContext *C, Point
     uiItemPointerR(col, ptr, "tracking_object", &tracking_ptr, "objects", "", ICON_OBJECT_DATA);
   }
 
-  uiItemR(layout, ptr, "smoothness", UI_ITEM_NONE, nullptr, ICON_NONE);
+  uiItemR(layout, ptr, "smoothness", UI_ITEM_NONE, std::nullopt, ICON_NONE);
 }
 
 using namespace blender::realtime_compositor;
@@ -96,10 +96,15 @@ class KeyingScreenOperation : public NodeOperation {
       return;
     }
 
-    KeyingScreen &cached_keying_screen = context().cache_manager().keying_screens.get(
+    Result &cached_keying_screen = context().cache_manager().keying_screens.get(
         context(), get_movie_clip(), movie_tracking_object, get_smoothness());
 
-    keying_screen.wrap_external(cached_keying_screen.texture());
+    if (!cached_keying_screen.is_allocated()) {
+      keying_screen.allocate_invalid();
+      return;
+    }
+
+    keying_screen.wrap_external(cached_keying_screen);
   }
 
   Domain compute_domain() override

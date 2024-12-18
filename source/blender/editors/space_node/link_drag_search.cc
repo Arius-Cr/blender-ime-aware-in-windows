@@ -204,12 +204,16 @@ static void search_link_ops_for_asset_metadata(const bNodeTree &node_tree,
            Main &bmain = *CTX_data_main(&params.C);
 
            bNode &node = params.add_node(params.node_tree.typeinfo->group_idname);
-           node.flag &= ~NODE_OPTIONS;
 
-           node.id = asset::asset_local_id_ensure_imported(bmain, asset);
+           bNodeTree *group = reinterpret_cast<bNodeTree *>(
+               asset::asset_local_id_ensure_imported(bmain, asset));
+           node.id = &group->id;
            id_us_plus(node.id);
            BKE_ntree_update_tag_node_property(&params.node_tree, &node);
            DEG_relations_tag_update(&bmain);
+
+           node.flag &= ~NODE_OPTIONS;
+           node.width = group->default_group_node_width;
 
            /* Create the inputs and outputs on the new node. */
            nodes::update_node_declaration_and_sockets(params.node_tree, node);
@@ -370,10 +374,10 @@ static void link_drag_search_exec_fn(bContext *C, void *arg1, void *arg2)
   BLI_assert(new_nodes.size() == 1);
   bNode *new_node = new_nodes.first();
 
-  new_node->locx = storage.cursor.x / UI_SCALE_FAC;
-  new_node->locy = storage.cursor.y / UI_SCALE_FAC + 20;
+  new_node->location[0] = storage.cursor.x / UI_SCALE_FAC;
+  new_node->location[1] = storage.cursor.y / UI_SCALE_FAC + 20;
   if (storage.in_out() == SOCK_IN) {
-    new_node->locx -= new_node->width;
+    new_node->location[0] -= new_node->width;
   }
 
   bke::node_set_selected(new_node, true);

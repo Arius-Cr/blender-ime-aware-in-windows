@@ -11,6 +11,7 @@
 #include "DNA_windowmanager_types.h"
 
 #include "BKE_context.hh"
+#include "BKE_screen.hh"
 
 #include "ED_screen.hh"
 #include "ED_transform_snap_object_context.hh"
@@ -115,6 +116,11 @@ static void snapsource_confirm(TransInfo *t)
 
 static eRedrawFlag snapsource_handle_event_fn(TransInfo *t, const wmEvent *event)
 {
+  if (t->redraw) {
+    /* Event already handled. */
+    return TREDRAW_NOTHING;
+  }
+
   if (event->type == EVT_MODAL_MAP) {
     switch (event->val) {
       case TFM_MODAL_CONFIRM:
@@ -124,9 +130,6 @@ static eRedrawFlag snapsource_handle_event_fn(TransInfo *t, const wmEvent *event
           snapsource_confirm(t);
 
           BLI_assert(t->state != TRANS_CONFIRM);
-        }
-        else {
-          t->modifiers |= MOD_EDIT_SNAP_SOURCE;
         }
         break;
       case TFM_MODAL_CANCEL:
@@ -235,7 +238,7 @@ void transform_mode_snap_source_init(TransInfo *t, wmOperator * /*op*/)
 #endif
 
 #ifdef REMOVE_GIZMO
-  wmGizmo *gz = WM_gizmomap_get_modal(t->region->gizmo_map);
+  wmGizmo *gz = WM_gizmomap_get_modal(t->region->runtime->gizmo_map);
   if (gz) {
     const wmEvent *event = CTX_wm_window(t->context)->eventstate;
 #  ifdef RESET_TRANSFORMATION
@@ -245,13 +248,14 @@ void transform_mode_snap_source_init(TransInfo *t, wmOperator * /*op*/)
     }
 #  endif
 
-    WM_gizmo_modal_set_while_modal(t->region->gizmo_map, t->context, nullptr, event);
+    WM_gizmo_modal_set_while_modal(t->region->runtime->gizmo_map, t->context, nullptr, event);
   }
 #endif
 
   t->mouse.apply = nullptr;
   t->mouse.post = nullptr;
   t->mouse.use_virtual_mval = false;
+  t->modifiers |= MOD_EDIT_SNAP_SOURCE;
 }
 
 /** \} */

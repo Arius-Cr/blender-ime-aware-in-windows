@@ -22,6 +22,7 @@
 #include "BKE_editmesh.hh"
 #include "BKE_global.hh"
 #include "BKE_layer.hh"
+#include "BKE_screen.hh"
 #include "BKE_unit.hh"
 
 #include "RNA_access.hh"
@@ -290,8 +291,10 @@ static bool edbm_bevel_init(bContext *C, wmOperator *op, const bool is_modal)
       BMEditMesh *em = BKE_editmesh_from_object(obedit);
       ob_store.mesh_backup = EDBM_redo_state_store(em);
     }
-    opdata->draw_handle_pixel = ED_region_draw_cb_activate(
-        region->type, ED_region_draw_mouse_line_cb, opdata->mcenter, REGION_DRAW_POST_PIXEL);
+    opdata->draw_handle_pixel = ED_region_draw_cb_activate(region->runtime->type,
+                                                           ED_region_draw_mouse_line_cb,
+                                                           opdata->mcenter,
+                                                           REGION_DRAW_POST_PIXEL);
     G.moving = G_TRANSFORM_EDIT;
   }
 
@@ -408,7 +411,7 @@ static void edbm_bevel_exit(bContext *C, wmOperator *op)
     for (BevelObjectStore &ob_store : opdata->ob_store) {
       EDBM_redo_state_free(&ob_store.mesh_backup);
     }
-    ED_region_draw_cb_exit(region->type, opdata->draw_handle_pixel);
+    ED_region_draw_cb_exit(region->runtime->type, opdata->draw_handle_pixel);
     G.moving = 0;
   }
   MEM_delete(opdata);
@@ -897,20 +900,20 @@ static void edbm_bevel_ui(bContext *C, wmOperator *op)
   uiLayoutSetPropDecorate(layout, false);
 
   row = uiLayoutRow(layout, false);
-  uiItemR(row, op->ptr, "affect", UI_ITEM_R_EXPAND, nullptr, ICON_NONE);
+  uiItemR(row, op->ptr, "affect", UI_ITEM_R_EXPAND, std::nullopt, ICON_NONE);
 
   uiItemS(layout);
 
-  uiItemR(layout, op->ptr, "offset_type", UI_ITEM_NONE, nullptr, ICON_NONE);
+  uiItemR(layout, op->ptr, "offset_type", UI_ITEM_NONE, std::nullopt, ICON_NONE);
 
   if (offset_type == BEVEL_AMT_PERCENT) {
-    uiItemR(layout, op->ptr, "offset_pct", UI_ITEM_NONE, nullptr, ICON_NONE);
+    uiItemR(layout, op->ptr, "offset_pct", UI_ITEM_NONE, std::nullopt, ICON_NONE);
   }
   else {
-    uiItemR(layout, op->ptr, "offset", UI_ITEM_NONE, nullptr, ICON_NONE);
+    uiItemR(layout, op->ptr, "offset", UI_ITEM_NONE, std::nullopt, ICON_NONE);
   }
 
-  uiItemR(layout, op->ptr, "segments", UI_ITEM_NONE, nullptr, ICON_NONE);
+  uiItemR(layout, op->ptr, "segments", UI_ITEM_NONE, std::nullopt, ICON_NONE);
   if (ELEM(profile_type, BEVEL_PROFILE_SUPERELLIPSE, BEVEL_PROFILE_CUSTOM)) {
     uiItemR(layout,
             op->ptr,
@@ -919,12 +922,12 @@ static void edbm_bevel_ui(bContext *C, wmOperator *op)
             (profile_type == BEVEL_PROFILE_SUPERELLIPSE) ? IFACE_("Shape") : IFACE_("Miter Shape"),
             ICON_NONE);
   }
-  uiItemR(layout, op->ptr, "material", UI_ITEM_NONE, nullptr, ICON_NONE);
+  uiItemR(layout, op->ptr, "material", UI_ITEM_NONE, std::nullopt, ICON_NONE);
 
   col = uiLayoutColumn(layout, true);
-  uiItemR(col, op->ptr, "harden_normals", UI_ITEM_NONE, nullptr, ICON_NONE);
-  uiItemR(col, op->ptr, "clamp_overlap", UI_ITEM_NONE, nullptr, ICON_NONE);
-  uiItemR(col, op->ptr, "loop_slide", UI_ITEM_NONE, nullptr, ICON_NONE);
+  uiItemR(col, op->ptr, "harden_normals", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+  uiItemR(col, op->ptr, "clamp_overlap", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+  uiItemR(col, op->ptr, "loop_slide", UI_ITEM_NONE, std::nullopt, ICON_NONE);
 
   col = uiLayoutColumnWithHeading(layout, true, IFACE_("Mark"));
   uiLayoutSetActive(col, affect_type == BEVEL_AFFECT_EDGES);
@@ -938,7 +941,7 @@ static void edbm_bevel_ui(bContext *C, wmOperator *op)
   uiItemR(col, op->ptr, "miter_outer", UI_ITEM_NONE, IFACE_("Miter Outer"), ICON_NONE);
   uiItemR(col, op->ptr, "miter_inner", UI_ITEM_NONE, IFACE_("Inner"), ICON_NONE);
   if (RNA_enum_get(op->ptr, "miter_inner") == BEVEL_MITER_ARC) {
-    uiItemR(col, op->ptr, "spread", UI_ITEM_NONE, nullptr, ICON_NONE);
+    uiItemR(col, op->ptr, "spread", UI_ITEM_NONE, std::nullopt, ICON_NONE);
   }
 
   uiItemS(layout);
@@ -952,7 +955,7 @@ static void edbm_bevel_ui(bContext *C, wmOperator *op)
   uiItemS(layout);
 
   row = uiLayoutRow(layout, false);
-  uiItemR(row, op->ptr, "profile_type", UI_ITEM_R_EXPAND, nullptr, ICON_NONE);
+  uiItemR(row, op->ptr, "profile_type", UI_ITEM_R_EXPAND, std::nullopt, ICON_NONE);
   if (profile_type == BEVEL_PROFILE_CUSTOM) {
     /* Get an RNA pointer to ToolSettings to give to the curve profile template code. */
     Scene *scene = CTX_data_scene(C);

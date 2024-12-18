@@ -189,7 +189,7 @@ class QuickFur(ObjectModeOperator, Operator):
                 with context.temp_override(object=curves_object):
                     try:
                         bpy.ops.object.modifier_apply(modifier=generate_modifier.name)
-                    except BaseException:
+                    except Exception:
                         modifier_apply_error = True
 
             curves_object.modifiers.move(0, len(curves_object.modifiers) - 1)
@@ -312,8 +312,7 @@ class QuickExplode(ObjectModeOperator, Operator):
                 explode.particle_uv = uv.name
 
                 mat = object_ensure_material(obj, "Explode Fade")
-                mat.blend_method = 'BLEND'
-                mat.shadow_method = 'HASHED'
+                mat.surface_render_method = 'DITHERED'
                 if not mat.use_nodes:
                     mat.use_nodes = True
 

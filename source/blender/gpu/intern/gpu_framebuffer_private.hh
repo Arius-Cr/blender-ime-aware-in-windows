@@ -61,8 +61,7 @@ inline GPUAttachmentType &operator--(GPUAttachmentType &a)
   return a;
 }
 
-namespace blender {
-namespace gpu {
+namespace blender::gpu {
 
 #ifndef NDEBUG
 #  define DEBUG_NAME_LEN 64
@@ -88,9 +87,11 @@ class FrameBuffer {
   bool dirty_state_ = true;
   /* Flag specifying the current bind operation should use explicit load-store state. */
   bool use_explicit_load_store_ = false;
+  /** Bit-set indicating the color attachments slots in use. */
+  uint16_t color_attachments_bits_ = 0;
 
-#ifndef GPU_NO_USE_PY_REFERENCES
  public:
+#ifndef GPU_NO_USE_PY_REFERENCES
   /**
    * Reference of a pointer that needs to be cleaned when deallocating the frame-buffer.
    * Points to #BPyGPUFrameBuffer.fb
@@ -98,7 +99,6 @@ class FrameBuffer {
   void **py_ref = nullptr;
 #endif
 
- public:
   FrameBuffer(const char *name);
   virtual ~FrameBuffer();
 
@@ -132,6 +132,14 @@ class FrameBuffer {
  protected:
   virtual void subpass_transition_impl(const GPUAttachmentState depth_attachment_state,
                                        Span<GPUAttachmentState> color_attachment_states) = 0;
+
+  inline void set_color_attachment_bit(GPUAttachmentType type, bool value)
+  {
+    if (type >= GPU_FB_COLOR_ATTACHMENT0) {
+      int color_index = type - GPU_FB_COLOR_ATTACHMENT0;
+      SET_FLAG_FROM_TEST(color_attachments_bits_, value, 1u << color_index);
+    }
+  }
 
  public:
   void subpass_transition(const GPUAttachmentState depth_attachment_state,
@@ -238,7 +246,7 @@ class FrameBuffer {
     return attachments_[GPU_FB_COLOR_ATTACHMENT0 + slot].tex;
   };
 
-  inline const char *const name_get() const
+  inline const char *name_get() const
   {
     return name_;
   };
@@ -251,6 +259,11 @@ class FrameBuffer {
   inline bool get_use_explicit_loadstore() const
   {
     return use_explicit_load_store_;
+  }
+
+  inline uint16_t get_color_attachments_bitset()
+  {
+    return color_attachments_bits_;
   }
 };
 
@@ -270,5 +283,4 @@ static inline const FrameBuffer *unwrap(const GPUFrameBuffer *vert)
 
 #undef DEBUG_NAME_LEN
 
-}  // namespace gpu
-}  // namespace blender
+}  // namespace blender::gpu

@@ -20,18 +20,16 @@ from bpy.props import (
 # Local Utility Functions
 
 def is_face_uv_selected(face, uv_layer, any_edge):
-    """
-    Returns True if the face is UV selected.
-
-    :arg face: the face to query.
-    :type face: :class:`BMFace`
-    :arg uv_layer: the UV layer to source UVs from.
-    :type bmesh: :class:`BMLayerItem`
-    :arg any_edge: use edge selection instead of vertex selection.
-    :type any_edge: bool
-    :return: True if the face is UV selected.
-    :rtype: bool
-    """
+    # Returns True if the face is UV selected.
+    #
+    # :arg face: the face to query.
+    # :type face: :class:`BMFace`
+    # :arg uv_layer: the UV layer to source UVs from.
+    # :type bmesh: :class:`BMLayerItem`
+    # :arg any_edge: use edge selection instead of vertex selection.
+    # :type any_edge: bool
+    # :return: True if the face is UV selected.
+    # :rtype: bool
 
     if not face.select:  # Geometry selection
         return False
@@ -54,18 +52,16 @@ def is_face_uv_selected(face, uv_layer, any_edge):
 
 
 def is_island_uv_selected(island, uv_layer, any_edge):
-    """
-    Returns True if the island is UV selected.
-
-    :arg island: list of faces to query.
-    :type island: sequence of :class:`BMFace`.
-    :arg uv_layer: the UV layer to source UVs from.
-    :type bmesh: :class:`BMLayerItem`
-    :arg any_edge: use edge selection instead of vertex selection.
-    :type any_edge: bool
-    :return: list of lists containing polygon indices.
-    :rtype: bool
-    """
+    # Returns True if the island is UV selected.
+    #
+    # :arg island: list of faces to query.
+    # :type island: Sequence[:class:`BMFace`]
+    # :arg uv_layer: the UV layer to source UVs from.
+    # :type bmesh: :class:`BMLayerItem`
+    # :arg any_edge: use edge selection instead of vertex selection.
+    # :type any_edge: bool
+    # :return: list of lists containing polygon indices.
+    # :rtype: bool
     for face in island:
         if is_face_uv_selected(face, uv_layer, any_edge):
             return True
@@ -73,15 +69,13 @@ def is_island_uv_selected(island, uv_layer, any_edge):
 
 
 def island_uv_bounds(island, uv_layer):
-    """
-    The UV bounds of UV island.
-
-    :arg island: list of faces to query.
-    :type island: sequence of :class:`BMFace`.
-    :arg uv_layer: the UV layer to source UVs from.
-    :return: U-min, V-min, U-max, V-max.
-    :rtype: list
-    """
+    # The UV bounds of UV island.
+    #
+    # :arg island: list of faces to query.
+    # :type island: Sequence[:class:`BMFace`]
+    # :arg uv_layer: the UV layer to source UVs from.
+    # :return: U-min, V-min, U-max, V-max.
+    # :rtype: list[float]
     minmax = [1e30, 1e30, -1e30, -1e30]
     for face in island:
         for loop in face.loops:
@@ -94,15 +88,13 @@ def island_uv_bounds(island, uv_layer):
 
 
 def island_uv_bounds_center(island, uv_layer):
-    """
-    The UV bounds center of UV island.
-
-    :arg island: list of faces to query.
-    :type island: sequence of :class:`BMFace`.
-    :arg uv_layer: the UV layer to source UVs from.
-    :return: U, V center.
-    :rtype: tuple
-    """
+    # The UV bounds center of UV island.
+    #
+    # :arg island: list of faces to query.
+    # :type island: Sequence[:class:`BMFace`]
+    # :arg uv_layer: the UV layer to source UVs from.
+    # :return: U, V center.
+    # :rtype: tuple[float, float]
     minmax = island_uv_bounds(island, uv_layer)
     return (
         (minmax[0] + minmax[2]) / 2.0,
@@ -225,7 +217,7 @@ def align_uv_rotation_island(bm, uv_layer, faces, method, axis, aspect_y):
     return True
 
 
-def align_uv_rotation_bmesh(mesh, bm, method, axis, aspect_y):
+def align_uv_rotation_bmesh(bm, method, axis, aspect_y):
     import bpy_extras.bmesh_utils
 
     uv_layer = bm.loops.layers.uv.active
@@ -268,7 +260,7 @@ def align_uv_rotation(context, method, axis, correct_aspect):
     for ob in ob_list:
         bm = bmesh.from_edit_mesh(ob.data)
         if bm.loops.layers.uv:
-            if align_uv_rotation_bmesh(ob.data, bm, method, axis, aspect_y):
+            if align_uv_rotation_bmesh(bm, method, axis, aspect_y):
                 bmesh.update_edit_mesh(ob.data)
 
     return {'FINISHED'}

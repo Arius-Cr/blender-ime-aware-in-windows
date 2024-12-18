@@ -874,7 +874,7 @@ bool bc_has_animations(Object *ob)
   }
 
   Key *key = BKE_key_from_object(ob);
-  if (blender::animrig::legacy::assigned_action_has_keyframes(key->adt)) {
+  if (key && blender::animrig::legacy::assigned_action_has_keyframes(key->adt)) {
     return true;
   }
 
@@ -1123,8 +1123,8 @@ static bNode *bc_add_node(
     if (label.length() > 0) {
       STRNCPY(node->label, label.c_str());
     }
-    node->locx = locx;
-    node->locy = locy;
+    node->location[0] = locx;
+    node->location[1] = locy;
     node->flag |= NODE_SELECT;
   }
   return node;

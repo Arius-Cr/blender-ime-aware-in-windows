@@ -12,7 +12,6 @@
 #include "mtl_backend.hh"
 #include "mtl_batch.hh"
 #include "mtl_context.hh"
-#include "mtl_drawlist.hh"
 #include "mtl_framebuffer.hh"
 #include "mtl_immediate.hh"
 #include "mtl_index_buffer.hh"
@@ -28,6 +27,7 @@
 #include <Cocoa/Cocoa.h>
 #include <Metal/Metal.h>
 #include <QuartzCore/QuartzCore.h>
+#include <sys/sysctl.h>
 
 namespace blender::gpu {
 
@@ -51,11 +51,6 @@ Context *MTLBackend::context_alloc(void *ghost_window, void *ghost_context)
 Batch *MTLBackend::batch_alloc()
 {
   return new MTLBatch();
-};
-
-DrawList *MTLBackend::drawlist_alloc(int list_length)
-{
-  return new MTLDrawList(list_length);
 };
 
 Fence *MTLBackend::fence_alloc()
@@ -136,7 +131,7 @@ void MTLBackend::render_end()
   }
 }
 
-void MTLBackend::render_step()
+void MTLBackend::render_step(bool force_resource_release)
 {
   /* NOTE(Metal): Primarily called from main thread, but below data-structures
    * and operations are thread-safe, and GPUContext rendering coordination
@@ -153,6 +148,11 @@ void MTLBackend::render_step()
       MTLContext::get_global_memory_manager()->get_current_safe_list();
   if (cmd_free_buffer_list->should_flush()) {
     MTLContext::get_global_memory_manager()->begin_new_safe_list();
+  }
+
+  if (force_resource_release && g_autoreleasepool) {
+    [g_autoreleasepool drain];
+    g_autoreleasepool = [[NSAutoreleasePool alloc] init];
   }
 }
 
@@ -285,6 +285,62 @@ bool supports_barycentric_whitelist(id<MTLDevice> device)
   return supported_gpu && should_support_barycentrics;
 }
 
+bool is_apple_sillicon(id<MTLDevice> device)
+{
+  NSString *gpu_name = [device name];
+  BLI_assert([gpu_name length]);
+
+  const char *vendor = [gpu_name UTF8String];
+
+  /* Known good configs. */
+  return (strstr(vendor, "Apple") || strstr(vendor, "APPLE"));
+}
+
+static int get_num_performance_cpu_cores(id<MTLDevice> device)
+{
+  const int SYSCTL_BUF_LENGTH = 16;
+  int num_performance_cores = -1;
+  unsigned char sysctl_buffer[SYSCTL_BUF_LENGTH];
+  size_t sysctl_buffer_length = SYSCTL_BUF_LENGTH;
+
+  if (is_apple_sillicon(device)) {
+    /* On Apple Silicon query the number of performance cores */
+    if (sysctlbyname(
+            "hw.perflevel0.logicalcpu", &sysctl_buffer, &sysctl_buffer_length, nullptr, 0) == 0)
+    {
+      num_performance_cores = sysctl_buffer[0];
+    }
+  }
+  else {
+    /* On Intel just return the logical core count */
+    if (sysctlbyname("hw.logicalcpu", &sysctl_buffer, &sysctl_buffer_length, nullptr, 0) == 0) {
+      num_performance_cores = sysctl_buffer[0];
+    }
+  }
+  BLI_assert(num_performance_cores != -1);
+  return num_performance_cores;
+}
+
+static int get_num_efficiency_cpu_cores(id<MTLDevice> device)
+{
+  if (is_apple_sillicon(device)) {
+    /* On Apple Silicon query the number of efficiency cores */
+    const int SYSCTL_BUF_LENGTH = 16;
+    int num_efficiency_cores = -1;
+    unsigned char sysctl_buffer[SYSCTL_BUF_LENGTH];
+    size_t sysctl_buffer_length = SYSCTL_BUF_LENGTH;
+    if (sysctlbyname(
+            "hw.perflevel1.logicalcpu", &sysctl_buffer, &sysctl_buffer_length, nullptr, 0) == 0)
+    {
+      num_efficiency_cores = sysctl_buffer[0];
+    }
+
+    BLI_assert(num_efficiency_cores != -1);
+    return num_efficiency_cores;
+  }
+  return 0;
+}
+
 bool MTLBackend::metal_is_supported()
 {
   /* Device compatibility information using Metal Feature-set tables.
@@ -392,6 +448,10 @@ void MTLBackend::capabilities_init(MTLContext *ctx)
   }
 #endif
 
+  /* CPU Info */
+  MTLBackend::capabilities.num_performance_cores = get_num_performance_cpu_cores(ctx->device);
+  MTLBackend::capabilities.num_efficiency_cores = get_num_efficiency_cpu_cores(ctx->device);
+
   /* Common Global Capabilities. */
   GCaps.max_texture_size = ([device supportsFamily:MTLGPUFamilyApple3] ||
                             MTLBackend::capabilities.supports_family_mac1) ?
@@ -430,10 +490,14 @@ void MTLBackend::capabilities_init(MTLContext *ctx)
 
   GCaps.geometry_shader_support = false;
 
+  /* Compile shaders on performance cores but leave one free so UI is still responsive */
+  GCaps.max_parallel_compilations = MTLBackend::capabilities.num_performance_cores - 1;
+
   /* Maximum buffer bindings: 31. Consider required slot for uniforms/UBOs/Vertex attributes.
    * Can use argument buffers if a higher limit is required. */
   GCaps.max_shader_storage_buffer_bindings = 14;
   GCaps.max_storage_buffer_size = size_t(ctx->device.maxBufferLength);
+  GCaps.storage_buffer_alignment = 256; /* TODO(fclem): But also unused. */
 
   GCaps.max_work_group_count[0] = 65535;
   GCaps.max_work_group_count[1] = 65535;
@@ -458,7 +522,6 @@ void MTLBackend::capabilities_init(MTLContext *ctx)
   GCaps.depth_blitting_workaround = false;
   GCaps.use_main_context_workaround = false;
   GCaps.broken_amd_driver = false;
-  GCaps.clear_viewport_workaround = true;
 
   /* Metal related workarounds. */
   /* Minimum per-vertex stride is 4 bytes in Metal.

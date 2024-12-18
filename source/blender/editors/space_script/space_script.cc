@@ -43,14 +43,14 @@ static SpaceLink *script_create(const ScrArea * /*area*/, const Scene * /*scene*
   sscript->spacetype = SPACE_SCRIPT;
 
   /* header */
-  region = static_cast<ARegion *>(MEM_callocN(sizeof(ARegion), "header for script"));
+  region = BKE_area_region_new();
 
   BLI_addtail(&sscript->regionbase, region);
   region->regiontype = RGN_TYPE_HEADER;
   region->alignment = (U.uiflag & USER_HEADER_BOTTOM) ? RGN_ALIGN_BOTTOM : RGN_ALIGN_TOP;
 
   /* main region */
-  region = static_cast<ARegion *>(MEM_callocN(sizeof(ARegion), "main region for script"));
+  region = BKE_area_region_new();
 
   BLI_addtail(&sscript->regionbase, region);
   region->regiontype = RGN_TYPE_WINDOW;
@@ -95,7 +95,7 @@ static void script_main_region_init(wmWindowManager *wm, ARegion *region)
 
   /* own keymap */
   keymap = WM_keymap_ensure(wm->defaultconf, "Script", SPACE_SCRIPT, RGN_TYPE_WINDOW);
-  WM_event_add_keymap_handler_v2d_mask(&region->handlers, keymap);
+  WM_event_add_keymap_handler_v2d_mask(&region->runtime->handlers, keymap);
 }
 
 static void script_main_region_draw(const bContext *C, ARegion *region)

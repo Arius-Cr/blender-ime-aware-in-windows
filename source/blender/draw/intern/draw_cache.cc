@@ -387,6 +387,7 @@ static blender::gpu::VertBuf *sphere_wire_vbo(const float rad, int flag)
 }
 
 /* Quads */
+
 blender::gpu::Batch *DRW_cache_fullscreen_quad_get()
 {
   if (!SHC.drw_fullscreen_quad) {
@@ -890,8 +891,6 @@ blender::gpu::Batch *DRW_cache_object_face_wireframe_get(const Scene *scene, Obj
       return DRW_pointcloud_batch_cache_get_dots(ob);
     case OB_VOLUME:
       return DRW_cache_volume_face_wireframe_get(ob);
-    case OB_GPENCIL_LEGACY:
-      return DRW_cache_gpencil_face_wireframe_get(ob);
     case OB_GREASE_PENCIL:
       return DRW_cache_grease_pencil_face_wireframe_get(scene, ob);
     default:
@@ -961,8 +960,6 @@ int DRW_cache_object_material_count_get(const Object *ob)
       return DRW_pointcloud_material_count_get(static_cast<const PointCloud *>(ob->data));
     case OB_VOLUME:
       return DRW_volume_material_count_get(static_cast<const Volume *>(ob->data));
-    case OB_GPENCIL_LEGACY:
-      return DRW_gpencil_material_count_get(static_cast<const bGPdata *>(ob->data));
     default:
       BLI_assert(0);
       return 0;
@@ -3233,8 +3230,8 @@ blender::gpu::Batch *DRW_cache_cursor_get(bool crosshair_lines)
     const int vert_len = segments + 8;
     const int index_len = vert_len + 5;
 
-    const uchar red[3] = {255, 0, 0};
-    const uchar white[3] = {255, 255, 255};
+    const float red[3] = {1.0f, 0.0f, 0.0f};
+    const float white[3] = {1.0f, 1.0f, 1.0f};
 
     static GPUVertFormat format = {0};
     static struct {
@@ -3242,8 +3239,7 @@ blender::gpu::Batch *DRW_cache_cursor_get(bool crosshair_lines)
     } attr_id;
     if (format.attr_len == 0) {
       attr_id.pos = GPU_vertformat_attr_add(&format, "pos", GPU_COMP_F32, 2, GPU_FETCH_FLOAT);
-      attr_id.color = GPU_vertformat_attr_add(
-          &format, "color", GPU_COMP_U8, 3, GPU_FETCH_INT_TO_FLOAT_UNIT);
+      attr_id.color = GPU_vertformat_attr_add(&format, "color", GPU_COMP_F32, 3, GPU_FETCH_FLOAT);
     }
 
     GPUIndexBufBuilder elb;
@@ -3266,9 +3262,10 @@ blender::gpu::Batch *DRW_cache_cursor_get(bool crosshair_lines)
     GPU_indexbuf_add_generic_vert(&elb, 0);
 
     if (crosshair_lines) {
-      uchar crosshair_color[3];
-      UI_GetThemeColor3ubv(TH_VIEW_OVERLAY, crosshair_color);
+      float crosshair_color[3];
+      UI_GetThemeColor3fv(TH_VIEW_OVERLAY, crosshair_color);
 
+      /* TODO(fclem): Remove primitive restart. Incompatible with wide lines. */
       GPU_indexbuf_add_primitive_restart(&elb);
 
       GPU_vertbuf_attr_set(vbo, attr_id.pos, v, blender::float2{-f20, 0});
@@ -3364,7 +3361,7 @@ void drw_batch_cache_generate_requested(Object *ob)
   const bool use_hide = ((ob->type == OB_MESH) &&
                          ((is_paint_mode && (ob == draw_ctx->obact) &&
                            DRW_object_use_hide_faces(ob)) ||
-                          ((mode == CTX_MODE_EDIT_MESH) && DRW_object_is_in_edit_mode(ob))));
+                          ((mode == CTX_MODE_EDIT_MESH) && (ob->mode == OB_MODE_EDIT))));
 
   switch (ob->type) {
     case OB_MESH:
@@ -3403,7 +3400,7 @@ void drw_batch_cache_generate_requested_evaluated_mesh_or_curve(Object *ob)
   const bool use_hide = ((ob->type == OB_MESH) &&
                          ((is_paint_mode && (ob == draw_ctx->obact) &&
                            DRW_object_use_hide_faces(ob)) ||
-                          ((mode == CTX_MODE_EDIT_MESH) && DRW_object_is_in_edit_mode(ob))));
+                          ((mode == CTX_MODE_EDIT_MESH) && (ob->mode == OB_MODE_EDIT))));
 
   Mesh *mesh = BKE_object_get_evaluated_mesh_no_subsurf_unchecked(ob);
   /* Try getting the mesh first and if that fails, try getting the curve data.

@@ -9,7 +9,7 @@
 #include "DNA_brush_types.h"
 
 #include "BKE_mesh.hh"
-#include "BKE_pbvh.hh"
+#include "BKE_paint_bvh.hh"
 #include "BKE_subdiv_ccg.hh"
 
 #include "BLI_enumerable_thread_specific.hh"
@@ -19,6 +19,8 @@
 #include "editors/sculpt_paint/sculpt_face_set.hh"
 #include "editors/sculpt_paint/sculpt_intern.hh"
 #include "editors/sculpt_paint/sculpt_undo.hh"
+
+#include "bmesh.hh"
 
 namespace blender::ed::sculpt_paint {
 inline namespace draw_face_sets_cc {
@@ -87,7 +89,7 @@ BLI_NOINLINE static void fill_factor_from_hide_and_mask(const Mesh &mesh,
     r_factors.fill(1.0f);
   }
 
-  if (const VArray hide_poly = *attributes.lookup<bool>(".hide_poly", bke::AttrDomain::Point)) {
+  if (const VArray hide_poly = *attributes.lookup<bool>(".hide_poly", bke::AttrDomain::Face)) {
     const VArraySpan span(hide_poly);
     for (const int i : face_indices.index_range()) {
       if (span[face_indices[i]]) {

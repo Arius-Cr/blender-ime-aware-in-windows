@@ -15,7 +15,11 @@
  * - Separated foreground and background CoC. 1/8th of half-res resolution. So 1/16th of full-res.
  */
 
-#pragma BLENDER_REQUIRE(eevee_depth_of_field_lib.glsl)
+#include "infos/eevee_depth_of_field_info.hh"
+
+COMPUTE_SHADER_CREATE_INFO(eevee_depth_of_field_tiles_flatten)
+
+#include "eevee_depth_of_field_lib.glsl"
 
 /**
  * In order to use atomic operations, we have to use uints. But this means having to deal with the
@@ -29,7 +33,7 @@ shared uint bg_min_coc;
 shared uint bg_max_coc;
 shared uint bg_min_intersectable_coc;
 
-uint dof_tile_large_coc_uint = floatBitsToUint(dof_tile_large_coc);
+#define dof_tile_large_coc_uint floatBitsToUint(dof_tile_large_coc)
 
 void main()
 {

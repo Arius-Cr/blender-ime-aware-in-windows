@@ -8,16 +8,20 @@
 /* Step 2 : Evaluate all light scattering for each froxels.
  * Also do the temporal reprojection to fight aliasing artifacts. */
 
-#pragma BLENDER_REQUIRE(gpu_shader_math_vector_lib.glsl)
+#include "infos/eevee_volume_info.hh"
+
+COMPUTE_SHADER_CREATE_INFO(eevee_volume_scatter)
+
+#include "gpu_shader_math_vector_lib.glsl"
 
 /* Included here to avoid requiring lightprobe resources for all volume lib users. */
-#pragma BLENDER_REQUIRE(eevee_lightprobe_eval_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_volume_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_sampling_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_colorspace_lib.glsl)
+#include "eevee_colorspace_lib.glsl"
+#include "eevee_lightprobe_eval_lib.glsl"
+#include "eevee_sampling_lib.glsl"
+#include "eevee_volume_lib.glsl"
 
-#pragma BLENDER_REQUIRE(eevee_volume_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_sampling_lib.glsl)
+#include "eevee_sampling_lib.glsl"
+#include "eevee_volume_lib.glsl"
 
 #ifdef VOLUME_LIGHTING
 
@@ -80,23 +84,25 @@ void main()
   }
 
   /* Emission. */
-  vec3 scattering = imageLoad(in_emission_img, froxel).rgb;
-  vec3 extinction = imageLoad(in_extinction_img, froxel).rgb;
-  vec3 s_scattering = imageLoad(in_scattering_img, froxel).rgb;
+  vec3 scattering = imageLoadFast(in_emission_img, froxel).rgb;
+  vec3 extinction = imageLoadFast(in_extinction_img, froxel).rgb;
+
+#ifdef VOLUME_LIGHTING
+  vec3 s_scattering = imageLoadFast(in_scattering_img, froxel).rgb;
 
   float offset = sampling_rng_1D_get(SAMPLING_VOLUME_W);
   float jitter = volume_froxel_jitter(froxel.xy, offset);
   vec3 uvw = (vec3(froxel) + vec3(0.5, 0.5, 0.5 - jitter)) * uniform_buf.volumes.inv_tex_size;
   vec3 vP = volume_jitter_to_view(uvw);
+
   vec3 P = drw_point_view_to_world(vP);
   vec3 V = drw_world_incident_vector(P);
 
-  float phase = imageLoad(in_phase_img, froxel).r;
-  float phase_weight = imageLoad(in_phase_weight_img, froxel).r;
+  float phase = imageLoadFast(in_phase_img, froxel).r;
+  float phase_weight = imageLoadFast(in_phase_weight_img, froxel).r;
   /* Divide by phase total weight, to compute the mean anisotropy. */
   float s_anisotropy = phase / max(1.0, phase_weight);
 
-#ifdef VOLUME_LIGHTING
   vec3 direct_radiance = vec3(0.0);
 
   if (reduce_max(s_scattering) > 0.0) {
@@ -145,6 +151,6 @@ void main()
     extinction = vec3(0.0);
   }
 
-  imageStore(out_scattering_img, froxel, vec4(scattering, 1.0));
-  imageStore(out_extinction_img, froxel, vec4(extinction, 1.0));
+  imageStoreFast(out_scattering_img, froxel, vec4(scattering, 1.0));
+  imageStoreFast(out_extinction_img, froxel, vec4(extinction, 1.0));
 }

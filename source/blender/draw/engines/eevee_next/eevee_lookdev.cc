@@ -6,7 +6,7 @@
  * \ingroup eevee
  */
 
-#include "BKE_image.h"
+#include "BKE_image.hh"
 #include "BKE_lib_id.hh"
 #include "BKE_node.hh"
 #include "BKE_studiolight.h"
@@ -183,7 +183,7 @@ void LookdevModule::sync()
   for (int index : IndexRange(num_spheres)) {
     if (spheres_[index].color_tx_.ensure_2d(color_format, extent)) {
       /* Request redraw if the light-probe were off and the sampling was already finished. */
-      if (inst_.sampling.finished_viewport()) {
+      if (inst_.is_viewport() && inst_.sampling.finished_viewport()) {
         inst_.sampling.reset();
       }
     }
@@ -268,6 +268,10 @@ void LookdevModule::draw(View &view)
   if (!enabled_) {
     return;
   }
+
+  inst_.volume_probes.set_view(view);
+  inst_.sphere_probes.set_view(view);
+
   for (Sphere &sphere : spheres_) {
     sphere.framebuffer.bind();
     inst_.manager->submit(sphere.pass, view);

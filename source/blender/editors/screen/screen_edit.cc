@@ -21,7 +21,7 @@
 #include "BKE_context.hh"
 #include "BKE_global.hh"
 #include "BKE_icons.h"
-#include "BKE_image.h"
+#include "BKE_image.hh"
 #include "BKE_layer.hh"
 #include "BKE_lib_id.hh"
 #include "BKE_main.hh"
@@ -554,6 +554,11 @@ static bool screen_area_join_ex(
     screen_area_close(C, screen, side1);
     screen_area_close(C, screen, side2);
   }
+  else {
+    /* Force full rebuild. #130732 */
+    ED_area_tag_redraw(side1);
+    ED_area_tag_redraw(side2);
+  }
 
   BKE_icon_changed(screen->id.icon_id);
   return true;
@@ -613,7 +618,9 @@ void screen_area_spacelink_add(const Scene *scene, ScrArea *area, eSpace_Type sp
 static void region_cursor_set_ex(wmWindow *win, ScrArea *area, ARegion *region, bool swin_changed)
 {
   BLI_assert(WM_window_get_active_screen(win)->active_region == region);
-  if (win->tag_cursor_refresh || swin_changed || (region->type && region->type->event_cursor)) {
+  if (win->tag_cursor_refresh || swin_changed ||
+      (region->runtime->type && region->runtime->type->event_cursor))
+  {
     win->tag_cursor_refresh = false;
     ED_region_cursor_set(win, area, region);
   }
@@ -666,7 +673,11 @@ static bool region_poll(const bContext *C,
                         const ScrArea *area,
                         const ARegion *region)
 {
-  if (!region->type || !region->type->poll) {
+  if (!region->runtime->type) {
+    BLI_assert_unreachable();
+    return false;
+  }
+  if (!region->runtime->type->poll) {
     /* Show region by default. */
     return true;
   }
@@ -677,7 +688,7 @@ static bool region_poll(const bContext *C,
   params.region = region;
   params.context = C;
 
-  return region->type->poll(&params);
+  return region->runtime->type->poll(&params);
 }
 
 /**
@@ -704,8 +715,8 @@ static bool screen_regions_poll(bContext *C, wmWindow *win, const bScreen *scree
       if (region_poll(C, screen, area, region) == false) {
         region->flag |= RGN_FLAG_POLL_FAILED;
       }
-      else if (region->type && region->type->on_poll_success) {
-        region->type->on_poll_success(C, region);
+      else if (region->runtime->type && region->runtime->type->on_poll_success) {
+        region->runtime->type->on_poll_success(C, region);
       }
 
       if (old_region_flag != region->flag) {
@@ -726,28 +737,33 @@ static bool screen_regions_poll(bContext *C, wmWindow *win, const bScreen *scree
 }
 
 /**
- * \param force_full_refresh: If false, a full refresh will only be performed if the screen is
- * tagged for refresh (#bScreen.do_refresh), or region polling changes require a refresh.
+ * Refreshes the active screen of \a win if #bScreen.do_refresh is set. Region polling is also done
+ * here, which will trigger a refresh on changes.
+ *
+ * Screen refreshes should only be necessary if the screen layout changes in some way.
  */
-static void screen_refresh(bContext *C,
-                           wmWindowManager *wm,
-                           wmWindow *win,
-                           const bool force_full_refresh)
+static void screen_refresh_if_needed(bContext *C, wmWindowManager *wm, wmWindow *win)
 {
   bScreen *screen = WM_window_get_active_screen(win);
-  bool do_refresh = screen->do_refresh;
-
-  /* Returns true if a change was done that requires refreshing. */
-  if (screen_regions_poll(C, win, screen)) {
-    do_refresh = true;
-  }
-
-  if (!force_full_refresh && !do_refresh) {
-    return;
-  }
 
   /* Exception for background mode, we only need the screen context. */
   if (!G.background) {
+    if (screen->do_refresh) {
+      ED_screen_areas_iter (win, screen, area) {
+        /* Ensure all area and region types are set before polling, it depends on it (see #130583).
+         */
+        ED_area_and_region_types_init(area);
+      }
+    }
+
+    /* Returns true if a change was done that requires refreshing. */
+    if (screen_regions_poll(C, win, screen)) {
+      screen->do_refresh = true;
+    }
+
+    if (!screen->do_refresh) {
+      return;
+    }
 
     /* Called even when creating the ghost window fails in #WM_window_open. */
     if (win->ghostwin) {
@@ -783,7 +799,10 @@ static void screen_refresh(bContext *C,
 
 void ED_screen_refresh(bContext *C, wmWindowManager *wm, wmWindow *win)
 {
-  screen_refresh(C, wm, win, /*force_full_refresh=*/true);
+  bScreen *screen = WM_window_get_active_screen(win);
+  /* Enforce full refresh. */
+  screen->do_refresh = true;
+  screen_refresh_if_needed(C, wm, win);
 }
 
 void ED_screens_init(bContext *C, Main *bmain, wmWindowManager *wm)
@@ -809,9 +828,7 @@ void ED_screens_init(bContext *C, Main *bmain, wmWindowManager *wm)
 
 void ED_screen_ensure_updated(bContext *C, wmWindowManager *wm, wmWindow *win)
 {
-  /* Only do a full refresh if required (checks #bScreen.do_refresh tag). */
-  const bool force_full_refresh = false;
-  screen_refresh(C, wm, win, force_full_refresh);
+  screen_refresh_if_needed(C, wm, win);
 }
 
 void ED_region_remove(bContext *C, ScrArea *area, ARegion *region)
@@ -829,13 +846,13 @@ void ED_region_exit(bContext *C, ARegion *region)
   wmWindow *win = CTX_wm_window(C);
   ARegion *prevar = CTX_wm_region(C);
 
-  if (region->type && region->type->exit) {
-    region->type->exit(wm, region);
+  if (region->runtime->type && region->runtime->type->exit) {
+    region->runtime->type->exit(wm, region);
   }
 
   CTX_wm_region_set(C, region);
 
-  WM_event_remove_handlers(C, &region->handlers);
+  WM_event_remove_handlers(C, &region->runtime->handlers);
   WM_event_modal_handler_region_replace(win, region, nullptr);
 
   if (region->regiontype == RGN_TYPE_TEMPORARY) {
@@ -851,13 +868,13 @@ void ED_region_exit(bContext *C, ARegion *region)
 
   WM_draw_region_free(region);
   /* The region is not in a state that it can be visible in anymore. Reinitializing is needed. */
-  region->visible = false;
+  region->runtime->visible = false;
 
-  MEM_SAFE_FREE(region->headerstr);
+  MEM_SAFE_FREE(region->runtime->headerstr);
 
-  if (region->regiontimer) {
-    WM_event_timer_remove(wm, win, region->regiontimer);
-    region->regiontimer = nullptr;
+  if (region->runtime->regiontimer) {
+    WM_event_timer_remove(wm, win, region->runtime->regiontimer);
+    region->runtime->regiontimer = nullptr;
   }
 
   WM_msgbus_clear_by_owner(wm->message_bus, region);
@@ -974,11 +991,7 @@ static void screen_cursor_set(wmWindow *win, const int xy[2])
 
   if (area) {
     if (az->type == AZONE_AREA) {
-#if defined(__APPLE__)
-      WM_cursor_set(win, WM_CURSOR_HAND);
-#else
       WM_cursor_set(win, WM_CURSOR_EDIT);
-#endif
     }
     else if (az->type == AZONE_REGION) {
       if (ELEM(az->edge, AE_LEFT_TO_TOPRIGHT, AE_RIGHT_TO_TOPLEFT)) {
@@ -1060,7 +1073,7 @@ void ED_screen_set_active_region(bContext *C, wmWindow *win, const int xy[2])
         }
 
         if (region == region_prev && region != screen->active_region) {
-          wmGizmoMap *gzmap = region_prev->gizmo_map;
+          wmGizmoMap *gzmap = region_prev->runtime->gizmo_map;
           if (gzmap) {
             if (WM_gizmo_highlight_set(gzmap, nullptr)) {
               ED_region_tag_redraw_no_rebuild(region_prev);
@@ -1616,9 +1629,9 @@ ScrArea *ED_screen_state_toggle(bContext *C, wmWindow *win, ScrArea *area, const
      * are no longer in the same screen */
     LISTBASE_FOREACH (ARegion *, region, &area->regionbase) {
       UI_blocklist_free(C, region);
-      if (region->regiontimer) {
-        WM_event_timer_remove(wm, nullptr, region->regiontimer);
-        region->regiontimer = nullptr;
+      if (region->runtime->regiontimer) {
+        WM_event_timer_remove(wm, nullptr, region->runtime->regiontimer);
+        region->runtime->regiontimer = nullptr;
       }
     }
 
@@ -1812,9 +1825,6 @@ void ED_screen_animation_timer(bContext *C, int redraws, int sync, int enable)
     sad->from_anim_edit = ELEM(spacetype, SPACE_GRAPH, SPACE_ACTION, SPACE_NLA);
 
     screen->animtimer->customdata = sad;
-
-    /* Seek audio to ensure playback in preview range with AV sync. */
-    DEG_id_tag_update(&scene->id, ID_RECALC_FRAME_CHANGE);
   }
 
   /* Notifier caught by top header, for button. */

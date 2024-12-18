@@ -5,8 +5,8 @@
 bl_info = {
     'name': 'glTF 2.0 format',
     'author': 'Julien Duroure, Scurest, Norbert Nopper, Urs Hanselmann, Moritz Becher, Benjamin Schmithüsen, Jim Eckerlein, and many external contributors',
-    "version": (4, 3, 36),
-    'blender': (4, 2, 0),
+    "version": (4, 4, 24),
+    'blender': (4, 4, 0),
     'location': 'File > Import-Export',
     'description': 'Import-Export as glTF 2.0',
     'warning': '',
@@ -175,6 +175,8 @@ def set_debug_log():
         return logging.CRITICAL
     elif bpy.app.debug_value == 4:
         return logging.DEBUG
+    else:
+        return logging.INFO
 
 
 class ConvertGLTF2_Base:
@@ -975,10 +977,16 @@ class ExportGLTF2_Base(ConvertGLTF2_Base):
     export_extra_animations: BoolProperty(
         name='Prepare extra animations',
         description=(
-            'Export additional animations'
+            'Export additional animations.\n'
             'This feature is not standard and needs an external extension to be included in the glTF file'
         ),
         default=False
+    )
+
+    export_loglevel: IntProperty(
+        name='Log Level',
+        description="Log Level",
+        default=-1,
     )
 
     # Custom scene property for saving settings
@@ -1066,7 +1074,11 @@ class ExportGLTF2_Base(ConvertGLTF2_Base):
         # All custom export settings are stored in this container.
         export_settings = {}
 
-        export_settings['loglevel'] = set_debug_log()
+        # Get log level from parameters
+        # If not set, get it from Blender app debug value
+        export_settings['gltf_loglevel'] = self.export_loglevel
+        if export_settings['gltf_loglevel'] < 0:
+            export_settings['loglevel'] = set_debug_log()
 
         export_settings['exported_images'] = {}
         export_settings['exported_texture_nodes'] = []
@@ -1463,10 +1475,10 @@ def export_panel_data_material(layout, operator):
         if operator.export_image_format in ["AUTO", "JPEG", "WEBP"]:
             col.prop(operator, 'export_image_quality')
         col = body.column()
-        col.active = operator.export_image_format != "WEBP"
+        col.active = operator.export_image_format != "WEBP" and not operator.export_materials in ['PLACEHOLDER', 'NONE']
         col.prop(operator, "export_image_add_webp")
         col = body.column()
-        col.active = operator.export_image_format != "WEBP"
+        col.active = operator.export_image_format != "WEBP"  and not operator.export_materials in ['PLACEHOLDER', 'NONE']
         col.prop(operator, "export_image_webp_fallback")
 
         header, sub_body = body.panel("GLTF_export_data_material_unused", default_closed=True)
@@ -1656,7 +1668,7 @@ def export_panel_animation_sampling(layout, operator):
     header.prop(operator, "export_force_sampling", text="")
     header.label(text="Sampling Animations")
     if body:
-        body.active = operator.export_animations
+        body.active = operator.export_animations and operator.export_force_sampling
 
         body.prop(operator, 'export_frame_step')
 
@@ -1721,8 +1733,8 @@ def export_panel_gltfpack(layout, operator):
         col.prop(operator, 'export_gltfpack_vc')
         col = body.column(heading="Vertex positions", align=True)
         col.prop(operator, 'export_gltfpack_vpi')
-        #col = body.column(heading = "Animations", align = True)
-        #col = body.column(heading = "Scene", align = True)
+        # col = body.column(heading = "Animations", align = True)
+        # col = body.column(heading = "Scene", align = True)
         col = body.column(heading="Miscellaneous", align=True)
         col.prop(operator, 'export_gltfpack_noq')
 
@@ -1840,6 +1852,19 @@ class ImportGLTF2(Operator, ConvertGLTF2_Base, ImportHelper):
         default=False,
     )
 
+    import_select_created_objects: BoolProperty(
+        name='Select imported objects',
+        description='Select created objects at the end of the import',
+        default=True,
+    )
+
+    import_scene_extras: BoolProperty(
+        name='Import Scene Extras',
+        description='Import scene extras as custom properties. '
+                    'Existing custom properties will be overwritten',
+        default=True,
+    )
+
     def draw(self, context):
         operator = self
         layout = self.layout
@@ -1854,6 +1879,7 @@ class ImportGLTF2(Operator, ConvertGLTF2_Base, ImportHelper):
         layout.prop(self, 'export_import_convert_lighting_mode')
         layout.prop(self, 'import_webp_texture')
         import_bone_panel(layout, operator)
+        import_ux_panel(layout, operator)
 
         import_panel_user_extension(context, layout)
 
@@ -1949,6 +1975,13 @@ def import_bone_panel(layout, operator):
         if operator.bone_heuristic == 'BLENDER':
             body.prop(operator, 'disable_bone_shape')
             body.prop(operator, 'bone_shape_scale_factor')
+
+def import_ux_panel(layout, operator):
+    header, body = layout.panel("GLTF_import_ux", default_closed=False)
+    header.label(text="Pipeline")
+    if body:
+        body.prop(operator, 'import_select_created_objects')
+        body.prop(operator, 'import_scene_extras')
 
 
 def import_panel_user_extension(context, layout):

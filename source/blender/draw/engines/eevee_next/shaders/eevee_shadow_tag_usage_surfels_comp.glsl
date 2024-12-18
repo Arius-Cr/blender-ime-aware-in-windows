@@ -10,11 +10,15 @@
  * needed.
  */
 
-#pragma BLENDER_REQUIRE(eevee_shadow_tag_usage_lib.glsl)
+#include "infos/eevee_shadow_info.hh"
+
+COMPUTE_SHADER_CREATE_INFO(eevee_shadow_tag_usage_surfels)
+
+#include "eevee_shadow_tag_usage_lib.glsl"
 
 void main()
 {
-  int index = int(gl_GlobalInvocationID.x);
+  uint index = gl_GlobalInvocationID.x;
   if (index >= capture_info_buf.surfel_len) {
     return;
   }

@@ -178,7 +178,6 @@ static ImBuf *sequencer_make_scope(Scene *scene,
       display_ibuf, &scene->view_settings, &scene->display_settings);
 
   scope = make_scope_fn(display_ibuf);
-  IMB_rectfill_alpha(scope, 1.0f);
 
   IMB_freeImBuf(display_ibuf);
 
@@ -327,15 +326,15 @@ static void *sequencer_OCIO_transform_ibuf(const bContext *C,
 
     *r_data = GPU_DATA_FLOAT;
     if (ibuf->channels == 4) {
-      *r_format = GPU_RGBA16F;
+      *r_format = GPU_RGBA32F;
     }
     else if (ibuf->channels == 3) {
       /* Alpha is implicitly 1. */
-      *r_format = GPU_RGB16F;
+      *r_format = GPU_RGB32F;
     }
     else {
       BLI_assert_msg(0, "Incompatible number of channels for float buffer in sequencer");
-      *r_format = GPU_RGBA16F;
+      *r_format = GPU_RGBA32F;
       display_buffer = nullptr;
     }
 
@@ -357,8 +356,7 @@ static void *sequencer_OCIO_transform_ibuf(const bContext *C,
     display_buffer = nullptr;
   }
 
-  /* There is data to be displayed, but GLSL is not initialized
-   * properly, in this case we fallback to CPU-based display transform. */
+  /* If we need to fallback to CPU based display transform, do that here. */
   if ((ibuf->byte_buffer.data || ibuf->float_buffer.data) && !*r_glsl_used) {
     display_buffer = IMB_display_buffer_acquire_ctx(C, ibuf, r_buffer_cache_handle);
     *r_format = GPU_RGBA8;
@@ -817,11 +815,7 @@ static void sequencer_draw_scopes(Scene *scene, ARegion *region, SpaceSeq *sseq)
 
   bool use_blend = sseq->mainb == SEQ_DRAW_IMG_IMBUF && sseq->flag & SEQ_USE_ALPHA;
 
-  /* Draw opaque black rectangle over whole preview area. The scope texture
-   * with clamp to border extend mode should be enough, but results in
-   * garbage pixels around the actual scope on some GPUs/drivers (#119505).
-   * To fix that, background must be drawn, and then the scopes texture be
-   * blended on top. */
+  /* Draw black rectangle over scopes area. */
   if (sseq->mainb != SEQ_DRAW_IMG_IMBUF) {
     GPU_blend(GPU_BLEND_NONE);
     uint pos = GPU_vertformat_attr_add(immVertexFormat(), "pos", GPU_COMP_F32, 2, GPU_FETCH_FLOAT);
@@ -830,7 +824,6 @@ static void sequencer_draw_scopes(Scene *scene, ARegion *region, SpaceSeq *sseq)
     immUniformColor4ubv(black);
     immRectf(pos, preview.xmin, preview.ymin, preview.xmax, preview.ymax);
     immUnbindProgram();
-    use_blend = true;
   }
 
   /* Draw scope image if there is one. */

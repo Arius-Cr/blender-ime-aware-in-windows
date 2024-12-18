@@ -20,7 +20,6 @@ from bl_ui.space_toolsystem_common import (
     ToolActivePanelHelper,
 )
 from bl_ui.properties_material import (
-    EEVEE_MATERIAL_PT_settings,
     EEVEE_NEXT_MATERIAL_PT_settings,
     EEVEE_NEXT_MATERIAL_PT_settings_surface,
     EEVEE_NEXT_MATERIAL_PT_settings_volume,
@@ -64,8 +63,7 @@ class NODE_HT_header(Header):
 
                 NODE_MT_editor_menus.draw_collapsible(context, layout)
 
-                # No shader nodes for EEVEE lights.
-                if snode_id and not (context.engine == 'BLENDER_EEVEE' and ob_type == 'LIGHT'):
+                if snode_id:
                     row = layout.row()
                     row.prop(snode_id, "use_nodes")
 
@@ -211,9 +209,6 @@ class NODE_HT_header(Header):
         # Snap
         row = layout.row(align=True)
         row.prop(tool_settings, "use_snap_node", text="")
-        row.prop(tool_settings, "snap_node_element", icon_only=True)
-        if tool_settings.snap_node_element != 'GRID':
-            row.prop(tool_settings, "snap_target", text="")
 
         # Overlay toggle & popover
         row = layout.row(align=True)
@@ -759,7 +754,10 @@ class NODE_PT_texture_mapping(Panel):
     bl_category = "Node"
     bl_label = "Texture Mapping"
     bl_options = {'DEFAULT_CLOSED'}
-    COMPAT_ENGINES = {'BLENDER_RENDER', 'BLENDER_EEVEE', 'BLENDER_WORKBENCH'}
+    COMPAT_ENGINES = {
+        'BLENDER_RENDER',
+        'BLENDER_WORKBENCH',
+    }
 
     @classmethod
     def poll(cls, context):
@@ -855,28 +853,6 @@ class NODE_PT_quality(bpy.types.Panel):
 
         col = layout.column()
         col.prop(tree, "use_viewer_border")
-
-
-class NODE_PT_compositor_debug(Panel):
-    bl_space_type = 'NODE_EDITOR'
-    bl_region_type = 'UI'
-    bl_category = "Options"
-    bl_label = "Debug"
-    bl_parent_id = "NODE_PT_quality"
-    bl_options = {'DEFAULT_CLOSED'}
-
-    @classmethod
-    def poll(cls, context):
-        render_data = context.scene.render
-        if render_data.compositor_device != "CPU":
-            return False
-
-        preferences = context.preferences
-        return preferences.view.show_developer_ui and preferences.experimental.enable_new_cpu_compositor
-
-    def draw(self, context):
-        render_data = context.scene.render
-        self.layout.prop(render_data, "use_new_cpu_compositor", text="Experimental CPU Implementation")
 
 
 class NODE_PT_overlay(Panel):
@@ -1105,12 +1081,10 @@ classes = (
     NODE_PT_active_tool,
     NODE_PT_backdrop,
     NODE_PT_quality,
-    NODE_PT_compositor_debug,
     NODE_PT_annotation,
     NODE_PT_overlay,
     NODE_PT_active_node_properties,
 
-    node_panel(EEVEE_MATERIAL_PT_settings),
     node_panel(EEVEE_NEXT_MATERIAL_PT_settings),
     node_panel(EEVEE_NEXT_MATERIAL_PT_settings_surface),
     node_panel(EEVEE_NEXT_MATERIAL_PT_settings_volume),

@@ -40,7 +40,6 @@ set(SRC
   intern/BLI_mmap.c
   intern/BLI_subprocess.cc
   intern/BLI_timer.c
-  intern/DLRB_tree.c
   intern/array_store.cc
   intern/array_store_utils.cc
   intern/array_utils.c
@@ -94,7 +93,7 @@ set(SRC
   intern/lazy_threading.cc
   intern/length_parameterize.cc
   intern/listbase.cc
-  intern/math_base.c
+  intern/math_base.cc
   intern/math_base_inline.c
   intern/math_base_safe_inline.c
   intern/math_basis_types.cc
@@ -109,29 +108,29 @@ set(SRC
   intern/math_interp.cc
   intern/math_matrix.cc
   intern/math_matrix_c.cc
-  intern/math_rotation.c
   intern/math_rotation.cc
-  intern/math_solvers.c
-  intern/math_statistics.c
-  intern/math_time.c
+  intern/math_rotation_c.cc
+  intern/math_solvers.cc
+  intern/math_statistics.cc
+  intern/math_time.cc
   intern/math_vec.cc
-  intern/math_vector.c
+  intern/math_vector.cc
   intern/math_vector_inline.c
   intern/memory_cache.cc
   intern/memory_counter.cc
-  intern/memory_utils.c
+  intern/memory_utils.cc
   intern/mesh_boolean.cc
   intern/mesh_intersect.cc
-  intern/noise.c
   intern/noise.cc
+  intern/noise_c.cc
   intern/offset_indices.cc
   intern/ordered_edge.cc
   intern/path_utils.cc
-  intern/polyfill_2d.c
-  intern/polyfill_2d_beautify.c
-  intern/quadric.c
+  intern/polyfill_2d.cc
+  intern/polyfill_2d_beautify.cc
+  intern/quadric.cc
   intern/rand.cc
-  intern/rct.c
+  intern/rct.cc
   intern/resource_scope.cc
   intern/scanfill.c
   intern/scanfill_utils.c
@@ -221,7 +220,6 @@ set(SRC
   BLI_devirtualize_parameters.hh
   BLI_dial_2d.h
   BLI_disjoint_set.hh
-  BLI_dlrbTree.h
   BLI_dot_export.hh
   BLI_dot_export_attribute_enums.hh
   BLI_dynlib.h
@@ -480,7 +478,7 @@ if(WIN32)
     dxgi
   )
   list(APPEND SRC
-    intern/system_win32.c
+    intern/system_win32.cc
   )
 endif()
 

@@ -17,10 +17,14 @@
  * setting `drw_view_id` accordingly.
  */
 
+#include "DNA_view3d_types.h"
 #include "DRW_gpu_wrapper.hh"
 #include "DRW_render.hh"
+#include "GPU_matrix.hh"
 
 #include "draw_shader_shared.hh"
+#include <atomic>
+#include <cstdint>
 
 namespace blender::draw {
 
@@ -28,10 +32,17 @@ class Manager;
 
 /* TODO: de-duplicate. */
 using ObjectBoundsBuf = StorageArrayBuffer<ObjectBounds, 128>;
+using ObjectInfosBuf = StorageArrayBuffer<ObjectInfos, 128>;
 using VisibilityBuf = StorageArrayBuffer<uint, 4, true>;
 
 class View {
   friend Manager;
+
+  /** Number of sync done by views. Used for fingerprint. */
+  static std::atomic<uint32_t> global_sync_counter_;
+
+  /* Local sync counter. Used for fingerprint. */
+  uint32_t sync_counter_ = 0;
 
  protected:
   /** TODO(fclem): Maybe try to reduce the minimum cost if the number of view is lower. */
@@ -43,6 +54,8 @@ class View {
   UniformArrayBuffer<ViewCullingData, DRW_VIEW_MAX> culling_freeze_;
   /** Result of the visibility computation. 1 bit or 1 or 2 word per resource ID per view. */
   VisibilityBuf visibility_buf_;
+  /* Fingerprint of the manager state when visibility was computed. */
+  uint64_t manager_fingerprint_ = 0;
 
   const char *debug_name_;
 
@@ -61,17 +74,9 @@ class View {
     BLI_assert(view_len <= DRW_VIEW_MAX);
   }
 
-  /* For compatibility with old system. Will be removed at some point. */
-  View(const char *name, const DRWView *view)
-      : visibility_buf_(name), debug_name_(name), view_len_(1)
-  {
-    this->sync(view);
-  }
+  virtual ~View() = default;
 
   void sync(const float4x4 &view_mat, const float4x4 &win_mat, int view_id = 0);
-
-  /* For compatibility with old system. Will be removed at some point. */
-  void sync(const DRWView *view);
 
   /** Enable or disable every visibility test (frustum culling, HiZ culling). */
   void visibility_test(bool enable)
@@ -170,11 +175,69 @@ class View {
     return data_;
   }
 
+  /* TODO(fclem): Remove. Global DST access. */
+  static View &default_get();
+  static void default_set(const float4x4 &view_mat, const float4x4 &win_mat);
+
+  /* Data to save per overlay to not rely on rv3d for rendering.
+   * TODO(fclem): Compute offset directly from the view. */
+  struct OffsetData {
+    /* Copy of rv3d->dist. */
+    float dist = 0.0f;
+    /* Copy of rv3d->persp. */
+    char persp = 0;
+    /* Copy of rv3d->is_persp. */
+    bool is_persp = false;
+
+    OffsetData() = default;
+    OffsetData(const RegionView3D &rv3d)
+        : dist(rv3d.dist), persp(rv3d.persp), is_persp(rv3d.is_persp != 0)
+    {
+    }
+
+    float4x4 winmat_polygon_offset(float4x4 winmat, float offset)
+    {
+      float view_dist = dist;
+      /* Special exception for orthographic camera:
+       * `view_dist` isn't used as the depth range isn't the same. */
+      if (persp == RV3D_CAMOB && is_persp == false) {
+        view_dist = 1.0f / max_ff(fabsf(winmat[0][0]), fabsf(winmat[1][1]));
+      }
+
+      winmat[3][2] -= GPU_polygon_offset_calc(winmat.ptr(), view_dist, offset);
+      return winmat;
+    }
+  };
+
+  /* Returns frustum planes equations. Available only after sync. */
+  std::array<float4, 6> frustum_planes_get(int view_id = 0);
+  /* Returns frustum corners positions in world space. Available only after sync. */
+  std::array<float3, 8> frustum_corners_get(int view_id = 0);
+
  protected:
   /** Called from draw manager. */
   void bind();
-  virtual void compute_visibility(ObjectBoundsBuf &bounds, uint resource_len, bool debug_freeze);
+  virtual void compute_visibility(ObjectBoundsBuf &bounds,
+                                  ObjectInfosBuf &infos,
+                                  uint resource_len,
+                                  bool debug_freeze);
   virtual VisibilityBuf &get_visibility_buffer();
+
+  bool has_computed_visibility() const
+  {
+    /* NOTE: Even though manager fingerprint is not enough to check for update, it is still
+     * guaranteed to not be 0. So we can check weather or not this view has computed visibility
+     * after sync. Asserts will catch invalid usage . */
+    return manager_fingerprint_ != 0;
+  }
+
+  /* Fingerprint of the view for the current state.
+   * Not reliable enough for general update detection. Only to be used for debugging assertion. */
+  uint64_t fingerprint_get() const
+  {
+    BLI_assert_msg(sync_counter_ != 0, "View should be synced at least once before use");
+    return sync_counter_;
+  }
 
   void update_viewport_size();
 

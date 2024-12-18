@@ -2,9 +2,8 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
-#pragma BLENDER_REQUIRE(gpu_shader_common_math_utils.glsl)
-#pragma BLENDER_REQUIRE(gpu_shader_compositor_blur_common.glsl)
-#pragma BLENDER_REQUIRE(gpu_shader_compositor_texture_utilities.glsl)
+#include "gpu_shader_compositor_texture_utilities.glsl"
+#include "gpu_shader_math_vector_lib.glsl"
 
 /* Given the texel in the range [-radius, radius] in both axis, load the appropriate weight from
  * the weights texture, where the given texel (0, 0) corresponds the center of weights texture.
@@ -32,7 +31,6 @@ void main()
   ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
 
   float center_radius = max(0.0, texture_load(radius_tx, texel).x);
-  vec4 center_color = texture_load(input_tx, texel);
 
   /* Go over the window of the given search radius and accumulate the colors multiplied by their
    * respective weights as well as the weights themselves, but only if both the radius of the
@@ -55,20 +53,12 @@ void main()
       vec4 weight = load_weight(ivec2(x, y), radius);
       vec4 input_color = texture_load(input_tx, texel + ivec2(x, y));
 
-      if (gamma_correct) {
-        input_color = gamma_correct_blur_input(input_color);
-      }
-
       accumulated_color += input_color * weight;
       accumulated_weight += weight;
     }
   }
 
   accumulated_color = safe_divide(accumulated_color, accumulated_weight);
-
-  if (gamma_correct) {
-    accumulated_color = gamma_uncorrect_blur_output(accumulated_color);
-  }
 
   imageStore(output_img, texel, accumulated_color);
 }

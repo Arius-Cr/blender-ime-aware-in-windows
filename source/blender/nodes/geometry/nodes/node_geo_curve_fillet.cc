@@ -50,7 +50,7 @@ static void node_declare(NodeDeclarationBuilder &b)
 
 static void node_layout(uiLayout *layout, bContext * /*C*/, PointerRNA *ptr)
 {
-  uiItemR(layout, ptr, "mode", UI_ITEM_R_EXPAND, nullptr, ICON_NONE);
+  uiItemR(layout, ptr, "mode", UI_ITEM_R_EXPAND, std::nullopt, ICON_NONE);
 }
 
 static void node_init(bNodeTree * /*tree*/, bNode *node)
@@ -108,7 +108,7 @@ static void fillet_grease_pencil(GreasePencil &grease_pencil,
       continue;
     }
     const bke::CurvesGeometry &src_curves = drawing->strokes();
-    if (src_curves.points_num() == 0) {
+    if (src_curves.is_empty()) {
       continue;
     }
     const bke::GreasePencilLayerFieldContext field_context(

@@ -229,8 +229,6 @@ static void mesh_calc_finalize(const Mesh &mesh_input, Mesh &mesh_eval)
   /* Make sure the name is the same. This is because mesh allocation from template does not
    * take care of naming. */
   STRNCPY(mesh_eval.id.name, mesh_input.id.name);
-  /* Make evaluated mesh to share same edit mesh pointer as original and copied meshes. */
-  mesh_eval.runtime->edit_mesh = mesh_input.runtime->edit_mesh;
 }
 
 /**
@@ -857,7 +855,6 @@ static void editbmesh_calc_modifiers(Depsgraph &depsgraph,
        * cage mesh isn't modified anymore. */
       mesh = BKE_mesh_copy_for_eval(*mesh);
       if (mesh_cage->runtime->edit_mesh) {
-        mesh->runtime->edit_mesh = mesh_cage->runtime->edit_mesh;
         mesh->runtime->is_original_bmesh = true;
         mesh->runtime->deformed_only = mesh_cage->runtime->deformed_only;
         if (mesh_cage->runtime->edit_data) {
@@ -1054,12 +1051,6 @@ static void editbmesh_build_data(Depsgraph &depsgraph,
   editbmesh_calc_modifiers(
       depsgraph, scene, obedit, dataMask, &me_cage, &me_final, &non_mesh_components);
 
-  /* The modifier stack result is expected to share edit mesh pointer with the input.
-   * This is similar `mesh_calc_finalize()`. */
-  BKE_mesh_free_editmesh(me_final);
-  BKE_mesh_free_editmesh(me_cage);
-  me_final->runtime->edit_mesh = me_cage->runtime->edit_mesh = mesh->runtime->edit_mesh;
-
   /* Object has edit_mesh but is not in edit mode (object shares mesh datablock with another object
    * with is in edit mode).
    * Convert edit mesh to mesh until the draw manager can draw mesh wrapper which is not in the
@@ -1134,7 +1125,10 @@ static void object_get_datamask(const Depsgraph &depsgraph,
     if (ob.mode & OB_MODE_WEIGHT_PAINT) {
       r_mask.vmask |= CD_MASK_MDEFORMVERT;
     }
+  }
 
+  /* Multiple objects can be in edit-mode at once. */
+  if (actob && (actob->mode & OB_MODE_EDIT)) {
     if (ob.mode & OB_MODE_EDIT) {
       r_mask.vmask |= CD_MASK_MVERT_SKIN;
     }
@@ -1207,6 +1201,9 @@ Mesh *mesh_get_eval_deform(Depsgraph *depsgraph,
       !CustomData_MeshMasks_are_matching(&(ob->runtime->last_data_mask), &cddata_masks) ||
       (need_mapping && !ob->runtime->last_need_mapping))
   {
+    /* FIXME: this block may leak memory (& assert) because it runs #BKE_object_eval_assign_data
+     * intended only to run during depsgraph-evaluation that overwrites the evaluated mesh
+     * without freeing beforehand, see: !128228. */
     CustomData_MeshMasks_update(&cddata_masks, &ob->runtime->last_data_mask);
     mesh_build_data(
         *depsgraph, *scene, *ob, cddata_masks, need_mapping || ob->runtime->last_need_mapping);
@@ -1263,6 +1260,9 @@ Mesh *editbmesh_get_eval_cage(Depsgraph *depsgraph,
   if (!obedit->runtime->editmesh_eval_cage ||
       !CustomData_MeshMasks_are_matching(&(obedit->runtime->last_data_mask), &cddata_masks))
   {
+    /* FIXME: this block may leak memory (& assert) because it runs #BKE_object_eval_assign_data
+     * intended only to run during depsgraph-evaluation that overwrites the evaluated mesh
+     * without freeing beforehand, see: !128228. */
     editbmesh_build_data(*depsgraph, *scene, *obedit, cddata_masks);
   }
 
@@ -1314,7 +1314,7 @@ void mesh_get_mapped_verts_coords(Mesh *mesh_eval, MutableSpan<float3> r_cos)
     MEM_freeN(user_data.vertex_visit);
   }
   else {
-    r_cos.copy_from(mesh_eval->vert_positions());
+    r_cos.copy_from(BKE_mesh_wrapper_vert_coords(mesh_eval));
   }
 }
 

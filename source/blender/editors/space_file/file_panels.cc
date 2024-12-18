@@ -243,7 +243,7 @@ static void file_panel_asset_catalog_buttons_draw(const bContext *C, Panel *pane
                       C,
                       "asset.bundle_install",
                       "asset_library_reference",
-                      "Copy Bundle to Asset Library...",
+                      IFACE_("Copy Bundle to Asset Library..."),
                       ICON_IMPORT);
     }
     CTX_free(mutable_ctx);
@@ -255,7 +255,7 @@ static void file_panel_asset_catalog_buttons_draw(const bContext *C, Panel *pane
   uiItemS(col);
 
   blender::ed::asset_browser::file_create_asset_catalog_tree_view_in_layout(
-      asset_library, col, sfile, params);
+      C, asset_library, col, sfile, params);
 }
 
 void file_tools_region_panels_register(ARegionType *art)

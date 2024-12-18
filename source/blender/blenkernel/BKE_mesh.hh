@@ -18,6 +18,7 @@
 namespace blender::bke {
 
 enum class AttrDomain : int8_t;
+struct AttributeAccessorFunctions;
 
 namespace mesh {
 /* -------------------------------------------------------------------- */
@@ -179,7 +180,7 @@ void normals_calc_corners(Span<float3> vert_positions,
                           Span<float3> face_normals,
                           Span<bool> sharp_edges,
                           Span<bool> sharp_faces,
-                          const short2 *clnors_data,
+                          Span<short2> custom_normals,
                           CornerNormalSpaceArray *r_lnors_spacearr,
                           MutableSpan<float3> r_corner_normals);
 
@@ -369,5 +370,7 @@ void mesh_data_update(Depsgraph &depsgraph,
                       const Scene &scene,
                       Object &ob,
                       const CustomData_MeshMasks &dataMask);
+
+const AttributeAccessorFunctions &mesh_attribute_accessor_functions();
 
 }  // namespace blender::bke

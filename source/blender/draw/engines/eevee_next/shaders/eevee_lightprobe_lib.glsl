@@ -2,8 +2,24 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
-#pragma BLENDER_REQUIRE(gpu_shader_utildefines_lib.glsl)
-#pragma BLENDER_REQUIRE(gpu_shader_math_vector_lib.glsl)
+#pragma once
+
+#include "infos/eevee_lightprobe_sphere_info.hh"
+
+/* TODO(fclem): Pass the lightprobe_sphere_buf around and avoid relying on interface.
+ * Currently in conflict with eevee_lightprobe_volume_load. */
+#ifndef SPHERE_PROBE_SELECT
+SHADER_LIBRARY_CREATE_INFO(eevee_lightprobe_sphere_data)
+#endif
+SHADER_LIBRARY_CREATE_INFO(eevee_lightprobe_planar_data)
+/* TODO(fclem): Pass the atlas texture around and avoid relying on interface.
+ * Currently in conflict with eevee_lightprobe_volume_load. */
+#ifndef IRRADIANCE_GRID_UPLOAD
+SHADER_LIBRARY_CREATE_INFO(eevee_volume_probe_data)
+#endif
+
+#include "gpu_shader_math_vector_lib.glsl"
+#include "gpu_shader_utildefines_lib.glsl"
 
 /**
  * Returns world position of a volume lightprobe sample (center of cell).

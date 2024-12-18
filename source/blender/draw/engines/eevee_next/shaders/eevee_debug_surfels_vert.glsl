@@ -2,8 +2,12 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
-#pragma BLENDER_REQUIRE(draw_view_lib.glsl)
-#pragma BLENDER_REQUIRE(gpu_shader_math_matrix_lib.glsl)
+#include "infos/eevee_lightprobe_volume_info.hh"
+
+VERTEX_SHADER_CREATE_INFO(eevee_debug_surfels)
+
+#include "draw_view_lib.glsl"
+#include "gpu_shader_math_matrix_lib.glsl"
 
 void main()
 {

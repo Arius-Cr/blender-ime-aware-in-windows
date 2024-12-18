@@ -2,13 +2,18 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
-#pragma BLENDER_REQUIRE(draw_model_lib.glsl)
-#pragma BLENDER_REQUIRE(gpu_shader_math_rotation_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_attributes_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_nodetree_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_surf_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_velocity_lib.glsl)
-#pragma BLENDER_REQUIRE(common_pointcloud_lib.glsl)
+#include "infos/eevee_material_info.hh"
+
+VERTEX_SHADER_CREATE_INFO(eevee_clip_plane)
+VERTEX_SHADER_CREATE_INFO(eevee_geom_point_cloud)
+
+#include "draw_model_lib.glsl"
+#include "draw_pointcloud_lib.glsl"
+#include "eevee_attributes_point_cloud_lib.glsl"
+#include "eevee_nodetree_lib.glsl"
+#include "eevee_surf_lib.glsl"
+#include "eevee_velocity_lib.glsl"
+#include "gpu_shader_math_rotation_lib.glsl"
 
 void main()
 {

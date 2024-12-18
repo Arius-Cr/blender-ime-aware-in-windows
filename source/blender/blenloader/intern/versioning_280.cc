@@ -26,6 +26,7 @@
 
 #include "DNA_anim_types.h"
 #include "DNA_armature_types.h"
+#include "DNA_brush_types.h"
 #include "DNA_camera_types.h"
 #include "DNA_cloth_types.h"
 #include "DNA_collection_types.h"
@@ -451,6 +452,7 @@ static void do_versions_fix_annotations(bGPdata *gpd)
 
 static void do_versions_remove_region(ListBase *regionbase, ARegion *region)
 {
+  MEM_delete(region->runtime);
   BLI_freelinkN(regionbase, region);
 }
 
@@ -663,8 +665,8 @@ static void do_versions_material_convert_legacy_blend_mode(bNodeTree *ntree, cha
       blender::bke::node_remove_link(ntree, link);
 
       bNode *add_node = blender::bke::node_add_static_node(nullptr, ntree, SH_NODE_ADD_SHADER);
-      add_node->locx = 0.5f * (fromnode->locx + tonode->locx);
-      add_node->locy = 0.5f * (fromnode->locy + tonode->locy);
+      add_node->locx_legacy = 0.5f * (fromnode->locx_legacy + tonode->locx_legacy);
+      add_node->locy_legacy = 0.5f * (fromnode->locy_legacy + tonode->locy_legacy);
 
       bNodeSocket *shader1_socket = static_cast<bNodeSocket *>(add_node->inputs.first);
       bNodeSocket *shader2_socket = static_cast<bNodeSocket *>(add_node->inputs.last);
@@ -672,8 +674,8 @@ static void do_versions_material_convert_legacy_blend_mode(bNodeTree *ntree, cha
 
       bNode *transp_node = blender::bke::node_add_static_node(
           nullptr, ntree, SH_NODE_BSDF_TRANSPARENT);
-      transp_node->locx = add_node->locx;
-      transp_node->locy = add_node->locy - 110.0f;
+      transp_node->locx_legacy = add_node->locx_legacy;
+      transp_node->locy_legacy = add_node->locy_legacy - 110.0f;
 
       bNodeSocket *transp_socket = blender::bke::node_find_socket(transp_node, SOCK_OUT, "BSDF");
 
@@ -695,13 +697,13 @@ static void do_versions_material_convert_legacy_blend_mode(bNodeTree *ntree, cha
 
       /* If incoming link is from a closure socket, we need to convert it. */
       if (fromsock->type == SOCK_SHADER) {
-        transp_node->locx = 0.33f * fromnode->locx + 0.66f * tonode->locx;
-        transp_node->locy = 0.33f * fromnode->locy + 0.66f * tonode->locy;
+        transp_node->locx_legacy = 0.33f * fromnode->locx_legacy + 0.66f * tonode->locx_legacy;
+        transp_node->locy_legacy = 0.33f * fromnode->locy_legacy + 0.66f * tonode->locy_legacy;
 
         bNode *shtorgb_node = blender::bke::node_add_static_node(
             nullptr, ntree, SH_NODE_SHADERTORGB);
-        shtorgb_node->locx = 0.66f * fromnode->locx + 0.33f * tonode->locx;
-        shtorgb_node->locy = 0.66f * fromnode->locy + 0.33f * tonode->locy;
+        shtorgb_node->locx_legacy = 0.66f * fromnode->locx_legacy + 0.33f * tonode->locx_legacy;
+        shtorgb_node->locy_legacy = 0.66f * fromnode->locy_legacy + 0.33f * tonode->locy_legacy;
 
         bNodeSocket *shader_socket = blender::bke::node_find_socket(
             shtorgb_node, SOCK_IN, "Shader");
@@ -711,8 +713,8 @@ static void do_versions_material_convert_legacy_blend_mode(bNodeTree *ntree, cha
         blender::bke::node_add_link(ntree, shtorgb_node, rgba_socket, transp_node, color_socket);
       }
       else {
-        transp_node->locx = 0.5f * (fromnode->locx + tonode->locx);
-        transp_node->locy = 0.5f * (fromnode->locy + tonode->locy);
+        transp_node->locx_legacy = 0.5f * (fromnode->locx_legacy + tonode->locx_legacy);
+        transp_node->locy_legacy = 0.5f * (fromnode->locy_legacy + tonode->locy_legacy);
 
         blender::bke::node_add_link(ntree, fromnode, fromsock, transp_node, color_socket);
       }
@@ -1017,8 +1019,8 @@ static void displacement_node_insert(bNodeTree *ntree)
 
     /* Add displacement node. */
     bNode *node = blender::bke::node_add_static_node(nullptr, ntree, SH_NODE_DISPLACEMENT);
-    node->locx = 0.5f * (fromnode->locx + tonode->locx);
-    node->locy = 0.5f * (fromnode->locy + tonode->locy);
+    node->locx_legacy = 0.5f * (fromnode->locx_legacy + tonode->locx_legacy);
+    node->locy_legacy = 0.5f * (fromnode->locy_legacy + tonode->locy_legacy);
 
     bNodeSocket *scale_socket = blender::bke::node_find_socket(node, SOCK_IN, "Scale");
     bNodeSocket *midlevel_socket = blender::bke::node_find_socket(node, SOCK_IN, "Midlevel");
@@ -1076,8 +1078,8 @@ static void square_roughness_node_insert(bNodeTree *ntree)
     /* Add `sqrt` node. */
     bNode *node = blender::bke::node_add_static_node(nullptr, ntree, SH_NODE_MATH);
     node->custom1 = NODE_MATH_POWER;
-    node->locx = 0.5f * (fromnode->locx + tonode->locx);
-    node->locy = 0.5f * (fromnode->locy + tonode->locy);
+    node->locx_legacy = 0.5f * (fromnode->locx_legacy + tonode->locx_legacy);
+    node->locy_legacy = 0.5f * (fromnode->locy_legacy + tonode->locy_legacy);
 
     /* Link to input and material output node. */
     *version_cycles_node_socket_float_value(static_cast<bNodeSocket *>(node->inputs.last)) = 0.5f;
@@ -1340,13 +1342,13 @@ static void update_vector_math_node_add_and_subtract_operators(bNodeTree *ntree)
 
         bNode *absNode = blender::bke::node_add_static_node(nullptr, ntree, SH_NODE_VECTOR_MATH);
         absNode->custom1 = NODE_VECTOR_MATH_ABSOLUTE;
-        absNode->locx = node->locx + node->width + 20.0f;
-        absNode->locy = node->locy;
+        absNode->locx_legacy = node->locx_legacy + node->width + 20.0f;
+        absNode->locy_legacy = node->locy_legacy;
 
         bNode *dotNode = blender::bke::node_add_static_node(nullptr, ntree, SH_NODE_VECTOR_MATH);
         dotNode->custom1 = NODE_VECTOR_MATH_DOT_PRODUCT;
-        dotNode->locx = absNode->locx + absNode->width + 20.0f;
-        dotNode->locy = absNode->locy;
+        dotNode->locx_legacy = absNode->locx_legacy + absNode->width + 20.0f;
+        dotNode->locy_legacy = absNode->locy_legacy;
         bNodeSocket *sockDotB = static_cast<bNodeSocket *>(BLI_findlink(&dotNode->inputs, 1));
         bNodeSocket *sockDotOutValue = blender::bke::node_find_socket(dotNode, SOCK_OUT, "Value");
         copy_v3_fl(version_cycles_node_socket_vector_value(sockDotB), 1 / 3.0f);
@@ -1435,8 +1437,8 @@ static void update_vector_math_node_cross_product_operator(bNodeTree *ntree)
           bNode *normalizeNode = blender::bke::node_add_static_node(
               nullptr, ntree, SH_NODE_VECTOR_MATH);
           normalizeNode->custom1 = NODE_VECTOR_MATH_NORMALIZE;
-          normalizeNode->locx = node->locx + node->width + 20.0f;
-          normalizeNode->locy = node->locy;
+          normalizeNode->locx_legacy = node->locx_legacy + node->width + 20.0f;
+          normalizeNode->locy_legacy = node->locy_legacy;
           bNodeSocket *sockNormalizeOut = blender::bke::node_find_socket(
               normalizeNode, SOCK_OUT, "Vector");
 
@@ -1459,12 +1461,12 @@ static void update_vector_math_node_cross_product_operator(bNodeTree *ntree)
           bNode *lengthNode = blender::bke::node_add_static_node(
               nullptr, ntree, SH_NODE_VECTOR_MATH);
           lengthNode->custom1 = NODE_VECTOR_MATH_LENGTH;
-          lengthNode->locx = node->locx + node->width + 20.0f;
+          lengthNode->locx_legacy = node->locx_legacy + node->width + 20.0f;
           if (version_node_socket_is_used(sockOutVector)) {
-            lengthNode->locy = node->locy - lengthNode->height - 20.0f;
+            lengthNode->locy_legacy = node->locy_legacy - lengthNode->height - 20.0f;
           }
           else {
-            lengthNode->locy = node->locy;
+            lengthNode->locy_legacy = node->locy_legacy;
           }
           bNodeSocket *sockLengthOut = blender::bke::node_find_socket(
               lengthNode, SOCK_OUT, "Value");
@@ -1511,8 +1513,8 @@ static void update_vector_math_node_normalize_operator(bNodeTree *ntree)
           bNode *lengthNode = blender::bke::node_add_static_node(
               nullptr, ntree, SH_NODE_VECTOR_MATH);
           lengthNode->custom1 = NODE_VECTOR_MATH_LENGTH;
-          lengthNode->locx = node->locx + node->width + 20.0f;
-          lengthNode->locy = node->locy;
+          lengthNode->locx_legacy = node->locx_legacy + node->width + 20.0f;
+          lengthNode->locy_legacy = node->locy_legacy;
           bNodeSocket *sockLengthValue = blender::bke::node_find_socket(
               lengthNode, SOCK_OUT, "Value");
 
@@ -1602,8 +1604,8 @@ static void update_vector_math_node_average_operator(bNodeTree *ntree)
           bNode *normalizeNode = blender::bke::node_add_static_node(
               nullptr, ntree, SH_NODE_VECTOR_MATH);
           normalizeNode->custom1 = NODE_VECTOR_MATH_NORMALIZE;
-          normalizeNode->locx = node->locx + node->width + 20.0f;
-          normalizeNode->locy = node->locy;
+          normalizeNode->locx_legacy = node->locx_legacy + node->width + 20.0f;
+          normalizeNode->locy_legacy = node->locy_legacy;
           bNodeSocket *sockNormalizeOut = blender::bke::node_find_socket(
               normalizeNode, SOCK_OUT, "Vector");
 
@@ -1626,12 +1628,12 @@ static void update_vector_math_node_average_operator(bNodeTree *ntree)
           bNode *lengthNode = blender::bke::node_add_static_node(
               nullptr, ntree, SH_NODE_VECTOR_MATH);
           lengthNode->custom1 = NODE_VECTOR_MATH_LENGTH;
-          lengthNode->locx = node->locx + node->width + 20.0f;
+          lengthNode->locx_legacy = node->locx_legacy + node->width + 20.0f;
           if (version_node_socket_is_used(sockOutVector)) {
-            lengthNode->locy = node->locy - lengthNode->height - 20.0f;
+            lengthNode->locy_legacy = node->locy_legacy - lengthNode->height - 20.0f;
           }
           else {
-            lengthNode->locy = node->locy;
+            lengthNode->locy_legacy = node->locy_legacy;
           }
           bNodeSocket *sockLengthOut = blender::bke::node_find_socket(
               lengthNode, SOCK_OUT, "Value");
@@ -1765,12 +1767,12 @@ static void update_mapping_node_inputs_and_properties(bNodeTree *ntree)
         maximumNode = blender::bke::node_add_static_node(nullptr, ntree, SH_NODE_VECTOR_MATH);
         maximumNode->custom1 = NODE_VECTOR_MATH_MAXIMUM;
         if (mapping->flag & TEXMAP_CLIP_MAX) {
-          maximumNode->locx = node->locx + (node->width + 20.0f) * 2.0f;
+          maximumNode->locx_legacy = node->locx_legacy + (node->width + 20.0f) * 2.0f;
         }
         else {
-          maximumNode->locx = node->locx + node->width + 20.0f;
+          maximumNode->locx_legacy = node->locx_legacy + node->width + 20.0f;
         }
-        maximumNode->locy = node->locy;
+        maximumNode->locy_legacy = node->locy_legacy;
         bNodeSocket *sockMaximumB = static_cast<bNodeSocket *>(
             BLI_findlink(&maximumNode->inputs, 1));
         copy_v3_v3(version_cycles_node_socket_vector_value(sockMaximumB), mapping->min);
@@ -1798,8 +1800,8 @@ static void update_mapping_node_inputs_and_properties(bNodeTree *ntree)
       if (mapping->flag & TEXMAP_CLIP_MAX) {
         minimumNode = blender::bke::node_add_static_node(nullptr, ntree, SH_NODE_VECTOR_MATH);
         minimumNode->custom1 = NODE_VECTOR_MATH_MINIMUM;
-        minimumNode->locx = node->locx + node->width + 20.0f;
-        minimumNode->locy = node->locy;
+        minimumNode->locx_legacy = node->locx_legacy + node->width + 20.0f;
+        minimumNode->locy_legacy = node->locy_legacy;
         bNodeSocket *sockMinimumB = static_cast<bNodeSocket *>(
             BLI_findlink(&minimumNode->inputs, 1));
         copy_v3_v3(version_cycles_node_socket_vector_value(sockMinimumB), mapping->max);
@@ -1960,8 +1962,8 @@ static void update_voronoi_node_crackle(bNodeTree *ntree)
         texVoronoi->feature = SHD_VORONOI_F2;
         texVoronoi->distance = tex->distance;
         texVoronoi->dimensions = 3;
-        voronoiNode->locx = node->locx + node->width + 20.0f;
-        voronoiNode->locy = node->locy;
+        voronoiNode->locx_legacy = node->locx_legacy + node->width + 20.0f;
+        voronoiNode->locy_legacy = node->locy_legacy;
 
         bNodeSocket *sockVector = blender::bke::node_find_socket(node, SOCK_IN, "Vector");
         bNodeSocket *sockScale = blender::bke::node_find_socket(node, SOCK_IN, "Scale");
@@ -2000,8 +2002,8 @@ static void update_voronoi_node_crackle(bNodeTree *ntree)
 
         bNode *subtractNode = blender::bke::node_add_static_node(nullptr, ntree, SH_NODE_MATH);
         subtractNode->custom1 = NODE_MATH_SUBTRACT;
-        subtractNode->locx = voronoiNode->locx + voronoiNode->width + 20.0f;
-        subtractNode->locy = voronoiNode->locy;
+        subtractNode->locx_legacy = voronoiNode->locx_legacy + voronoiNode->width + 20.0f;
+        subtractNode->locy_legacy = voronoiNode->locy_legacy;
         bNodeSocket *sockSubtractOutValue = blender::bke::node_find_socket(
             subtractNode, SOCK_OUT, "Value");
 
@@ -2095,8 +2097,8 @@ static void update_voronoi_node_square_distance(bNodeTree *ntree)
       {
         bNode *multiplyNode = blender::bke::node_add_static_node(nullptr, ntree, SH_NODE_MATH);
         multiplyNode->custom1 = NODE_MATH_MULTIPLY;
-        multiplyNode->locx = node->locx + node->width + 20.0f;
-        multiplyNode->locy = node->locy;
+        multiplyNode->locx_legacy = node->locx_legacy + node->width + 20.0f;
+        multiplyNode->locy_legacy = node->locy_legacy;
 
         bNodeSocket *sockValue = blender::bke::node_find_socket(multiplyNode, SOCK_OUT, "Value");
         LISTBASE_FOREACH_BACKWARD_MUTABLE (bNodeLink *, link, &ntree->links) {
@@ -2146,8 +2148,8 @@ static void update_noise_and_wave_distortion(bNodeTree *ntree)
 
         bNode *mulNode = blender::bke::node_add_static_node(nullptr, ntree, SH_NODE_MATH);
         mulNode->custom1 = NODE_MATH_MULTIPLY;
-        mulNode->locx = node->locx;
-        mulNode->locy = node->locy - 240.0f;
+        mulNode->locx_legacy = node->locx_legacy;
+        mulNode->locy_legacy = node->locy_legacy - 240.0f;
         mulNode->flag |= NODE_HIDDEN;
         bNodeSocket *mulSockA = static_cast<bNodeSocket *>(BLI_findlink(&mulNode->inputs, 0));
         bNodeSocket *mulSockB = static_cast<bNodeSocket *>(BLI_findlink(&mulNode->inputs, 1));
@@ -2886,10 +2888,10 @@ void do_versions_after_linking_280(FileData *fd, Main *bmain)
       ToolSettings *ts = scene->toolsettings;
 
       /* Ensure new Paint modes. */
-      BKE_paint_ensure_from_paintmode(bmain, scene, PaintMode::GPencil);
-      BKE_paint_ensure_from_paintmode(bmain, scene, PaintMode::VertexGPencil);
-      BKE_paint_ensure_from_paintmode(bmain, scene, PaintMode::SculptGPencil);
-      BKE_paint_ensure_from_paintmode(bmain, scene, PaintMode::WeightGPencil);
+      BKE_paint_ensure_from_paintmode(scene, PaintMode::GPencil);
+      BKE_paint_ensure_from_paintmode(scene, PaintMode::VertexGPencil);
+      BKE_paint_ensure_from_paintmode(scene, PaintMode::SculptGPencil);
+      BKE_paint_ensure_from_paintmode(scene, PaintMode::WeightGPencil);
 
       /* Enable cursor by default. */
       Paint *paint = &ts->gp_paint->paint;
@@ -2933,9 +2935,9 @@ void do_versions_after_linking_280(FileData *fd, Main *bmain)
     /* Reset all grease pencil brushes. */
     LISTBASE_FOREACH (Scene *, scene, &bmain->scenes) {
       /* Ensure new Paint modes. */
-      BKE_paint_ensure_from_paintmode(bmain, scene, PaintMode::VertexGPencil);
-      BKE_paint_ensure_from_paintmode(bmain, scene, PaintMode::SculptGPencil);
-      BKE_paint_ensure_from_paintmode(bmain, scene, PaintMode::WeightGPencil);
+      BKE_paint_ensure_from_paintmode(scene, PaintMode::VertexGPencil);
+      BKE_paint_ensure_from_paintmode(scene, PaintMode::SculptGPencil);
+      BKE_paint_ensure_from_paintmode(scene, PaintMode::WeightGPencil);
     }
   }
 
@@ -3061,14 +3063,6 @@ void blo_do_versions_280(FileData *fd, Library * /*lib*/, Main *bmain)
         la->cascade_count = 4;
         la->cascade_exponent = 0.8f;
         la->cascade_fade = 0.1f;
-      }
-    }
-
-    if (!DNA_struct_member_exists(fd->filesdna, "Light", "float", "contact_dist")) {
-      LISTBASE_FOREACH (Light *, la, &bmain->lights) {
-        la->contact_dist = 0.2f;
-        la->contact_bias = 0.03f;
-        la->contact_thickness = 0.2f;
       }
     }
 
@@ -3440,15 +3434,6 @@ void blo_do_versions_280(FileData *fd, Library * /*lib*/, Main *bmain)
         scene->eevee.taa_samples = 16;
         scene->eevee.taa_render_samples = 64;
 
-        scene->eevee.sss_samples = 7;
-        scene->eevee.sss_jitter_threshold = 0.3f;
-
-        scene->eevee.ssr_quality = 0.25f;
-        scene->eevee.ssr_max_roughness = 0.5f;
-        scene->eevee.ssr_thickness = 0.2f;
-        scene->eevee.ssr_border_fade = 0.075f;
-        scene->eevee.ssr_firefly_fac = 10.0f;
-
         scene->eevee.volumetric_start = 0.1f;
         scene->eevee.volumetric_end = 100.0f;
         scene->eevee.volumetric_tile_size = 8;
@@ -3458,29 +3443,17 @@ void blo_do_versions_280(FileData *fd, Library * /*lib*/, Main *bmain)
         scene->eevee.volumetric_shadow_samples = 16;
 
         scene->eevee.gtao_distance = 0.2f;
-        scene->eevee.gtao_factor = 1.0f;
-        scene->eevee.gtao_quality = 0.25f;
+        scene->eevee.fast_gi_quality = 0.25f;
 
         scene->eevee.bokeh_max_size = 100.0f;
         scene->eevee.bokeh_threshold = 1.0f;
 
-        copy_v3_fl(scene->eevee.bloom_color, 1.0f);
-        scene->eevee.bloom_threshold = 0.8f;
-        scene->eevee.bloom_knee = 0.5f;
-        scene->eevee.bloom_intensity = 0.05f;
-        scene->eevee.bloom_radius = 6.5f;
-        scene->eevee.bloom_clamp = 0.0f;
-
         scene->eevee.motion_blur_samples = 8;
         scene->eevee.motion_blur_shutter_deprecated = 0.5f;
 
-        scene->eevee.shadow_method = SHADOW_ESM;
-        scene->eevee.shadow_cube_size = 512;
-        scene->eevee.shadow_cascade_size = 1024;
+        scene->eevee.shadow_cube_size_deprecated = 512;
 
-        scene->eevee.flag = SCE_EEVEE_VOLUMETRIC_LIGHTS | SCE_EEVEE_GTAO_BENT_NORMALS |
-                            SCE_EEVEE_GTAO_BOUNCE | SCE_EEVEE_TAA_REPROJECTION |
-                            SCE_EEVEE_SSR_HALF_RESOLUTION;
+        scene->eevee.flag = SCE_EEVEE_TAA_REPROJECTION;
 
         /* If the file is pre-2.80 move on. */
         if (scene->layer_properties == nullptr) {
@@ -3536,21 +3509,21 @@ void blo_do_versions_280(FileData *fd, Library * /*lib*/, Main *bmain)
         IDProperty *props = IDP_GetPropertyFromGroup(scene->layer_properties,
                                                      RE_engine_id_BLENDER_EEVEE);
         // EEVEE_GET_BOOL(props, volumetric_enable, SCE_EEVEE_VOLUMETRIC_ENABLED);
-        EEVEE_GET_BOOL(props, volumetric_lights, SCE_EEVEE_VOLUMETRIC_LIGHTS);
-        EEVEE_GET_BOOL(props, volumetric_shadows, SCE_EEVEE_VOLUMETRIC_SHADOWS);
+        // EEVEE_GET_BOOL(props, volumetric_lights, SCE_EEVEE_VOLUMETRIC_LIGHTS);
+        // EEVEE_GET_BOOL(props, volumetric_shadows, SCE_EEVEE_VOLUMETRIC_SHADOWS);
         EEVEE_GET_BOOL(props, gtao_enable, SCE_EEVEE_GTAO_ENABLED);
-        EEVEE_GET_BOOL(props, gtao_use_bent_normals, SCE_EEVEE_GTAO_BENT_NORMALS);
-        EEVEE_GET_BOOL(props, gtao_bounce, SCE_EEVEE_GTAO_BOUNCE);
+        // EEVEE_GET_BOOL(props, gtao_use_bent_normals, SCE_EEVEE_GTAO_BENT_NORMALS);
+        // EEVEE_GET_BOOL(props, gtao_bounce, SCE_EEVEE_GTAO_BOUNCE);
         EEVEE_GET_BOOL(props, dof_enable, SCE_EEVEE_DOF_ENABLED);
         // EEVEE_GET_BOOL(props, bloom_enable, SCE_EEVEE_BLOOM_ENABLED);
         EEVEE_GET_BOOL(props, motion_blur_enable, SCE_EEVEE_MOTION_BLUR_ENABLED_DEPRECATED);
-        EEVEE_GET_BOOL(props, shadow_high_bitdepth, SCE_EEVEE_SHADOW_HIGH_BITDEPTH);
+        // EEVEE_GET_BOOL(props, shadow_high_bitdepth, SCE_EEVEE_SHADOW_HIGH_BITDEPTH);
         EEVEE_GET_BOOL(props, taa_reprojection, SCE_EEVEE_TAA_REPROJECTION);
         // EEVEE_GET_BOOL(props, sss_enable, SCE_EEVEE_SSS_ENABLED);
         // EEVEE_GET_BOOL(props, sss_separate_albedo, SCE_EEVEE_SSS_SEPARATE_ALBEDO);
         EEVEE_GET_BOOL(props, ssr_enable, SCE_EEVEE_SSR_ENABLED);
-        EEVEE_GET_BOOL(props, ssr_refraction, SCE_EEVEE_SSR_REFRACTION);
-        EEVEE_GET_BOOL(props, ssr_halfres, SCE_EEVEE_SSR_HALF_RESOLUTION);
+        // EEVEE_GET_BOOL(props, ssr_refraction, SCE_EEVEE_SSR_REFRACTION);
+        // EEVEE_GET_BOOL(props, ssr_halfres, SCE_EEVEE_SSR_HALF_RESOLUTION);
 
         EEVEE_GET_INT(props, gi_diffuse_bounces);
         EEVEE_GET_INT(props, gi_diffuse_bounces);
@@ -3560,14 +3533,14 @@ void blo_do_versions_280(FileData *fd, Library * /*lib*/, Main *bmain)
         EEVEE_GET_INT(props, taa_samples);
         EEVEE_GET_INT(props, taa_render_samples);
 
-        EEVEE_GET_INT(props, sss_samples);
-        EEVEE_GET_FLOAT(props, sss_jitter_threshold);
+        // EEVEE_GET_INT(props, sss_samples);
+        // EEVEE_GET_FLOAT(props, sss_jitter_threshold);
 
-        EEVEE_GET_FLOAT(props, ssr_quality);
-        EEVEE_GET_FLOAT(props, ssr_max_roughness);
-        EEVEE_GET_FLOAT(props, ssr_thickness);
-        EEVEE_GET_FLOAT(props, ssr_border_fade);
-        EEVEE_GET_FLOAT(props, ssr_firefly_fac);
+        // EEVEE_GET_FLOAT(props, ssr_quality);
+        // EEVEE_GET_FLOAT(props, ssr_max_roughness);
+        // EEVEE_GET_FLOAT(props, ssr_thickness);
+        // EEVEE_GET_FLOAT(props, ssr_border_fade);
+        // EEVEE_GET_FLOAT(props, ssr_firefly_fac);
 
         EEVEE_GET_FLOAT(props, volumetric_start);
         EEVEE_GET_FLOAT(props, volumetric_end);
@@ -3577,26 +3550,26 @@ void blo_do_versions_280(FileData *fd, Library * /*lib*/, Main *bmain)
         EEVEE_GET_FLOAT(props, volumetric_light_clamp);
         EEVEE_GET_INT(props, volumetric_shadow_samples);
 
-        EEVEE_GET_FLOAT(props, gtao_distance);
-        EEVEE_GET_FLOAT(props, gtao_factor);
-        EEVEE_GET_FLOAT(props, gtao_quality);
+        // EEVEE_GET_FLOAT(props, gtao_distance);
+        // EEVEE_GET_FLOAT(props, gtao_factor);
+        EEVEE_GET_FLOAT(props, fast_gi_quality);
 
         EEVEE_GET_FLOAT(props, bokeh_max_size);
         EEVEE_GET_FLOAT(props, bokeh_threshold);
 
-        EEVEE_GET_FLOAT_ARRAY(props, bloom_color, 3);
-        EEVEE_GET_FLOAT(props, bloom_threshold);
-        EEVEE_GET_FLOAT(props, bloom_knee);
-        EEVEE_GET_FLOAT(props, bloom_intensity);
-        EEVEE_GET_FLOAT(props, bloom_radius);
-        EEVEE_GET_FLOAT(props, bloom_clamp);
+        // EEVEE_GET_FLOAT_ARRAY(props, bloom_color, 3);
+        // EEVEE_GET_FLOAT(props, bloom_threshold);
+        // EEVEE_GET_FLOAT(props, bloom_knee);
+        // EEVEE_GET_FLOAT(props, bloom_intensity);
+        // EEVEE_GET_FLOAT(props, bloom_radius);
+        // EEVEE_GET_FLOAT(props, bloom_clamp);
 
         EEVEE_GET_INT(props, motion_blur_samples);
         EEVEE_GET_FLOAT(props, motion_blur_shutter_deprecated);
 
-        EEVEE_GET_INT(props, shadow_method);
-        EEVEE_GET_INT(props, shadow_cube_size);
-        EEVEE_GET_INT(props, shadow_cascade_size);
+        // EEVEE_GET_INT(props, shadow_method);
+        EEVEE_GET_INT(props, shadow_cube_size_deprecated);
+        // EEVEE_GET_INT(props, shadow_cascade_size);
 
         /* Cleanup. */
         IDP_FreeProperty(scene->layer_properties);
@@ -3879,13 +3852,6 @@ void blo_do_versions_280(FileData *fd, Library * /*lib*/, Main *bmain)
             }
           }
         }
-      }
-    }
-
-    if (!DNA_struct_member_exists(fd->filesdna, "SceneEEVEE", "float", "gi_cubemap_draw_size")) {
-      LISTBASE_FOREACH (Scene *, scene, &bmain->scenes) {
-        scene->eevee.gi_irradiance_draw_size = 0.1f;
-        scene->eevee.gi_cubemap_draw_size = 0.3f;
       }
     }
 
@@ -4276,8 +4242,7 @@ void blo_do_versions_280(FileData *fd, Library * /*lib*/, Main *bmain)
           if (sl->spacetype == SPACE_PROPERTIES) {
             ListBase *regionbase = (sl == area->spacedata.first) ? &area->regionbase :
                                                                    &sl->regionbase;
-            ARegion *region = static_cast<ARegion *>(
-                MEM_callocN(sizeof(ARegion), "navigation bar for properties"));
+            ARegion *region = BKE_area_region_new();
             ARegion *region_header = nullptr;
 
             for (region_header = static_cast<ARegion *>(regionbase->first);
@@ -4345,22 +4310,9 @@ void blo_do_versions_280(FileData *fd, Library * /*lib*/, Main *bmain)
       }
     }
 
-    if (!DNA_struct_member_exists(fd->filesdna, "SceneEEVEE", "float", "gi_irradiance_smoothing"))
-    {
-      LISTBASE_FOREACH (Scene *, scene, &bmain->scenes) {
-        scene->eevee.gi_irradiance_smoothing = 0.1f;
-      }
-    }
-
-    if (!DNA_struct_member_exists(fd->filesdna, "SceneEEVEE", "float", "gi_filter_quality")) {
-      LISTBASE_FOREACH (Scene *, scene, &bmain->scenes) {
-        scene->eevee.gi_filter_quality = 1.0f;
-      }
-    }
-
     if (!DNA_struct_member_exists(fd->filesdna, "Light", "float", "att_dist")) {
       LISTBASE_FOREACH (Light *, la, &bmain->lights) {
-        la->att_dist = la->clipend;
+        la->att_dist = la->clipend_deprecated;
       }
     }
 
@@ -4519,8 +4471,7 @@ void blo_do_versions_280(FileData *fd, Library * /*lib*/, Main *bmain)
               ListBase *regionbase = (slink == area->spacedata.first) ? &area->regionbase :
                                                                         &slink->regionbase;
 
-              navigation_region = static_cast<ARegion *>(
-                  MEM_callocN(sizeof(ARegion), "userpref navigation-region do_versions"));
+              navigation_region = BKE_area_region_new();
 
               /* Order matters, addhead not addtail! */
               BLI_insertlinkbefore(regionbase, main_region, navigation_region);
@@ -4791,8 +4742,7 @@ void blo_do_versions_280(FileData *fd, Library * /*lib*/, Main *bmain)
                                                                      &sl->regionbase;
               ARegion *region_navbar = BKE_spacedata_find_region_type(sl, area, RGN_TYPE_NAV_BAR);
 
-              execute_region = static_cast<ARegion *>(
-                  MEM_callocN(sizeof(ARegion), "execute region for properties"));
+              execute_region = BKE_area_region_new();
 
               BLI_assert(region_navbar);
 
@@ -5583,6 +5533,7 @@ void blo_do_versions_280(FileData *fd, Library * /*lib*/, Main *bmain)
 
   if (!MAIN_VERSION_FILE_ATLEAST(bmain, 281, 15)) {
     LISTBASE_FOREACH (Scene *, scene, &bmain->scenes) {
+      constexpr char SCE_SNAP_TO_NODE_X = (1 << 1);
       if (scene->toolsettings->snap_node_mode == SCE_SNAP_TO_NODE_X) {
         scene->toolsettings->snap_node_mode = SCE_SNAP_TO_GRID;
       }
@@ -5855,15 +5806,6 @@ void blo_do_versions_280(FileData *fd, Library * /*lib*/, Main *bmain)
         {
           br->tip_roundness = 0.18f;
         }
-      }
-    }
-
-    /* EEVEE: Cascade shadow bias fix */
-    LISTBASE_FOREACH (Light *, light, &bmain->lights) {
-      if (light->type == LA_SUN) {
-        /* Should be 0.0004 but for practical reason we make it bigger.
-         * Correct factor is scene dependent. */
-        light->bias *= 0.002f;
       }
     }
   }

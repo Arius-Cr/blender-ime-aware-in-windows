@@ -10,9 +10,6 @@
 
 #include <variant>
 
-/* XXX temporary, until AssetHandle is designed properly and queries can return a pointer to it. */
-#include "DNA_asset_types.h"
-
 #include "BLI_string_ref.hh"
 #include "BLI_utildefines.h"
 #include "BLI_vector.hh"
@@ -22,8 +19,9 @@
 #include "RNA_types.hh"
 
 struct ARegion;
+struct AssetLibraryReference;
+struct AssetWeakReference;
 struct Base;
-struct bGPdata;
 struct bGPDframe;
 struct bGPDlayer;
 struct bPoseChannel;
@@ -104,7 +102,7 @@ using bContextDataCallback = int /*eContextResult*/ (*)(const bContext *C,
 
 struct bContextStoreEntry {
   std::string name;
-  std::variant<PointerRNA, std::string> value;
+  std::variant<PointerRNA, std::string, int64_t> value;
 };
 
 struct bContextStore {
@@ -159,20 +157,24 @@ bContext *CTX_copy(const bContext *C);
 /* Stored Context */
 
 bContextStore *CTX_store_add(blender::Vector<std::unique_ptr<bContextStore>> &contexts,
-                             blender::StringRefNull name,
+                             blender::StringRef name,
                              const PointerRNA *ptr);
 bContextStore *CTX_store_add(blender::Vector<std::unique_ptr<bContextStore>> &contexts,
-                             blender::StringRefNull name,
+                             blender::StringRef name,
                              blender::StringRef str);
+bContextStore *CTX_store_add(blender::Vector<std::unique_ptr<bContextStore>> &contexts,
+                             blender::StringRef name,
+                             int64_t value);
 bContextStore *CTX_store_add_all(blender::Vector<std::unique_ptr<bContextStore>> &contexts,
                                  const bContextStore *context);
 const bContextStore *CTX_store_get(const bContext *C);
 void CTX_store_set(bContext *C, const bContextStore *store);
 const PointerRNA *CTX_store_ptr_lookup(const bContextStore *store,
-                                       blender::StringRefNull name,
+                                       blender::StringRef name,
                                        const StructRNA *type = nullptr);
 std::optional<blender::StringRefNull> CTX_store_string_lookup(const bContextStore *store,
-                                                              blender::StringRefNull name);
+                                                              blender::StringRef name);
+std::optional<int64_t> CTX_store_int_lookup(const bContextStore *store, blender::StringRef name);
 
 /* need to store if python is initialized or not */
 bool CTX_py_init_get(bContext *C);
@@ -271,6 +273,7 @@ enum {
   CTX_DATA_TYPE_COLLECTION,
   CTX_DATA_TYPE_PROPERTY,
   CTX_DATA_TYPE_STRING,
+  CTX_DATA_TYPE_INT64,
 };
 
 PointerRNA CTX_data_pointer_get(const bContext *C, const char *member);
@@ -292,6 +295,7 @@ void CTX_data_collection_remap_property(blender::MutableSpan<PointerRNA> collect
                                         const char *propname);
 
 std::optional<blender::StringRefNull> CTX_data_string_get(const bContext *C, const char *member);
+std::optional<int64_t> CTX_data_int_get(const bContext *C, const char *member);
 
 /**
  * \param C: Context.
@@ -308,6 +312,7 @@ int /*eContextResult*/ CTX_data_get(const bContext *C,
                                     PropertyRNA **r_prop,
                                     int *r_index,
                                     blender::StringRef *r_str,
+                                    std::optional<int64_t> *r_int_value,
                                     short *r_type);
 
 void CTX_data_id_pointer_set(bContextDataResult *result, ID *id);
@@ -426,13 +431,6 @@ bool CTX_data_selected_pose_bones_from_active_object(const bContext *C,
                                                      blender::Vector<PointerRNA> *list);
 bool CTX_data_visible_pose_bones(const bContext *C, blender::Vector<PointerRNA> *list);
 
-bGPdata *CTX_data_gpencil_data(const bContext *C);
-bGPDlayer *CTX_data_active_gpencil_layer(const bContext *C);
-bGPDframe *CTX_data_active_gpencil_frame(const bContext *C);
-bool CTX_data_visible_gpencil_layers(const bContext *C, blender::Vector<PointerRNA> *list);
-bool CTX_data_editable_gpencil_layers(const bContext *C, blender::Vector<PointerRNA> *list);
-bool CTX_data_editable_gpencil_strokes(const bContext *C, blender::Vector<PointerRNA> *list);
-
 const AssetLibraryReference *CTX_wm_asset_library_ref(const bContext *C);
 class blender::asset_system::AssetRepresentation *CTX_wm_asset(const bContext *C);
 
@@ -465,6 +463,7 @@ Depsgraph *CTX_data_expect_evaluated_depsgraph(const bContext *C);
  *
  * \note Will be expensive if there are relations or objects tagged for update.
  * \note If there are pending updates depsgraph hooks will be invoked.
+ * \warning In many cases, runtime data on associated objects will be destroyed & recreated.
  */
 Depsgraph *CTX_data_ensure_evaluated_depsgraph(const bContext *C);
 

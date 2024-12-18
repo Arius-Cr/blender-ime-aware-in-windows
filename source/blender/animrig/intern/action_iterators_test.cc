@@ -123,8 +123,10 @@ TEST_F(ActionIteratorsTest, foreach_action_slot_use_with_references)
   std::optional<ActionSlotAssignmentResult> slot_assignment_result;
 
   bool all_assigns_ok = true;
-  const auto assign_other_action =
-      [&](bAction *&action_ptr_ref, slot_handle_t &slot_handle_ref, char *slot_name) -> bool {
+  const auto assign_other_action = [&](ID & /* animated_id */,
+                                       bAction *&action_ptr_ref,
+                                       slot_handle_t &slot_handle_ref,
+                                       char *slot_name) -> bool {
     /* Assign the other Action. */
     all_assigns_ok &= generic_assign_action(
         cube->id, &other_action, action_ptr_ref, slot_handle_ref, slot_name);
@@ -150,7 +152,8 @@ TEST_F(ActionIteratorsTest, foreach_action_slot_use_with_references)
       << "Expected Action " << other_action.id.name << " but found "
       << action_and_slot->first->id.name;
   EXPECT_EQ(&another_slot, action_and_slot->second)
-      << "Expected Slot " << another_slot.name << " but found " << action_and_slot->second->name;
+      << "Expected Slot " << another_slot.identifier << " but found "
+      << action_and_slot->second->identifier;
 }
 
 }  // namespace blender::animrig::tests

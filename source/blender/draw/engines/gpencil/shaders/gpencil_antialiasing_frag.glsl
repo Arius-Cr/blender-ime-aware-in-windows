@@ -2,7 +2,11 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
-#pragma BLENDER_REQUIRE(gpu_shader_smaa_lib.glsl)
+#include "infos/gpencil_info.hh"
+
+FRAGMENT_SHADER_CREATE_INFO(gpencil_antialiasing_stage_1)
+
+#include "gpu_shader_smaa_lib.glsl"
 
 void main()
 {

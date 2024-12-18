@@ -238,10 +238,8 @@ static void node_socket_add_replace(const bContext *C,
     node_from = bke::node_add_static_node(C, ntree, type);
     if (node_prev != nullptr) {
       /* If we're replacing existing node, use its location. */
-      node_from->locx = node_prev->locx;
-      node_from->locy = node_prev->locy;
-      node_from->offsetx = node_prev->offsetx;
-      node_from->offsety = node_prev->offsety;
+      node_from->location[0] = node_prev->location[0];
+      node_from->location[1] = node_prev->location[1];
     }
     else {
       sock_from_tmp = (bNodeSocket *)BLI_findlink(&node_from->outputs, item->socket_index);
@@ -607,12 +605,12 @@ static void ui_node_menu_column(NodeLinkArg *arg, int nclass, const char *cname)
   }
 }
 
-static void node_menu_column_foreach_cb(void *calldata, int nclass, const char *name)
+static void node_menu_column_foreach_cb(void *calldata, int nclass, const StringRefNull name)
 {
   NodeLinkArg *arg = (NodeLinkArg *)calldata;
 
   if (!ELEM(nclass, NODE_CLASS_GROUP, NODE_CLASS_LAYOUT)) {
-    ui_node_menu_column(arg, nclass, name);
+    ui_node_menu_column(arg, nclass, name.c_str());
   }
 }
 
@@ -756,11 +754,9 @@ static void node_panel_toggle_button_cb(bContext *C, void *panel_state_argv, voi
 }
 
 static void ui_node_draw_panel(uiLayout &layout,
-                               bContext &C,
                                bNodeTree &ntree,
                                const nodes::PanelDeclaration &panel_decl,
-                               bNodePanelState &panel_state,
-                               PointerRNA nodeptr)
+                               bNodePanelState &panel_state)
 {
   uiLayout *row = uiLayoutRow(&layout, true);
   uiLayoutSetPropDecorate(row, false);
@@ -784,11 +780,40 @@ static void ui_node_draw_panel(uiLayout &layout,
   UI_but_drawflag_enable(but, UI_BUT_TEXT_LEFT | UI_BUT_NO_TOOLTIP);
   UI_but_func_set(but, node_panel_toggle_button_cb, &panel_state, &ntree);
   UI_block_emboss_set(block, UI_EMBOSS);
+}
 
-  /* Panel buttons. */
-  if (!panel_state.is_collapsed() && panel_decl.draw_buttons) {
-    uiLayoutSetPropSep(&layout, true);
-    panel_decl.draw_buttons(&layout, &C, &nodeptr);
+static void ui_node_draw_recursive(uiLayout &layout,
+                                   bContext &C,
+                                   bNodeTree &ntree,
+                                   bNode &node,
+                                   const nodes::PanelDeclaration &panel_decl,
+                                   const int depth)
+{
+  bNodePanelState &panel_state = node.panel_states_array[panel_decl.index];
+  ui_node_draw_panel(layout, ntree, panel_decl, panel_state);
+  if (panel_state.is_collapsed()) {
+    return;
+  }
+  for (const nodes::ItemDeclaration *item_decl : panel_decl.items) {
+    if (const auto *socket_decl = dynamic_cast<const nodes::SocketDeclaration *>(item_decl)) {
+      if (socket_decl->in_out == SOCK_IN) {
+        ui_node_draw_input(layout,
+                           C,
+                           ntree,
+                           node,
+                           node.socket_by_decl(*socket_decl),
+                           depth,
+                           panel_decl.name.c_str());
+      }
+    }
+    else if (const auto *sub_panel_decl = dynamic_cast<const nodes::PanelDeclaration *>(item_decl))
+    {
+      ui_node_draw_recursive(layout, C, ntree, node, *sub_panel_decl, depth + 1);
+    }
+    else if (const auto *layout_decl = dynamic_cast<const nodes::LayoutDeclaration *>(item_decl)) {
+      PointerRNA nodeptr = RNA_pointer_create(&ntree.id, &RNA_Node, &node);
+      layout_decl->draw(&layout, &C, &nodeptr);
+    }
   }
 }
 
@@ -797,51 +822,29 @@ static void ui_node_draw_node(
 {
   PointerRNA nodeptr = RNA_pointer_create(&ntree.id, &RNA_Node, &node);
 
-  if (node.typeinfo->draw_buttons) {
-    if (node.type != NODE_GROUP) {
-      uiLayoutSetPropSep(&layout, true);
-      node.typeinfo->draw_buttons(&layout, &C, &nodeptr);
-    }
-  }
-
   if (node.declaration() && node.declaration()->use_custom_socket_order) {
-    /* Node with panels. */
-    namespace nodes = blender::nodes;
-    using ItemDeclIterator = blender::Span<nodes::ItemDeclarationPtr>::iterator;
-    using SocketIterator = blender::Span<bNodeSocket *>::iterator;
-    using PanelStateIterator = blender::MutableSpan<bNodePanelState>::iterator;
-
-    ItemDeclIterator item_decl = node.declaration()->items.begin();
-    SocketIterator input = node.input_sockets().begin();
-    PanelStateIterator panel_state = node.panel_states().begin();
-    const ItemDeclIterator item_decl_end = node.declaration()->items.end();
-
-    bool panel_collapsed = false;
-    const char *panel_label = nullptr;
-
-    for (; item_decl != item_decl_end; ++item_decl) {
-      if (const nodes::SocketDeclaration *socket_decl =
-              dynamic_cast<const nodes::SocketDeclaration *>(item_decl->get()))
+    const nodes::NodeDeclaration &node_decl = *node.declaration();
+    for (const nodes::ItemDeclaration *item_decl : node_decl.root_items) {
+      if (const auto *panel_decl = dynamic_cast<const nodes::PanelDeclaration *>(item_decl)) {
+        ui_node_draw_recursive(layout, C, ntree, node, *panel_decl, depth + 1);
+      }
+      else if (const auto *socket_decl = dynamic_cast<const nodes::SocketDeclaration *>(item_decl))
       {
         if (socket_decl->in_out == SOCK_IN) {
-          if (!panel_collapsed) {
-            ui_node_draw_input(layout, C, ntree, node, **input, depth + 1, panel_label);
-          }
-          ++input;
+          ui_node_draw_input(
+              layout, C, ntree, node, node.socket_by_decl(*socket_decl), depth, nullptr);
         }
-      }
-      else if (const nodes::PanelDeclaration *panel_decl =
-                   dynamic_cast<const nodes::PanelDeclaration *>(item_decl->get()))
-      {
-        panel_collapsed = panel_state->is_collapsed();
-        panel_label = panel_decl->name.c_str();
-        ui_node_draw_panel(layout, C, ntree, *panel_decl, *panel_state, nodeptr);
-        ++panel_state;
       }
     }
   }
   else {
-    /* Node without panels. */
+    if (node.typeinfo->draw_buttons) {
+      if (node.type != NODE_GROUP) {
+        uiLayoutSetPropSep(&layout, true);
+        node.typeinfo->draw_buttons(&layout, &C, &nodeptr);
+      }
+    }
+
     LISTBASE_FOREACH (bNodeSocket *, input, &node.inputs) {
       ui_node_draw_input(layout, C, ntree, node, *input, depth + 1, nullptr);
     }
@@ -979,7 +982,7 @@ static void ui_node_draw_input(uiLayout &layout,
   }
 
   if (add_dummy_decorator && split_wrapper.decorate_column) {
-    uiItemDecoratorR(split_wrapper.decorate_column, nullptr, nullptr, 0);
+    uiItemDecoratorR(split_wrapper.decorate_column, nullptr, std::nullopt, 0);
   }
 
   node_socket_add_tooltip(ntree, input, *row);

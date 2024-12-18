@@ -2,7 +2,11 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
-#pragma BLENDER_REQUIRE(eevee_film_lib.glsl)
+#include "infos/eevee_film_info.hh"
+
+FRAGMENT_SHADER_CREATE_INFO(eevee_film_frag)
+
+#include "eevee_film_lib.glsl"
 
 void main()
 {

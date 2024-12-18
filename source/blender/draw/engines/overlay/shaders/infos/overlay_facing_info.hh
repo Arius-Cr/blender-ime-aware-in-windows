@@ -2,16 +2,16 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
-#include "gpu_shader_create_info.hh"
+#include "overlay_common_info.hh"
 
-GPU_SHADER_CREATE_INFO(overlay_facing)
-    .do_static_compilation(true)
-    .vertex_in(0, Type::VEC3, "pos")
-    .vertex_source("overlay_facing_vert.glsl")
-    .fragment_source("overlay_facing_frag.glsl")
-    .fragment_out(0, Type::VEC4, "fragColor")
-    .additional_info("draw_mesh", "draw_globals");
+GPU_SHADER_CREATE_INFO(overlay_facing_base)
+VERTEX_IN(0, VEC3, pos)
+VERTEX_SOURCE("overlay_facing_vert.glsl")
+FRAGMENT_SOURCE("overlay_facing_frag.glsl")
+FRAGMENT_OUT(0, VEC4, fragColor)
+ADDITIONAL_INFO(draw_view)
+ADDITIONAL_INFO(draw_resource_handle_new)
+ADDITIONAL_INFO(draw_globals)
+GPU_SHADER_CREATE_END()
 
-GPU_SHADER_CREATE_INFO(overlay_facing_clipped)
-    .do_static_compilation(true)
-    .additional_info("overlay_facing", "drw_clipped");
+OVERLAY_INFO_VARIATIONS_MODELMAT(overlay_facing, overlay_facing_base)

@@ -104,6 +104,12 @@ class Operation {
    * establish links between different operations. */
   void map_input_to_result(StringRef identifier, Result *result);
 
+  /* Free the results of the operation. Note that normally, operation results aren't freed by the
+   * operation itself, but by the operations that consume those results, see the release_inputs
+   * method. But this is used to force free results in cases like canceled evaluations where later
+   * operations will not get evaluated and thus will not free the results it consumes. */
+  void free_results();
+
  protected:
   /* Compute the operation domain of this operation. By default, this implements a default logic
    * that infers the operation domain from the inputs, which may be overridden for a different
@@ -153,6 +159,11 @@ class Operation {
   /* Get a reference to the descriptor of the input identified by the given identified. */
   InputDescriptor &get_input_descriptor(StringRef identifier);
 
+  /* Release the results that are mapped to the inputs of the operation. This is called after the
+   * evaluation of the operation to declare that the results are no longer needed by this
+   * operation. */
+  virtual void release_inputs();
+
   /* Returns a reference to the compositor context. */
   Context &context() const;
 
@@ -167,11 +178,6 @@ class Operation {
   /* Resets the results of the operation. See the reset method in the Result class for more
    * information. */
   void reset_results();
-
-  /* Release the results that are mapped to the inputs of the operation. This is called after the
-   * evaluation of the operation to declare that the results are no longer needed by this
-   * operation. */
-  void release_inputs();
 
   /* Release the results that were allocated in the execute method but are not actually needed.
    * This can be the case if the execute method allocated a dummy texture for an unneeded result,

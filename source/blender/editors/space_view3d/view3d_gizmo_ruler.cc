@@ -16,10 +16,10 @@
 
 #include "BKE_context.hh"
 #include "BKE_gpencil_legacy.h"
-#include "BKE_report.hh"
-
 #include "BKE_layer.hh"
+#include "BKE_report.hh"
 #include "BKE_scene.hh"
+#include "BKE_screen.hh"
 #include "BKE_unit.hh"
 
 #include "DNA_gpencil_legacy_types.h"
@@ -1332,7 +1332,7 @@ static int view3d_ruler_add_invoke(bContext *C, wmOperator *op, const wmEvent *e
     return OPERATOR_CANCELLED;
   }
 
-  wmGizmoMap *gzmap = region->gizmo_map;
+  wmGizmoMap *gzmap = region->runtime->gizmo_map;
   wmGizmoGroup *gzgroup = WM_gizmomap_group_find(gzmap, view3d_gzgt_ruler_id);
 
   if (!gizmo_ruler_check_for_operator(gzgroup)) {
@@ -1406,10 +1406,10 @@ static int view3d_ruler_remove_invoke(bContext *C, wmOperator *op, const wmEvent
 
   if (v3d->gizmo_flag & (V3D_GIZMO_HIDE | V3D_GIZMO_HIDE_TOOL)) {
     BKE_report(op->reports, RPT_WARNING, "Gizmos hidden in this view");
-    return OPERATOR_CANCELLED;
+    return OPERATOR_PASS_THROUGH;
   }
 
-  wmGizmoMap *gzmap = region->gizmo_map;
+  wmGizmoMap *gzmap = region->runtime->gizmo_map;
   wmGizmoGroup *gzgroup = WM_gizmomap_group_find(gzmap, view3d_gzgt_ruler_id);
   if (gzgroup) {
     if (!gizmo_ruler_check_for_operator(gzgroup)) {

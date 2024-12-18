@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include "BLI_array.hh"
+#include "BLI_array_utils.hh"
 #include "BLI_delaunay_2d.hh"
 #include "BLI_math_vector_types.hh"
 
@@ -38,7 +39,7 @@ static void node_declare(NodeDeclarationBuilder &b)
 
 static void node_layout(uiLayout *layout, bContext * /*C*/, PointerRNA *ptr)
 {
-  uiItemR(layout, ptr, "mode", UI_ITEM_R_EXPAND, nullptr, ICON_NONE);
+  uiItemR(layout, ptr, "mode", UI_ITEM_R_EXPAND, std::nullopt, ICON_NONE);
 }
 
 static void node_init(bNodeTree * /*tree*/, bNode *node)
@@ -271,7 +272,7 @@ static void curve_fill_calculate(GeometrySet &geometry_set,
         continue;
       }
       const bke::CurvesGeometry &src_curves = drawing->strokes();
-      if (src_curves.curves_num() == 0) {
+      if (src_curves.is_empty()) {
         continue;
       }
       const Array<meshintersect::CDT_result<double>> results = do_group_aware_cdt(

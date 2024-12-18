@@ -9,12 +9,20 @@
  * Each thread group will load a brick worth of data and add the needed padding texels.
  */
 
-#pragma BLENDER_REQUIRE(gpu_shader_utildefines_lib.glsl)
-#pragma BLENDER_REQUIRE(gpu_shader_math_base_lib.glsl)
-#pragma BLENDER_REQUIRE(gpu_shader_math_vector_lib.glsl)
-#pragma BLENDER_REQUIRE(gpu_shader_math_matrix_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_spherical_harmonics_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_lightprobe_volume_eval_lib.glsl)
+#include "infos/eevee_lightprobe_volume_info.hh"
+
+#ifdef GLSL_CPP_STUBS
+#  define IRRADIANCE_GRID_UPLOAD
+#endif
+
+COMPUTE_SHADER_CREATE_INFO(eevee_lightprobe_volume_load)
+
+#include "eevee_lightprobe_volume_eval_lib.glsl"
+#include "eevee_spherical_harmonics_lib.glsl"
+#include "gpu_shader_math_base_lib.glsl"
+#include "gpu_shader_math_matrix_lib.glsl"
+#include "gpu_shader_math_vector_lib.glsl"
+#include "gpu_shader_utildefines_lib.glsl"
 
 void atlas_store(vec4 sh_coefficient, ivec2 atlas_coord, int layer)
 {
@@ -104,7 +112,8 @@ void main()
   }
 
   /* Rotate Spherical Harmonic into world space. */
-  mat3 grid_to_world_rot = normalize(mat3(grids_infos_buf[grid_index].world_to_grid_transposed));
+  mat3 grid_to_world_rot = normalize(
+      to_float3x3(grids_infos_buf[grid_index].world_to_grid_transposed));
   sh_local = spherical_harmonics_rotate(grid_to_world_rot, sh_local);
 
   SphericalHarmonicL1 sh_visibility;
@@ -143,8 +152,6 @@ void main()
     /* Encode validity of each samples in the grid cell. */
     for (int cell = 0; cell < 4; cell++) {
       for (int i = 0; i < 8; i++) {
-        ivec3 offset = lightprobe_volume_grid_cell_corner(i);
-        ivec3 coord_output = texel_coord + offset + ivec3(0, 0, cell);
         ivec3 coord_input = clamp(texel_coord, ivec3(0), grid_size - 1);
         float validity = texelFetch(validity_tx, coord_input, 0).r;
         bool is_padding_voxel = !all(equal(texel_coord, input_coord));

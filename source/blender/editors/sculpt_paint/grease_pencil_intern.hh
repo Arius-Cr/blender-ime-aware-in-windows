@@ -78,8 +78,11 @@ float brush_point_influence(const Scene &scene,
                             const float2 &co,
                             const InputSample &sample,
                             float multi_frame_falloff);
-/* Compute the closest distance to a polygon. If the point is inside the polygon, the distance is
- * 0.0f. If the point is outside the polygon, the distance to the closest point is returned. */
+/**
+ * Compute the closest distance to the "surface".
+ * When the point is outside the polygon, compute the closest distance to the polygon points.
+ * When the point is inside the polygon return 0.
+ */
 float closest_distance_to_surface_2d(const float2 pt, const Span<float2> verts);
 /* Influence value for an entire fill. */
 float brush_fill_influence(const Scene &scene,
@@ -87,6 +90,9 @@ float brush_fill_influence(const Scene &scene,
                            Span<float2> fill_positions,
                            const InputSample &sample,
                            float multi_frame_falloff);
+
+/* Based on pinning status, decide whether to use vertex color or material mode for brush. */
+bool brush_using_vertex_color(const GpPaint *gp_paint, const Brush *brush);
 
 /* True if influence of the brush should be inverted. */
 bool is_brush_inverted(const Brush &brush, BrushStrokeMode stroke_mode);
@@ -144,6 +150,17 @@ DeltaProjectionFunc get_screen_projection_fn(const GreasePencilStrokeParams &par
                                              const Object &object,
                                              const bke::greasepencil::Layer &layer);
 
+/**
+ * Compute position offset for a point in the original geometry
+ * from a screen offset and crazyspace deformation info.
+ * \param projection_fn Projection from screen space to the evaluated object.
+ * \param deformation Converts evaluated position delta to original geometry.
+ */
+float3 compute_orig_delta(const DeltaProjectionFunc &projection_fn,
+                          const bke::crazyspace::GeometryDeformation &deformation,
+                          int index,
+                          const float2 &screen_delta);
+
 bool do_vertex_color_points(const Brush &brush);
 bool do_vertex_color_fill(const Brush &brush);
 
@@ -185,15 +202,16 @@ class GreasePencilStrokeOperationCommon : public GreasePencilStrokeOperation {
 
 /* Operations */
 
-std::unique_ptr<GreasePencilStrokeOperation> new_paint_operation();
-std::unique_ptr<GreasePencilStrokeOperation> new_erase_operation(bool temp_eraser);
+std::unique_ptr<GreasePencilStrokeOperation> new_paint_operation(bool temp_draw = false);
+std::unique_ptr<GreasePencilStrokeOperation> new_erase_operation(bool temp_eraser = false);
 std::unique_ptr<GreasePencilStrokeOperation> new_tint_operation();
 std::unique_ptr<GreasePencilStrokeOperation> new_weight_paint_draw_operation(
     const BrushStrokeMode &brush_mode);
 std::unique_ptr<GreasePencilStrokeOperation> new_weight_paint_blur_operation();
 std::unique_ptr<GreasePencilStrokeOperation> new_weight_paint_average_operation();
 std::unique_ptr<GreasePencilStrokeOperation> new_weight_paint_smear_operation();
-std::unique_ptr<GreasePencilStrokeOperation> new_smooth_operation(BrushStrokeMode stroke_mode);
+std::unique_ptr<GreasePencilStrokeOperation> new_smooth_operation(BrushStrokeMode stroke_mode,
+                                                                  bool temp_smooth = false);
 std::unique_ptr<GreasePencilStrokeOperation> new_thickness_operation(BrushStrokeMode stroke_mode);
 std::unique_ptr<GreasePencilStrokeOperation> new_strength_operation(BrushStrokeMode stroke_mode);
 std::unique_ptr<GreasePencilStrokeOperation> new_randomize_operation(BrushStrokeMode stroke_mode);

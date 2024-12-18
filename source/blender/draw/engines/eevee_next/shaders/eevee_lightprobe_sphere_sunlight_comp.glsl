@@ -5,11 +5,15 @@
 /* Sum all Suns extracting during remapping to octahedral map.
  * Dispatch only one thread-group that sums. */
 
-#pragma BLENDER_REQUIRE(gpu_shader_math_matrix_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_lightprobe_sphere_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_lightprobe_sphere_mapping_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_spherical_harmonics_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_sampling_lib.glsl)
+#include "infos/eevee_lightprobe_sphere_info.hh"
+
+COMPUTE_SHADER_CREATE_INFO(eevee_lightprobe_sphere_sunlight)
+
+#include "eevee_lightprobe_sphere_lib.glsl"
+#include "eevee_lightprobe_sphere_mapping_lib.glsl"
+#include "eevee_sampling_lib.glsl"
+#include "eevee_spherical_harmonics_lib.glsl"
+#include "gpu_shader_math_matrix_lib.glsl"
 
 shared vec3 local_radiance[gl_WorkGroupSize.x];
 shared vec4 local_direction[gl_WorkGroupSize.x];
@@ -67,7 +71,6 @@ void main()
 
     /* Auto sun angle. */
     float sun_angle_cos = 2.0 * len - 1.0;
-    float sun_angle = acos(sun_angle_cos);
     /* Compute tangent from cosine.  */
     float sun_angle_tan = sqrt(-1.0 + 1.0 / square(sun_angle_cos));
     /* Clamp value to avoid float imprecision artifacts. */

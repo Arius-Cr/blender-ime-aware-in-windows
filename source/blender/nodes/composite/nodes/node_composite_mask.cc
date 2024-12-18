@@ -52,19 +52,21 @@ static void node_composit_buts_mask(uiLayout *layout, bContext *C, PointerRNA *p
   bNode *node = (bNode *)ptr->data;
 
   uiTemplateID(layout, C, ptr, "mask", nullptr, nullptr, nullptr);
-  uiItemR(layout, ptr, "use_feather", UI_ITEM_R_SPLIT_EMPTY_NAME, nullptr, ICON_NONE);
+  uiItemR(layout, ptr, "use_feather", UI_ITEM_R_SPLIT_EMPTY_NAME, std::nullopt, ICON_NONE);
 
   uiItemR(layout, ptr, "size_source", UI_ITEM_R_SPLIT_EMPTY_NAME, "", ICON_NONE);
 
   if (node->custom1 & (CMP_NODE_MASK_FLAG_SIZE_FIXED | CMP_NODE_MASK_FLAG_SIZE_FIXED_SCENE)) {
-    uiItemR(layout, ptr, "size_x", UI_ITEM_R_SPLIT_EMPTY_NAME, nullptr, ICON_NONE);
-    uiItemR(layout, ptr, "size_y", UI_ITEM_R_SPLIT_EMPTY_NAME, nullptr, ICON_NONE);
+    uiItemR(layout, ptr, "size_x", UI_ITEM_R_SPLIT_EMPTY_NAME, std::nullopt, ICON_NONE);
+    uiItemR(layout, ptr, "size_y", UI_ITEM_R_SPLIT_EMPTY_NAME, std::nullopt, ICON_NONE);
   }
 
-  uiItemR(layout, ptr, "use_motion_blur", UI_ITEM_R_SPLIT_EMPTY_NAME, nullptr, ICON_NONE);
+  uiItemR(layout, ptr, "use_motion_blur", UI_ITEM_R_SPLIT_EMPTY_NAME, std::nullopt, ICON_NONE);
   if (node->custom1 & CMP_NODE_MASK_FLAG_MOTION_BLUR) {
-    uiItemR(layout, ptr, "motion_blur_samples", UI_ITEM_R_SPLIT_EMPTY_NAME, nullptr, ICON_NONE);
-    uiItemR(layout, ptr, "motion_blur_shutter", UI_ITEM_R_SPLIT_EMPTY_NAME, nullptr, ICON_NONE);
+    uiItemR(
+        layout, ptr, "motion_blur_samples", UI_ITEM_R_SPLIT_EMPTY_NAME, std::nullopt, ICON_NONE);
+    uiItemR(
+        layout, ptr, "motion_blur_shutter", UI_ITEM_R_SPLIT_EMPTY_NAME, std::nullopt, ICON_NONE);
   }
 }
 
@@ -83,16 +85,15 @@ class MaskOperation : public NodeOperation {
     }
 
     const Domain domain = compute_domain();
-    CachedMask &cached_mask = context().cache_manager().cached_masks.get(
-        context(),
-        get_mask(),
-        domain.size,
-        get_aspect_ratio(),
-        get_use_feather(),
-        get_motion_blur_samples(),
-        get_motion_blur_shutter());
+    Result &cached_mask = context().cache_manager().cached_masks.get(context(),
+                                                                     get_mask(),
+                                                                     domain.size,
+                                                                     get_aspect_ratio(),
+                                                                     get_use_feather(),
+                                                                     get_motion_blur_samples(),
+                                                                     get_motion_blur_shutter());
 
-    output_mask.wrap_external(cached_mask.texture());
+    output_mask.wrap_external(cached_mask);
   }
 
   Domain compute_domain() override

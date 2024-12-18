@@ -55,7 +55,7 @@
 #include "BKE_grease_pencil.hh"
 #include "BKE_icons.h"
 #include "BKE_idtype.hh"
-#include "BKE_image.h"
+#include "BKE_image.hh"
 #include "BKE_lib_id.hh"
 #include "BKE_lib_query.hh"
 #include "BKE_main.hh"
@@ -204,15 +204,10 @@ static void material_blend_write(BlendWriter *writer, ID *id, const void *id_add
 
   /* nodetree is integral part of material, no libdata */
   if (ma->nodetree) {
-    BLO_Write_IDBuffer *temp_embedded_id_buffer = BLO_write_allocate_id_buffer();
-    BLO_write_init_id_buffer_from_id(
-        temp_embedded_id_buffer, &ma->nodetree->id, BLO_write_is_undo(writer));
-    BLO_write_struct_at_address(
-        writer, bNodeTree, ma->nodetree, BLO_write_get_id_buffer_temp_id(temp_embedded_id_buffer));
+    BLO_Write_IDBuffer temp_embedded_id_buffer{ma->nodetree->id, writer};
+    BLO_write_struct_at_address(writer, bNodeTree, ma->nodetree, temp_embedded_id_buffer.get());
     blender::bke::node_tree_blend_write(
-        writer,
-        reinterpret_cast<bNodeTree *>(BLO_write_get_id_buffer_temp_id(temp_embedded_id_buffer)));
-    BLO_write_destroy_id_buffer(&temp_embedded_id_buffer);
+        writer, reinterpret_cast<bNodeTree *>(temp_embedded_id_buffer.get()));
   }
 
   BKE_previewimg_blend_write(writer, ma->preview);
@@ -511,8 +506,6 @@ bool BKE_object_material_slot_used(Object *object, short actcol)
     case ID_MB:
       /* Meta-elements don't support materials at the moment. */
       return false;
-    case ID_GD_LEGACY:
-      return BKE_gpencil_material_index_used((bGPdata *)ob_data, actcol - 1);
     case ID_GP:
       return BKE_grease_pencil_material_index_used(reinterpret_cast<GreasePencil *>(ob_data),
                                                    actcol - 1);
@@ -1172,9 +1165,6 @@ void BKE_object_material_remap(Object *ob, const uint *remap)
   else if (ELEM(ob->type, OB_CURVES_LEGACY, OB_SURF, OB_FONT)) {
     BKE_curve_material_remap(static_cast<Curve *>(ob->data), remap, ob->totcol);
   }
-  else if (ob->type == OB_GPENCIL_LEGACY) {
-    BKE_gpencil_material_remap(static_cast<bGPdata *>(ob->data), remap, ob->totcol);
-  }
   else if (ob->type == OB_GREASE_PENCIL) {
     BKE_grease_pencil_material_remap(static_cast<GreasePencil *>(ob->data), remap, ob->totcol);
   }
@@ -1426,10 +1416,6 @@ bool BKE_object_material_slot_remove(Main *bmain, Object *ob)
     if (ob->runtime->curve_cache) {
       BKE_displist_free(&ob->runtime->curve_cache->disp);
     }
-  }
-  /* check indices from gpencil legacy. */
-  else if (ob->type == OB_GPENCIL_LEGACY) {
-    BKE_gpencil_material_index_reassign((bGPdata *)ob->data, ob->totcol, actcol - 1);
   }
 
   return true;
@@ -1791,18 +1777,9 @@ void ramp_blend(int type, float r_col[3], const float fac, const float col[3])
       r_col[2] = min_ff(r_col[2], col[2]) * fac + r_col[2] * facm;
       break;
     case MA_RAMP_LIGHT:
-      tmp = fac * col[0];
-      if (tmp > r_col[0]) {
-        r_col[0] = tmp;
-      }
-      tmp = fac * col[1];
-      if (tmp > r_col[1]) {
-        r_col[1] = tmp;
-      }
-      tmp = fac * col[2];
-      if (tmp > r_col[2]) {
-        r_col[2] = tmp;
-      }
+      r_col[0] = max_ff(r_col[0], col[0]) * fac + r_col[0] * facm;
+      r_col[1] = max_ff(r_col[1], col[1]) * fac + r_col[1] * facm;
+      r_col[2] = max_ff(r_col[2], col[2]) * fac + r_col[2] * facm;
       break;
     case MA_RAMP_DODGE:
       if (r_col[0] != 0.0f) {
@@ -2022,10 +1999,10 @@ static void material_default_surface_init(Material *ma)
                               output,
                               blender::bke::node_find_socket(output, SOCK_IN, "Surface"));
 
-  principled->locx = 10.0f;
-  principled->locy = 300.0f;
-  output->locx = 300.0f;
-  output->locy = 300.0f;
+  principled->location[0] = 10.0f;
+  principled->location[1] = 300.0f;
+  output->location[0] = 300.0f;
+  output->location[1] = 300.0f;
 
   blender::bke::node_set_active(ntree, output);
 }
@@ -2048,10 +2025,10 @@ static void material_default_volume_init(Material *ma)
                               output,
                               blender::bke::node_find_socket(output, SOCK_IN, "Volume"));
 
-  principled->locx = 10.0f;
-  principled->locy = 300.0f;
-  output->locx = 300.0f;
-  output->locy = 300.0f;
+  principled->location[0] = 10.0f;
+  principled->location[1] = 300.0f;
+  output->location[0] = 300.0f;
+  output->location[1] = 300.0f;
 
   blender::bke::node_set_active(ntree, output);
 }
@@ -2073,10 +2050,10 @@ static void material_default_holdout_init(Material *ma)
                               output,
                               blender::bke::node_find_socket(output, SOCK_IN, "Surface"));
 
-  holdout->locx = 10.0f;
-  holdout->locy = 300.0f;
-  output->locx = 300.0f;
-  output->locy = 300.0f;
+  holdout->location[0] = 10.0f;
+  holdout->location[1] = 300.0f;
+  output->location[0] = 300.0f;
+  output->location[1] = 300.0f;
 
   blender::bke::node_set_active(ntree, output);
 }

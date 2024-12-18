@@ -19,10 +19,11 @@ namespace blender::gpu {
 
 void VKDescriptorSetTracker::bind_buffer(VkDescriptorType vk_descriptor_type,
                                          VkBuffer vk_buffer,
+                                         VkDeviceSize buffer_offset,
                                          VkDeviceSize size_in_bytes,
                                          VKDescriptorSet::Location location)
 {
-  vk_descriptor_buffer_infos_.append({vk_buffer, 0, size_in_bytes});
+  vk_descriptor_buffer_infos_.append({vk_buffer, buffer_offset, size_in_bytes});
   vk_write_descriptor_sets_.append({VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                                     nullptr,
                                     vk_descriptor_set,
@@ -112,7 +113,17 @@ void VKDescriptorSetTracker::bind_texture_resource(const VKDevice &device,
     }
     case BindSpaceTextures::Type::Texture: {
       VKTexture *texture = static_cast<VKTexture *>(elem.resource);
-      if (texture->type_ != GPU_TEXTURE_BUFFER) {
+      if (texture->type_ == GPU_TEXTURE_BUFFER) {
+        /* Texture buffers are no textures, but wrap around vertex buffers and need to be
+         * bound as texel buffers. */
+        /* TODO: Investigate if this can be improved in the API. */
+        VKVertexBuffer *vertex_buffer = texture->source_buffer_;
+        vertex_buffer->ensure_updated();
+        vertex_buffer->ensure_buffer_view();
+        bind_texel_buffer(vertex_buffer->vk_buffer_view_get(), resource_binding.location);
+        access_info.buffers.append({vertex_buffer->vk_handle(), resource_binding.access_mask});
+      }
+      else {
         const VKSampler &sampler = device.samplers().get(elem.sampler);
         bind_image(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                    sampler.vk_handle(),
@@ -125,21 +136,48 @@ void VKDescriptorSetTracker::bind_texture_resource(const VKDevice &device,
                                    0,
                                    VK_REMAINING_ARRAY_LAYERS});
       }
-      else {
-        /* Texture buffers are no textures, but wrap around vertex buffers and need to be
-         * bound as texel buffers. */
-        /* TODO: Investigate if this can be improved in the API. */
-        VKVertexBuffer *vertex_buffer = texture->source_buffer_;
-        vertex_buffer->ensure_updated();
-        vertex_buffer->ensure_buffer_view();
-        bind_texel_buffer(vertex_buffer->vk_buffer_view_get(), resource_binding.location);
-        access_info.buffers.append({vertex_buffer->vk_handle(), resource_binding.access_mask});
-      }
       break;
     }
     case BindSpaceTextures::Type::Unused: {
       BLI_assert_unreachable();
     }
+  }
+}
+
+void VKDescriptorSetTracker::bind_input_attachment_resource(
+    const VKDevice &device,
+    const VKStateManager &state_manager,
+    const VKResourceBinding &resource_binding,
+    render_graph::VKResourceAccessInfo &access_info)
+{
+  const BindSpaceTextures::Elem &elem = state_manager.textures_.get(resource_binding.binding);
+  VKTexture *texture = static_cast<VKTexture *>(elem.resource);
+  BLI_assert(elem.resource_type == BindSpaceTextures::Type::Texture);
+
+  if (!device.workarounds_get().dynamic_rendering) {
+    const VKSampler &sampler = device.samplers().get(elem.sampler);
+    bind_image(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+               sampler.vk_handle(),
+               texture->image_view_get(resource_binding.arrayed).vk_handle(),
+               VK_IMAGE_LAYOUT_GENERAL,
+               resource_binding.location);
+    access_info.images.append({texture->vk_image_handle(),
+                               resource_binding.access_mask,
+                               to_vk_image_aspect_flag_bits(texture->device_format_get()),
+                               0,
+                               VK_REMAINING_ARRAY_LAYERS});
+  }
+  else {
+    bind_image(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+               VK_NULL_HANDLE,
+               texture->image_view_get(resource_binding.arrayed).vk_handle(),
+               VK_IMAGE_LAYOUT_GENERAL,
+               resource_binding.location);
+    access_info.images.append({texture->vk_image_handle(),
+                               resource_binding.access_mask,
+                               to_vk_image_aspect_flag_bits(texture->device_format_get()),
+                               0,
+                               VK_REMAINING_ARRAY_LAYERS});
   }
 }
 
@@ -181,13 +219,22 @@ void VKDescriptorSetTracker::bind_storage_buffer_resource(
       vk_device_size = storage_buffer->size_in_bytes();
       break;
     }
+    case BindSpaceStorageBuffers::Type::Buffer: {
+      VKBuffer *buffer = static_cast<VKBuffer *>(elem.resource);
+      vk_buffer = buffer->vk_handle();
+      vk_device_size = buffer->size_in_bytes();
+      break;
+    }
     case BindSpaceStorageBuffers::Type::Unused: {
       BLI_assert_unreachable();
     }
   }
 
-  bind_buffer(
-      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk_buffer, vk_device_size, resource_binding.location);
+  bind_buffer(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+              vk_buffer,
+              elem.offset,
+              vk_device_size - elem.offset,
+              resource_binding.location);
   access_info.buffers.append({vk_buffer, resource_binding.access_mask});
 }
 
@@ -200,6 +247,7 @@ void VKDescriptorSetTracker::bind_uniform_buffer_resource(
   uniform_buffer.ensure_updated();
   bind_buffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
               uniform_buffer.vk_handle(),
+              0,
               uniform_buffer.size_in_bytes(),
               resource_binding.location);
   access_info.buffers.append({uniform_buffer.vk_handle(), resource_binding.access_mask});
@@ -217,6 +265,7 @@ void VKDescriptorSetTracker::bind_push_constants(VKPushConstants &push_constants
   const VKUniformBuffer &uniform_buffer = *push_constants.uniform_buffer_get().get();
   bind_buffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
               uniform_buffer.vk_handle(),
+              0,
               uniform_buffer.size_in_bytes(),
               push_constants.layout_get().descriptor_set_location_get());
   access_info.buffers.append({uniform_buffer.vk_handle(), VK_ACCESS_UNIFORM_READ_BIT});
@@ -234,20 +283,24 @@ void VKDescriptorSetTracker::bind_shader_resources(const VKDevice &device,
     }
 
     switch (resource_binding.bind_type) {
-      case shader::ShaderCreateInfo::Resource::BindType::IMAGE:
-        bind_image_resource(state_manager, resource_binding, access_info);
+      case VKBindType::UNIFORM_BUFFER:
+        bind_uniform_buffer_resource(state_manager, resource_binding, access_info);
         break;
 
-      case shader::ShaderCreateInfo::Resource::BindType::SAMPLER:
-        bind_texture_resource(device, state_manager, resource_binding, access_info);
-        break;
-
-      case shader::ShaderCreateInfo::Resource::BindType::STORAGE_BUFFER:
+      case VKBindType::STORAGE_BUFFER:
         bind_storage_buffer_resource(state_manager, resource_binding, access_info);
         break;
 
-      case shader::ShaderCreateInfo::Resource::BindType::UNIFORM_BUFFER:
-        bind_uniform_buffer_resource(state_manager, resource_binding, access_info);
+      case VKBindType::SAMPLER:
+        bind_texture_resource(device, state_manager, resource_binding, access_info);
+        break;
+
+      case VKBindType::IMAGE:
+        bind_image_resource(state_manager, resource_binding, access_info);
+        break;
+
+      case VKBindType::INPUT_ATTACHMENT:
+        bind_input_attachment_resource(device, state_manager, resource_binding, access_info);
         break;
     }
   }
@@ -291,11 +344,11 @@ void VKDescriptorSetTracker::upload_descriptor_sets()
   int buffer_index = 0;
   int buffer_view_index = 0;
   int image_index = 0;
-  for (int write_index : vk_write_descriptor_sets_.index_range()) {
-    VkWriteDescriptorSet &vk_write_descriptor_set = vk_write_descriptor_sets_[write_index++];
+  for (VkWriteDescriptorSet &vk_write_descriptor_set : vk_write_descriptor_sets_) {
     switch (vk_write_descriptor_set.descriptorType) {
       case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
       case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+      case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
         vk_write_descriptor_set.pImageInfo = &vk_descriptor_image_infos_[image_index++];
         break;
 
@@ -313,6 +366,53 @@ void VKDescriptorSetTracker::upload_descriptor_sets()
         break;
     }
   }
+
+#if 0
+  /* Uncomment this for rebalancing VKDescriptorPools::POOL_SIZE_* */
+  {
+    int storage_buffer_count = 0;
+    int storage_image_count = 0;
+    int combined_image_sampler_count = 0;
+    int uniform_buffer_count = 0;
+    int uniform_texel_buffer_count = 0;
+    int input_attachment_count = 0;
+    Set<VkDescriptorSet> descriptor_set_count;
+
+    for (VkWriteDescriptorSet &vk_write_descriptor_set : vk_write_descriptor_sets_) {
+      descriptor_set_count.add(vk_write_descriptor_set.dstSet);
+      switch (vk_write_descriptor_set.descriptorType) {
+        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+          combined_image_sampler_count += 1;
+          break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+          storage_image_count += 1;
+          break;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+          uniform_texel_buffer_count += 1;
+          break;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+          uniform_buffer_count += 1;
+          break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+          storage_buffer_count += 1;
+          break;
+        case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+          input_attachment_count += 1;
+          break;
+        default:
+          BLI_assert_unreachable();
+      }
+    }
+    std::cout << __func__ << ": "
+              << "descriptor_set=" << descriptor_set_count.size()
+              << ", combined_image_sampler=" << combined_image_sampler_count
+              << ", storage_image=" << storage_image_count
+              << ", uniform_texel_buffer=" << uniform_texel_buffer_count
+              << ", uniform_buffer=" << uniform_buffer_count
+              << ", storage_buffer=" << storage_buffer_count
+              << ", input_attachment=" << input_attachment_count << "\n";
+  }
+#endif
 
   /* Update the descriptor set on the device. */
   const VKDevice &device = VKBackend::get().device;

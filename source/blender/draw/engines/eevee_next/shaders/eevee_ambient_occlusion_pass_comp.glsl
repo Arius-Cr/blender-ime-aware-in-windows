@@ -2,8 +2,12 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
-#pragma BLENDER_REQUIRE(gpu_shader_math_vector_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_horizon_scan_eval_lib.glsl)
+#include "infos/eevee_ambient_occlusion_info.hh"
+
+COMPUTE_SHADER_CREATE_INFO(eevee_ambient_occlusion_pass)
+
+#include "eevee_horizon_scan_eval_lib.glsl"
+#include "gpu_shader_math_vector_lib.glsl"
 
 void main()
 {
@@ -18,7 +22,7 @@ void main()
 
   if (depth == 1.0) {
     /* Do not trace for background */
-    imageStore(out_ao_img, ivec3(texel, out_ao_img_layer_index), vec4(0.0));
+    imageStoreFast(out_ao_img, ivec3(texel, out_ao_img_layer_index), vec4(0.0));
     return;
   }
 
@@ -42,5 +46,5 @@ void main()
                                              false,
                                              true);
 
-  imageStore(out_ao_img, ivec3(texel, out_ao_img_layer_index), vec4(saturate(scan.result)));
+  imageStoreFast(out_ao_img, ivec3(texel, out_ao_img_layer_index), vec4(saturate(scan.result)));
 }

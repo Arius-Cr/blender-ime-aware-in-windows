@@ -153,6 +153,18 @@ static void mesh_copy_data(Main *bmain,
   mesh_dst->runtime->vert_to_face_map_cache = mesh_src->runtime->vert_to_face_map_cache;
   mesh_dst->runtime->vert_to_corner_map_cache = mesh_src->runtime->vert_to_corner_map_cache;
   mesh_dst->runtime->corner_to_face_map_cache = mesh_src->runtime->corner_to_face_map_cache;
+  mesh_dst->runtime->bvh_cache_verts = mesh_src->runtime->bvh_cache_verts;
+  mesh_dst->runtime->bvh_cache_edges = mesh_src->runtime->bvh_cache_edges;
+  mesh_dst->runtime->bvh_cache_faces = mesh_src->runtime->bvh_cache_faces;
+  mesh_dst->runtime->bvh_cache_corner_tris = mesh_src->runtime->bvh_cache_corner_tris;
+  mesh_dst->runtime->bvh_cache_corner_tris_no_hidden =
+      mesh_src->runtime->bvh_cache_corner_tris_no_hidden;
+  mesh_dst->runtime->bvh_cache_loose_verts = mesh_src->runtime->bvh_cache_loose_verts;
+  mesh_dst->runtime->bvh_cache_loose_verts_no_hidden =
+      mesh_src->runtime->bvh_cache_loose_verts_no_hidden;
+  mesh_dst->runtime->bvh_cache_loose_edges = mesh_src->runtime->bvh_cache_loose_edges;
+  mesh_dst->runtime->bvh_cache_loose_edges_no_hidden =
+      mesh_src->runtime->bvh_cache_loose_edges_no_hidden;
   if (mesh_src->runtime->bake_materials) {
     mesh_dst->runtime->bake_materials = std::make_unique<blender::bke::bake::BakeMaterialsList>(
         *mesh_src->runtime->bake_materials);
@@ -166,6 +178,13 @@ static void mesh_copy_data(Main *bmain,
   if (mesh_src->id.tag & ID_TAG_NO_MAIN) {
     /* For copies in depsgraph, keep data like #CD_ORIGINDEX and #CD_ORCO. */
     CustomData_MeshMasks_update(&mask, &CD_MASK_DERIVEDMESH);
+
+    /* Meshes copied during evaluation pass the edit mesh pointer to determine whether a mapping
+     * from the evaluated to the original state is possible. */
+    mesh_dst->runtime->edit_mesh = mesh_src->runtime->edit_mesh;
+    if (const blender::bke::EditMeshData *edit_data = mesh_src->runtime->edit_data.get()) {
+      mesh_dst->runtime->edit_data = std::make_unique<blender::bke::EditMeshData>(*edit_data);
+    }
   }
 
   mesh_dst->mat = (Material **)MEM_dupallocN(mesh_src->mat);
@@ -208,16 +227,9 @@ static void mesh_copy_data(Main *bmain,
   }
 }
 
-void BKE_mesh_free_editmesh(Mesh *mesh)
-{
-  mesh->runtime->edit_mesh.reset();
-}
-
 static void mesh_free_data(ID *id)
 {
   Mesh *mesh = reinterpret_cast<Mesh *>(id);
-
-  BKE_mesh_free_editmesh(mesh);
 
   BKE_mesh_clear_geometry_and_metadata(mesh);
   MEM_SAFE_FREE(mesh->mat);
@@ -290,6 +302,7 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
     CustomData_blend_write_prepare(mesh->face_data, face_layers, {});
     if (!is_undo) {
       mesh_sculpt_mask_to_legacy(vert_layers);
+      mesh_custom_normals_to_legacy(loop_layers);
     }
   }
 
@@ -459,10 +472,11 @@ void BKE_mesh_ensure_skin_customdata(Mesh *mesh)
 bool BKE_mesh_has_custom_loop_normals(Mesh *mesh)
 {
   if (mesh->runtime->edit_mesh) {
-    return CustomData_has_layer(&mesh->runtime->edit_mesh->bm->ldata, CD_CUSTOMLOOPNORMAL);
+    return CustomData_has_layer_named(
+        &mesh->runtime->edit_mesh->bm->ldata, CD_PROP_INT16_2D, "custom_normal");
   }
 
-  return CustomData_has_layer(&mesh->corner_data, CD_CUSTOMLOOPNORMAL);
+  return mesh->attributes().contains("custom_normal");
 }
 
 namespace blender::bke {
@@ -701,6 +715,17 @@ void Mesh::count_memory(blender::MemoryCounter &memory) const
   CustomData_count_memory(this->corner_data, this->corners_num, memory);
 }
 
+blender::bke::AttributeAccessor Mesh::attributes() const
+{
+  return blender::bke::AttributeAccessor(this, blender::bke::mesh_attribute_accessor_functions());
+}
+
+blender::bke::MutableAttributeAccessor Mesh::attributes_for_write()
+{
+  return blender::bke::MutableAttributeAccessor(this,
+                                                blender::bke::mesh_attribute_accessor_functions());
+}
+
 Mesh *BKE_mesh_new_nomain(const int verts_num,
                           const int edges_num,
                           const int faces_num,
@@ -793,6 +818,8 @@ void BKE_mesh_copy_parameters_for_eval(Mesh *me_dst, const Mesh *me_src)
   }
   me_dst->mat = (Material **)MEM_dupallocN(me_src->mat);
   me_dst->totcol = me_src->totcol;
+
+  me_dst->runtime->edit_mesh = me_src->runtime->edit_mesh;
 }
 
 Mesh *BKE_mesh_new_nomain_from_template_ex(const Mesh *me_src,

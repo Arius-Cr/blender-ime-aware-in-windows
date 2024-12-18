@@ -25,6 +25,7 @@
 #include "BKE_grease_pencil.hh"
 
 #include "DNA_curves_types.h"
+#include "DNA_gpencil_legacy_types.h"
 
 #include "ED_curves.hh"
 #include "ED_grease_pencil.hh"
@@ -232,7 +233,7 @@ blender::bke::CurvesGeometry curves_merge_by_distance(const bke::CurvesGeometry 
       const IndexRange points = points_by_curve[curve_i];
       merge_indices_per_curve[curve_i].reinitialize(points.size());
 
-      Array<float> distances_along_curve(points.size());
+      Array<float> distances_along_curve(points.size() + int(cyclic[curve_i]));
       distances_along_curve.first() = 0.0f;
       const Span<float> lengths = src_curves.evaluated_lengths_for_curve(curve_i, cyclic[curve_i]);
       distances_along_curve.as_mutable_span().drop_front(1).copy_from(lengths);
@@ -503,6 +504,8 @@ static void generate_cap(const float3 &point,
                                        r_src_indices);
       break;
     case GP_STROKE_CAP_FLAT:
+      r_perimeter.append(point - normal * radius);
+      r_src_indices.append(src_point_index);
       r_perimeter.append(point + normal * radius);
       r_src_indices.append(src_point_index);
       break;

@@ -6,18 +6,25 @@
 
 #include "DNA_userdef_types.h"
 
+#include "BLI_math_base.h"
+
 #include "mtl_context.hh"
 #include "mtl_debug.hh"
 #include "mtl_memory.hh"
+#include "mtl_storage_buffer.hh"
 
 using namespace blender;
 using namespace blender::gpu;
 
+/* Allows a scratch buffer to temporarily grow beyond its maximum, which allows submission
+ * of one-time-use data packets which are too large. */
+#define MTL_SCRATCH_BUFFER_ALLOW_TEMPORARY_EXPANSION
+
 /* Memory size in bytes macros, used as pool flushing frequency thresholds. */
-#define MEMORY_SIZE_2GB 2147483648LL
-#define MEMORY_SIZE_1GB 1073741824LL
-#define MEMORY_SIZE_512MB 536870912LL
-#define MEMORY_SIZE_256MB 268435456LL
+constexpr static size_t MEMORY_SIZE_256MB = 256LL * (1024LL * 1024LL);
+constexpr static size_t MEMORY_SIZE_512MB = 512LL * (1024LL * 1024LL);
+constexpr static size_t MEMORY_SIZE_1GB = 1LL * (1024LL * 1024LL * 1024LL);
+constexpr static size_t MEMORY_SIZE_2GB = 2LL * (1024LL * 1024LL * 1024LL);
 
 namespace blender::gpu {
 
@@ -642,7 +649,6 @@ bool MTLSafeFreeList::should_flush()
 /** \name MTLBuffer wrapper class implementation.
  * \{ */
 
-/* Construct a gpu::MTLBuffer wrapper around a newly created metal::MTLBuffer. */
 MTLBuffer::MTLBuffer(id<MTLDevice> mtl_device,
                      uint64_t size,
                      MTLResourceOptions options,
@@ -912,15 +918,29 @@ void MTLScratchBufferManager::flush_active_scratch_buffer()
   active_scratch_buf->flush();
 }
 
+void MTLScratchBufferManager::bind_as_ssbo(int slot)
+{
+  /* Fetch active scratch buffer and verify context. */
+  MTLCircularBuffer *active_scratch_buf = scratch_buffers_[current_scratch_buffer_];
+  BLI_assert(&active_scratch_buf->own_context_ == &context_);
+  active_scratch_buf->ssbo_source_->bind(slot);
+}
+
+void MTLScratchBufferManager::unbind_as_ssbo()
+{
+  /* Fetch active scratch buffer and verify context. */
+  MTLCircularBuffer *active_scratch_buf = scratch_buffers_[current_scratch_buffer_];
+  BLI_assert(&active_scratch_buf->own_context_ == &context_);
+  active_scratch_buf->ssbo_source_->unbind();
+}
+
 /* MTLCircularBuffer implementation. */
 MTLCircularBuffer::MTLCircularBuffer(MTLContext &ctx, uint64_t initial_size, bool allow_grow)
     : own_context_(ctx)
 {
   BLI_assert(this);
-  MTLResourceOptions options = ([own_context_.device hasUnifiedMemory]) ?
-                                   MTLResourceStorageModeShared :
-                                   MTLResourceStorageModeManaged;
-  cbuffer_ = new gpu::MTLBuffer(own_context_.device, initial_size, options, 256);
+  ssbo_source_ = new gpu::MTLStorageBuf(initial_size);
+  cbuffer_ = ssbo_source_->metal_buffer_;
   current_offset_ = 0;
   can_resize_ = allow_grow;
   cbuffer_->flag_in_use(true);
@@ -936,7 +956,7 @@ MTLCircularBuffer::MTLCircularBuffer(MTLContext &ctx, uint64_t initial_size, boo
 
 MTLCircularBuffer::~MTLCircularBuffer()
 {
-  delete cbuffer_;
+  delete ssbo_source_;
 }
 
 MTLTemporaryBuffer MTLCircularBuffer::allocate_range(uint64_t alloc_size)
@@ -970,11 +990,11 @@ MTLTemporaryBuffer MTLCircularBuffer::allocate_range_aligned(uint64_t alloc_size
       /* Resize to the maximum of basic resize heuristic OR the size of the current offset +
        * requested allocation -- we want the buffer to grow to a large enough size such that it
        * does not need to resize mid-frame. */
-      new_size = max_ulul(
-          min_ulul(MTLScratchBufferManager::mtl_scratch_buffer_max_size_, new_size * 1.2),
-          aligned_current_offset + aligned_alloc_size);
+      new_size = max_ulul(min_ulul(MTLScratchBufferManager::mtl_scratch_buffer_max_size_,
+                                   ceil_to_multiple_ul(new_size * 1.2f, 256)),
+                          aligned_current_offset + aligned_alloc_size);
 
-#if MTL_SCRATCH_BUFFER_ALLOW_TEMPORARY_EXPANSION == 1
+#ifdef MTL_SCRATCH_BUFFER_ALLOW_TEMPORARY_EXPANSION
       /* IF a requested allocation EXCEEDS the maximum supported size, temporarily allocate up to
        * this, but shrink down ASAP. */
       if (new_size > MTLScratchBufferManager::mtl_scratch_buffer_max_size_) {
@@ -1029,10 +1049,9 @@ MTLTemporaryBuffer MTLCircularBuffer::allocate_range_aligned(uint64_t alloc_size
 
     /* Discard old buffer and create a new one - Relying on Metal reference counting to track
      * in-use buffers */
-    MTLResourceOptions prev_options = cbuffer_->get_resource_options();
-    uint prev_alignment = cbuffer_->get_alignment();
-    delete cbuffer_;
-    cbuffer_ = new gpu::MTLBuffer(own_context_.device, new_size, prev_options, prev_alignment);
+    delete ssbo_source_;
+    ssbo_source_ = new gpu::MTLStorageBuf(new_size);
+    cbuffer_ = ssbo_source_->metal_buffer_;
     cbuffer_->flag_in_use(true);
     current_offset_ = 0;
     last_flush_base_offset_ = 0;

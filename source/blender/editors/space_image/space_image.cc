@@ -20,7 +20,7 @@
 
 #include "BKE_colortools.hh"
 #include "BKE_context.hh"
-#include "BKE_image.h"
+#include "BKE_image.hh"
 #include "BKE_layer.hh"
 #include "BKE_lib_query.hh"
 #include "BKE_lib_remap.hh"
@@ -120,27 +120,27 @@ static SpaceLink *image_create(const ScrArea * /*area*/, const Scene * /*scene*/
   simage->mask_info = *DNA_struct_default_get(MaskSpaceInfo);
 
   /* header */
-  region = static_cast<ARegion *>(MEM_callocN(sizeof(ARegion), "header for image"));
+  region = BKE_area_region_new();
 
   BLI_addtail(&simage->regionbase, region);
   region->regiontype = RGN_TYPE_HEADER;
   region->alignment = (U.uiflag & USER_HEADER_BOTTOM) ? RGN_ALIGN_BOTTOM : RGN_ALIGN_TOP;
 
   /* asset shelf */
-  region = MEM_cnew<ARegion>("asset shelf for view3d");
+  region = BKE_area_region_new();
   BLI_addtail(&simage->regionbase, region);
   region->regiontype = RGN_TYPE_ASSET_SHELF;
   region->alignment = RGN_ALIGN_BOTTOM;
   region->flag |= RGN_FLAG_HIDDEN;
 
   /* asset shelf header */
-  region = MEM_cnew<ARegion>("asset shelf header for view3d");
+  region = BKE_area_region_new();
   BLI_addtail(&simage->regionbase, region);
   region->regiontype = RGN_TYPE_ASSET_SHELF_HEADER;
   region->alignment = RGN_ALIGN_BOTTOM | RGN_ALIGN_HIDE_WITH_PREV;
 
   /* tool header */
-  region = static_cast<ARegion *>(MEM_callocN(sizeof(ARegion), "tool header for image"));
+  region = BKE_area_region_new();
 
   BLI_addtail(&simage->regionbase, region);
   region->regiontype = RGN_TYPE_TOOL_HEADER;
@@ -148,7 +148,7 @@ static SpaceLink *image_create(const ScrArea * /*area*/, const Scene * /*scene*/
   region->flag = RGN_FLAG_HIDDEN | RGN_FLAG_HIDDEN_BY_USER;
 
   /* buttons/list view */
-  region = static_cast<ARegion *>(MEM_callocN(sizeof(ARegion), "buttons for image"));
+  region = BKE_area_region_new();
 
   BLI_addtail(&simage->regionbase, region);
   region->regiontype = RGN_TYPE_UI;
@@ -156,7 +156,7 @@ static SpaceLink *image_create(const ScrArea * /*area*/, const Scene * /*scene*/
   region->flag = RGN_FLAG_HIDDEN;
 
   /* scopes/uv sculpt/paint */
-  region = static_cast<ARegion *>(MEM_callocN(sizeof(ARegion), "buttons for image"));
+  region = BKE_area_region_new();
 
   BLI_addtail(&simage->regionbase, region);
   region->regiontype = RGN_TYPE_TOOLS;
@@ -164,7 +164,7 @@ static SpaceLink *image_create(const ScrArea * /*area*/, const Scene * /*scene*/
   region->flag = RGN_FLAG_HIDDEN;
 
   /* main area */
-  region = static_cast<ARegion *>(MEM_callocN(sizeof(ARegion), "main area for image"));
+  region = BKE_area_region_new();
 
   BLI_addtail(&simage->regionbase, region);
   region->regiontype = RGN_TYPE_WINDOW;
@@ -591,26 +591,26 @@ static void image_main_region_init(wmWindowManager *wm, ARegion *region)
 
   /* mask polls mode */
   keymap = WM_keymap_ensure(wm->defaultconf, "Mask Editing", SPACE_EMPTY, RGN_TYPE_WINDOW);
-  WM_event_add_keymap_handler_v2d_mask(&region->handlers, keymap);
+  WM_event_add_keymap_handler_v2d_mask(&region->runtime->handlers, keymap);
 
   /* image paint polls for mode */
   keymap = WM_keymap_ensure(wm->defaultconf, "Curve", SPACE_EMPTY, RGN_TYPE_WINDOW);
-  WM_event_add_keymap_handler_v2d_mask(&region->handlers, keymap);
+  WM_event_add_keymap_handler_v2d_mask(&region->runtime->handlers, keymap);
 
   keymap = WM_keymap_ensure(wm->defaultconf, "Paint Curve", SPACE_EMPTY, RGN_TYPE_WINDOW);
-  WM_event_add_keymap_handler(&region->handlers, keymap);
+  WM_event_add_keymap_handler(&region->runtime->handlers, keymap);
 
   keymap = WM_keymap_ensure(wm->defaultconf, "Image Paint", SPACE_EMPTY, RGN_TYPE_WINDOW);
-  WM_event_add_keymap_handler_v2d_mask(&region->handlers, keymap);
+  WM_event_add_keymap_handler_v2d_mask(&region->runtime->handlers, keymap);
 
   keymap = WM_keymap_ensure(wm->defaultconf, "UV Editor", SPACE_EMPTY, RGN_TYPE_WINDOW);
-  WM_event_add_keymap_handler(&region->handlers, keymap);
+  WM_event_add_keymap_handler(&region->runtime->handlers, keymap);
 
   /* own keymaps */
   keymap = WM_keymap_ensure(wm->defaultconf, "Image Generic", SPACE_IMAGE, RGN_TYPE_WINDOW);
-  WM_event_add_keymap_handler(&region->handlers, keymap);
+  WM_event_add_keymap_handler(&region->runtime->handlers, keymap);
   keymap = WM_keymap_ensure(wm->defaultconf, "Image", SPACE_IMAGE, RGN_TYPE_WINDOW);
-  WM_event_add_keymap_handler_v2d_mask(&region->handlers, keymap);
+  WM_event_add_keymap_handler_v2d_mask(&region->runtime->handlers, keymap);
 }
 
 static void image_main_region_draw(const bContext *C, ARegion *region)
@@ -707,7 +707,7 @@ static void image_main_region_draw(const bContext *C, ARegion *region)
                         C);
   }
   if ((sima->gizmo_flag & SI_GIZMO_HIDE) == 0) {
-    WM_gizmomap_draw(region->gizmo_map, C, WM_GIZMOMAP_DRAWSTEP_2D);
+    WM_gizmomap_draw(region->runtime->gizmo_map, C, WM_GIZMOMAP_DRAWSTEP_2D);
   }
   draw_image_cache(C, region);
 }
@@ -722,7 +722,7 @@ static void image_main_region_listener(const wmRegionListenerParams *params)
   switch (wmn->category) {
     case NC_GEOM:
       if (ELEM(wmn->data, ND_DATA, ND_SELECT)) {
-        WM_gizmomap_tag_refresh(region->gizmo_map);
+        WM_gizmomap_tag_refresh(region->runtime->gizmo_map);
       }
       break;
     case NC_GPENCIL:
@@ -737,7 +737,7 @@ static void image_main_region_listener(const wmRegionListenerParams *params)
       if (wmn->action == NA_PAINTING) {
         ED_region_tag_redraw(region);
       }
-      WM_gizmomap_tag_refresh(region->gizmo_map);
+      WM_gizmomap_tag_refresh(region->runtime->gizmo_map);
       break;
     case NC_MATERIAL:
       if (wmn->data == ND_SHADING_LINKS) {
@@ -767,7 +767,7 @@ static void image_buttons_region_init(wmWindowManager *wm, ARegion *region)
   ED_region_panels_init(wm, region);
 
   keymap = WM_keymap_ensure(wm->defaultconf, "Image Generic", SPACE_IMAGE, RGN_TYPE_WINDOW);
-  WM_event_add_keymap_handler(&region->handlers, keymap);
+  WM_event_add_keymap_handler(&region->runtime->handlers, keymap);
 }
 
 static void image_buttons_region_layout(const bContext *C, ARegion *region)
@@ -793,8 +793,12 @@ static void image_buttons_region_layout(const bContext *C, ARegion *region)
       break;
   }
 
-  ED_region_panels_layout_ex(
-      C, region, &region->type->paneltypes, WM_OP_INVOKE_REGION_WIN, contexts_base, nullptr);
+  ED_region_panels_layout_ex(C,
+                             region,
+                             &region->runtime->type->paneltypes,
+                             WM_OP_INVOKE_REGION_WIN,
+                             contexts_base,
+                             nullptr);
 }
 
 static void image_buttons_region_draw(const bContext *C, ARegion *region)
@@ -882,7 +886,7 @@ static void image_tools_region_init(wmWindowManager *wm, ARegion *region)
   ED_region_panels_init(wm, region);
 
   keymap = WM_keymap_ensure(wm->defaultconf, "Image Generic", SPACE_IMAGE, RGN_TYPE_WINDOW);
-  WM_event_add_keymap_handler(&region->handlers, keymap);
+  WM_event_add_keymap_handler(&region->runtime->handlers, keymap);
 }
 
 static void image_tools_region_draw(const bContext *C, ARegion *region)
@@ -1008,7 +1012,7 @@ static void image_asset_shelf_region_init(wmWindowManager *wm, ARegion *region)
   using namespace blender::ed;
   wmKeyMap *keymap = WM_keymap_ensure(
       wm->defaultconf, "Image Generic", SPACE_IMAGE, RGN_TYPE_WINDOW);
-  WM_event_add_keymap_handler(&region->handlers, keymap);
+  WM_event_add_keymap_handler(&region->runtime->handlers, keymap);
 
   asset::shelf::region_init(wm, region);
 }

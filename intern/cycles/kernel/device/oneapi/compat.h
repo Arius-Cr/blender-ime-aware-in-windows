@@ -38,7 +38,7 @@
 #define ccl_global
 #define ccl_always_inline __attribute__((always_inline))
 #define ccl_device_inline inline
-#define ccl_noinline
+#define ccl_noinline __attribute__((noinline))
 #define ccl_inline_constant const constexpr
 #define ccl_device_constant static constexpr
 #define ccl_static_constexpr static constexpr
@@ -47,7 +47,6 @@
 #define ccl_device_noinline_cpu ccl_device
 #define ccl_device_inline_method ccl_device
 #define ccl_restrict __restrict__
-#define ccl_loop_no_unroll
 #define ccl_optional_struct_init
 #define ccl_private
 #define ccl_ray_data ccl_private
@@ -230,6 +229,7 @@ ccl_device_forceinline int __float_as_int(float x)
 #define tanf(x) sycl::native::tan(((float)(x)))
 #define logf(x) sycl::native::log(((float)(x)))
 #define expf(x) sycl::native::exp(((float)(x)))
+#define sqrtf(x) sycl::native::sqrt(((float)(x)))
 
 #define __forceinline __attribute__((always_inline))
 

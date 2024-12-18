@@ -7,8 +7,13 @@
  *
  * See fragment shader for more infos.
  */
-#pragma BLENDER_REQUIRE(gpu_shader_utildefines_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_shadow_tilemap_lib.glsl)
+
+#include "infos/eevee_shadow_info.hh"
+
+VERTEX_SHADER_CREATE_INFO(eevee_shadow_page_tile_clear)
+
+#include "eevee_shadow_tilemap_lib.glsl"
+#include "gpu_shader_utildefines_lib.glsl"
 
 void main()
 {

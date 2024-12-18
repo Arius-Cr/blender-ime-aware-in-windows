@@ -2,6 +2,8 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
+#pragma once
+
 /**
  * Various utilities related to object subsurface light transport.
  *
@@ -9,7 +11,11 @@
  * - utility_tx
  */
 
-#pragma BLENDER_REQUIRE(eevee_shadow_lib.glsl)
+#include "infos/eevee_common_info.hh"
+
+SHADER_LIBRARY_CREATE_INFO(eevee_utility_texture)
+
+#include "eevee_shadow_lib.glsl"
 
 #ifdef EEVEE_UTILITY_TX
 

@@ -23,7 +23,7 @@
 #include "BLT_translation.hh"
 
 #include "BKE_context.hh"
-#include "BKE_image.h"
+#include "BKE_image.hh"
 #include "BKE_lib_id.hh"
 #include "BKE_main.hh"
 #include "BKE_node.hh"
@@ -64,8 +64,8 @@ namespace blender::ed::space_node {
 
 static void position_node_based_on_mouse(bNode &node, const float2 &location)
 {
-  node.locx = location.x - NODE_DY * 1.5f / UI_SCALE_FAC;
-  node.locy = location.y + NODE_DY * 0.5f / UI_SCALE_FAC;
+  node.location[0] = location.x - NODE_DY * 1.5f / UI_SCALE_FAC;
+  node.location[1] = location.y + NODE_DY * 0.5f / UI_SCALE_FAC;
 }
 
 bNode *add_node(const bContext &C, const StringRef idname, const float2 &location)
@@ -210,8 +210,8 @@ static int add_reroute_exec(bContext *C, wmOperator *op)
     const float2 insert_point = std::accumulate(
                                     cuts.values().begin(), cuts.values().end(), float2(0)) /
                                 cuts.size();
-    reroute->locx = insert_point.x / UI_SCALE_FAC;
-    reroute->locy = insert_point.y / UI_SCALE_FAC;
+    reroute->location[0] = insert_point.x / UI_SCALE_FAC;
+    reroute->location[1] = insert_point.y / UI_SCALE_FAC;
 
     /* Attach the reroute node to frame nodes behind it. */
     for (const int i : frame_nodes.index_range()) {
@@ -540,6 +540,7 @@ static int node_add_object_exec(bContext *C, wmOperator *op)
   bNodeSocketValueObject *socket_data = (bNodeSocketValueObject *)sock->default_value;
   socket_data->value = object;
   id_us_plus(&object->id);
+  BKE_ntree_update_tag_socket_property(ntree, sock);
 
   bke::node_set_active(ntree, object_node);
   ED_node_tree_propagate_change(C, bmain, ntree);
@@ -626,6 +627,7 @@ static int node_add_collection_exec(bContext *C, wmOperator *op)
   bNodeSocketValueCollection *socket_data = (bNodeSocketValueCollection *)sock->default_value;
   socket_data->value = collection;
   id_us_plus(&collection->id);
+  BKE_ntree_update_tag_socket_property(&ntree, sock);
 
   bke::node_set_active(&ntree, collection_node);
   ED_node_tree_propagate_change(C, bmain, &ntree);
@@ -716,7 +718,7 @@ static int node_add_file_modal(bContext *C, wmOperator *op, const wmEvent *event
   float stack_offset = 0.0f;
 
   for (bNode *node : data->nodes) {
-    node->locy -= stack_offset;
+    node->location[1] -= stack_offset;
     stack_offset += (node->runtime->totr.ymax - node->runtime->totr.ymin) * delta_factor;
     redraw = true;
   }
@@ -796,6 +798,7 @@ static int node_add_file_exec(bContext *C, wmOperator *op)
       bNodeSocket *image_socket = (bNodeSocket *)node->inputs.first;
       bNodeSocketValueImage *socket_value = (bNodeSocketValueImage *)image_socket->default_value;
       socket_value->value = image;
+      BKE_ntree_update_tag_socket_property(&node_tree, image_socket);
     }
     else {
       node->id = (ID *)image;

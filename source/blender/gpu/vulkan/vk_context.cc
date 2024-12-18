@@ -11,7 +11,6 @@
 #include "vk_backend.hh"
 #include "vk_framebuffer.hh"
 #include "vk_immediate.hh"
-#include "vk_memory.hh"
 #include "vk_shader.hh"
 #include "vk_shader_interface.hh"
 #include "vk_state_manager.hh"
@@ -21,14 +20,17 @@
 
 namespace blender::gpu {
 
-VKContext::VKContext(void *ghost_window, void *ghost_context, VKThreadData &thread_data)
-    : thread_data_(thread_data), render_graph(thread_data_.render_graph)
+VKContext::VKContext(void *ghost_window,
+                     void *ghost_context,
+                     render_graph::VKResourceStateTracker &resources)
+    : render_graph(std::make_unique<render_graph::VKCommandBufferWrapper>(
+                       VKBackend::get().device.workarounds_get()),
+                   resources)
 {
   ghost_window_ = ghost_window;
   ghost_context_ = ghost_context;
 
   state_manager = new VKStateManager();
-  imm = &thread_data.resource_pool_get().immediate;
 
   back_left = new VKFrameBuffer("back_left");
   front_left = new VKFrameBuffer("front_left");
@@ -51,15 +53,16 @@ VKContext::~VKContext()
   compiler = nullptr;
 }
 
-void VKContext::sync_backbuffer()
+void VKContext::sync_backbuffer(bool cycle_resource_pool)
 {
   VKDevice &device = VKBackend::get().device;
   if (ghost_window_) {
     GHOST_VulkanSwapChainData swap_chain_data = {};
     GHOST_GetVulkanSwapChainFormat((GHOST_WindowHandle)ghost_window_, &swap_chain_data);
-    if (assign_if_different(thread_data_.resource_pool_index, swap_chain_data.swap_chain_index)) {
-      thread_data_.resource_pool_index = swap_chain_data.swap_chain_index;
-      VKResourcePool &resource_pool = thread_data_.resource_pool_get();
+    VKThreadData &thread_data = thread_data_.value().get();
+    if (cycle_resource_pool) {
+      thread_data.resource_pool_next();
+      VKResourcePool &resource_pool = thread_data.resource_pool_get();
       imm = &resource_pool.immediate;
       resource_pool.discard_pool.destroy_discarded_resources(device);
       resource_pool.reset();
@@ -108,17 +111,25 @@ void VKContext::activate()
   /* Make sure no other context is already bound to this thread. */
   BLI_assert(is_active_ == false);
 
+  VKDevice &device = VKBackend::get().device;
+  VKThreadData &thread_data = device.current_thread_data();
+  thread_data_ = std::reference_wrapper<VKThreadData>(thread_data);
+
+  imm = &thread_data.resource_pool_get().immediate;
+
   is_active_ = true;
 
-  sync_backbuffer();
+  sync_backbuffer(false);
 
   immActivate();
 }
 
 void VKContext::deactivate()
 {
-  rendering_end();
+  flush_render_graph();
   immDeactivate();
+  imm = nullptr;
+  thread_data_.reset();
   is_active_ = false;
 }
 
@@ -130,6 +141,9 @@ void VKContext::flush() {}
 
 void VKContext::flush_render_graph()
 {
+  if (render_graph.is_empty()) {
+    return;
+  }
   if (has_active_framebuffer()) {
     VKFrameBuffer &framebuffer = *active_framebuffer_get();
     if (framebuffer.is_rendering()) {
@@ -154,12 +168,12 @@ void VKContext::memory_statistics_get(int *r_total_mem_kb, int *r_free_mem_kb)
 
 VKDescriptorPools &VKContext::descriptor_pools_get()
 {
-  return thread_data_.resource_pool_get().descriptor_pools;
+  return thread_data_.value().get().resource_pool_get().descriptor_pools;
 }
 
 VKDescriptorSetTracker &VKContext::descriptor_set_get()
 {
-  return thread_data_.resource_pool_get().descriptor_set;
+  return thread_data_.value().get().resource_pool_get().descriptor_set;
 }
 
 VKStateManager &VKContext::state_manager_get() const
@@ -311,7 +325,7 @@ void VKContext::swap_buffers_pre_handler(const GHOST_VulkanSwapChainData &swap_c
   blit_image.filter = VK_FILTER_NEAREST;
 
   VkImageBlit &region = blit_image.region;
-  region.srcOffsets[0] = {0, color_attachment->height_get() - 1, 0};
+  region.srcOffsets[0] = {0, color_attachment->height_get(), 0};
   region.srcOffsets[1] = {color_attachment->width_get(), 0, 1};
   region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   region.srcSubresource.mipLevel = 0;
@@ -349,7 +363,7 @@ void VKContext::swap_buffers_pre_handler(const GHOST_VulkanSwapChainData &swap_c
 
 void VKContext::swap_buffers_post_handler()
 {
-  sync_backbuffer();
+  sync_backbuffer(true);
 }
 
 /** \} */

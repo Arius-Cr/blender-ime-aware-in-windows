@@ -6,9 +6,13 @@
  * Custom full-screen triangle with placeholders varyings.
  */
 
-#pragma BLENDER_REQUIRE(draw_view_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_nodetree_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_surf_lib.glsl)
+#include "infos/eevee_material_info.hh"
+
+VERTEX_SHADER_CREATE_INFO(eevee_geom_world)
+
+#include "draw_view_lib.glsl"
+#include "eevee_nodetree_lib.glsl"
+#include "eevee_surf_lib.glsl"
 
 void main()
 {

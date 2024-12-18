@@ -8,7 +8,11 @@
  * Equivalent to a frame-buffer depth clear but only for pages pushed to the clear_page_buf.
  */
 
-#pragma BLENDER_REQUIRE(gpu_shader_utildefines_lib.glsl)
+#include "infos/eevee_shadow_info.hh"
+
+COMPUTE_SHADER_CREATE_INFO(eevee_shadow_page_clear)
+
+#include "gpu_shader_utildefines_lib.glsl"
 
 void main()
 {

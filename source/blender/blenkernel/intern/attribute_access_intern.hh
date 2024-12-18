@@ -2,6 +2,8 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
+#include <functional>
+
 #include "BLI_generic_pointer.hh"
 #include "BLI_map.hh"
 #include "BLI_span.hh"
@@ -21,11 +23,12 @@ struct CustomDataAccessInfo {
   using CustomDataGetter = CustomData *(*)(void *owner);
   using ConstCustomDataGetter = const CustomData *(*)(const void *owner);
   using GetElementNum = int (*)(const void *owner);
-  using UpdateCustomDataPointers = void (*)(void *owner);
+  using GetTagModifiedFunction = std::function<void()> (*)(void *owner, StringRef name);
 
   CustomDataGetter get_custom_data;
   ConstCustomDataGetter get_const_custom_data;
   GetElementNum get_element_num;
+  GetTagModifiedFunction get_tag_modified_function;
 };
 
 /**
@@ -202,10 +205,10 @@ class BuiltinCustomDataLayerProvider final : public BuiltinAttributeProvider {
 };
 
 /**
- * This is a container for multiple attribute providers that are used by one geometry component
- * type (e.g. there is a set of attribute providers for mesh components).
+ * This is a container for multiple attribute providers that are used by one geometry type
+ * (e.g. there is a set of attribute providers for mesh components).
  */
-class ComponentAttributeProviders {
+class GeometryAttributeProviders {
  private:
   /**
    * Builtin attribute providers are identified by their name. Attribute names that are in this
@@ -225,8 +228,8 @@ class ComponentAttributeProviders {
   VectorSet<AttrDomain> supported_domains_;
 
  public:
-  ComponentAttributeProviders(Span<const BuiltinAttributeProvider *> builtin_attribute_providers,
-                              Span<const DynamicAttributesProvider *> dynamic_attribute_providers)
+  GeometryAttributeProviders(Span<const BuiltinAttributeProvider *> builtin_attribute_providers,
+                             Span<const DynamicAttributesProvider *> dynamic_attribute_providers)
       : dynamic_attribute_providers_(dynamic_attribute_providers)
   {
     for (const BuiltinAttributeProvider *provider : builtin_attribute_providers) {
@@ -257,29 +260,28 @@ class ComponentAttributeProviders {
 
 namespace attribute_accessor_functions {
 
-template<const ComponentAttributeProviders &providers>
-inline bool is_builtin(const void * /*owner*/, const StringRef attribute_id)
+template<const GeometryAttributeProviders &providers>
+inline std::optional<AttributeDomainAndType> builtin_domain_and_type(const void * /*owner*/,
+                                                                     const StringRef name)
 {
-  if (bke::attribute_name_is_anonymous(attribute_id)) {
-    return false;
+  if (const BuiltinAttributeProvider *provider =
+          providers.builtin_attribute_providers().lookup_default_as(name, nullptr))
+  {
+    return AttributeDomainAndType{provider->domain(), provider->data_type()};
   }
-  const StringRef name = attribute_id;
-  return providers.builtin_attribute_providers().contains_as(name);
+  return std::nullopt;
 }
 
-template<const ComponentAttributeProviders &providers>
-inline GAttributeReader lookup(const void *owner, const StringRef attribute_id)
+template<const GeometryAttributeProviders &providers>
+inline GAttributeReader lookup(const void *owner, const StringRef name)
 {
-  if (!bke::attribute_name_is_anonymous(attribute_id)) {
-    const StringRef name = attribute_id;
-    if (const BuiltinAttributeProvider *provider =
-            providers.builtin_attribute_providers().lookup_default_as(name, nullptr))
-    {
-      return provider->try_get_for_read(owner);
-    }
+  if (const BuiltinAttributeProvider *provider =
+          providers.builtin_attribute_providers().lookup_default_as(name, nullptr))
+  {
+    return provider->try_get_for_read(owner);
   }
   for (const DynamicAttributesProvider *provider : providers.dynamic_attribute_providers()) {
-    GAttributeReader attribute = provider->try_get_for_read(owner, attribute_id);
+    GAttributeReader attribute = provider->try_get_for_read(owner, name);
     if (attribute) {
       return attribute;
     }
@@ -287,7 +289,7 @@ inline GAttributeReader lookup(const void *owner, const StringRef attribute_id)
   return {};
 }
 
-template<const ComponentAttributeProviders &providers>
+template<const GeometryAttributeProviders &providers>
 inline void foreach_attribute(const void *owner,
                               const FunctionRef<void(const AttributeIter &)> fn,
                               const AttributeAccessor &accessor)
@@ -320,34 +322,27 @@ inline void foreach_attribute(const void *owner,
   }
 }
 
-template<const ComponentAttributeProviders &providers>
-inline AttributeValidator lookup_validator(const void * /*owner*/,
-                                           const blender::StringRef attribute_id)
+template<const GeometryAttributeProviders &providers>
+inline AttributeValidator lookup_validator(const void * /*owner*/, const blender::StringRef name)
 {
-  if (bke::attribute_name_is_anonymous(attribute_id)) {
-    return {};
-  }
   const BuiltinAttributeProvider *provider =
-      providers.builtin_attribute_providers().lookup_default_as(attribute_id, nullptr);
+      providers.builtin_attribute_providers().lookup_default_as(name, nullptr);
   if (!provider) {
     return {};
   }
   return provider->validator();
 }
 
-template<const ComponentAttributeProviders &providers>
-inline GAttributeWriter lookup_for_write(void *owner, const StringRef attribute_id)
+template<const GeometryAttributeProviders &providers>
+inline GAttributeWriter lookup_for_write(void *owner, const StringRef name)
 {
-  if (!bke::attribute_name_is_anonymous(attribute_id)) {
-    const StringRef name = attribute_id;
-    if (const BuiltinAttributeProvider *provider =
-            providers.builtin_attribute_providers().lookup_default_as(name, nullptr))
-    {
-      return provider->try_get_for_write(owner);
-    }
+  if (const BuiltinAttributeProvider *provider =
+          providers.builtin_attribute_providers().lookup_default_as(name, nullptr))
+  {
+    return provider->try_get_for_write(owner);
   }
   for (const DynamicAttributesProvider *provider : providers.dynamic_attribute_providers()) {
-    GAttributeWriter attribute = provider->try_get_for_write(owner, attribute_id);
+    GAttributeWriter attribute = provider->try_get_for_write(owner, name);
     if (attribute) {
       return attribute;
     }
@@ -355,60 +350,54 @@ inline GAttributeWriter lookup_for_write(void *owner, const StringRef attribute_
   return {};
 }
 
-template<const ComponentAttributeProviders &providers>
-inline bool remove(void *owner, const StringRef attribute_id)
+template<const GeometryAttributeProviders &providers>
+inline bool remove(void *owner, const StringRef name)
 {
-  if (!bke::attribute_name_is_anonymous(attribute_id)) {
-    const StringRef name = attribute_id;
-    if (const BuiltinAttributeProvider *provider =
-            providers.builtin_attribute_providers().lookup_default_as(name, nullptr))
-    {
-      return provider->try_delete(owner);
-    }
+  if (const BuiltinAttributeProvider *provider =
+          providers.builtin_attribute_providers().lookup_default_as(name, nullptr))
+  {
+    return provider->try_delete(owner);
   }
   for (const DynamicAttributesProvider *provider : providers.dynamic_attribute_providers()) {
-    if (provider->try_delete(owner, attribute_id)) {
+    if (provider->try_delete(owner, name)) {
       return true;
     }
   }
   return false;
 }
 
-template<const ComponentAttributeProviders &providers>
+template<const GeometryAttributeProviders &providers>
 inline bool add(void *owner,
-                const StringRef attribute_id,
+                const StringRef name,
                 AttrDomain domain,
                 eCustomDataType data_type,
                 const AttributeInit &initializer)
 {
-  if (!bke::attribute_name_is_anonymous(attribute_id)) {
-    const StringRef name = attribute_id;
-    if (const BuiltinAttributeProvider *provider =
-            providers.builtin_attribute_providers().lookup_default_as(name, nullptr))
-    {
-      if (provider->domain() != domain) {
-        return false;
-      }
-      if (provider->data_type() != data_type) {
-        return false;
-      }
-      return provider->try_create(owner, initializer);
+  if (const BuiltinAttributeProvider *provider =
+          providers.builtin_attribute_providers().lookup_default_as(name, nullptr))
+  {
+    if (provider->domain() != domain) {
+      return false;
     }
+    if (provider->data_type() != data_type) {
+      return false;
+    }
+    return provider->try_create(owner, initializer);
   }
   for (const DynamicAttributesProvider *provider : providers.dynamic_attribute_providers()) {
-    if (provider->try_create(owner, attribute_id, domain, data_type, initializer)) {
+    if (provider->try_create(owner, name, domain, data_type, initializer)) {
       return true;
     }
   }
   return false;
 }
 
-template<const ComponentAttributeProviders &providers>
+template<const GeometryAttributeProviders &providers>
 inline AttributeAccessorFunctions accessor_functions_for_providers()
 {
   return AttributeAccessorFunctions{nullptr,
                                     nullptr,
-                                    is_builtin<providers>,
+                                    builtin_domain_and_type<providers>,
                                     lookup<providers>,
                                     nullptr,
                                     foreach_attribute<providers>,

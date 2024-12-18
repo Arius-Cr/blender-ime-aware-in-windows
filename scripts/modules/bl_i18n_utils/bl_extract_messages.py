@@ -6,6 +6,10 @@
 # XXX: This script is meant to be used from inside Blender!
 #      You should not directly use this script, rather use update_msg.py!
 
+__all__ = (
+    "dump_addon_messages",
+)
+
 import time
 import os
 import re
@@ -29,7 +33,7 @@ def init_spell_check(settings, lang="en_US"):
     try:
         from bl_i18n_utils import utils_spell_check
         return utils_spell_check.SpellChecker(settings, lang)
-    except BaseException as ex:
+    except Exception as ex:
         print("Failed to import utils_spell_check ({})".format(str(ex)))
         return None
 
@@ -416,6 +420,13 @@ def dump_rna_messages(msgs, reports, settings, verbose=False):
             # Do not process blacklisted classes, but do handle their children.
             if cls in blacklist_rna_class:
                 reports["rna_structs_skipped"].append(cls)
+            elif bpy.types.Operator in cls.__bases__ and not getattr(cls, "is_registered", True):
+                # unregistering a python-defined operator does not remove it from the list of subclasses of
+                # `bpy.types.Operator`, this works around this issue.
+                # While not a huge problem for main UI messages extraction, it does break fairly badly
+                # extraction of specific add-ons UI messages, see #116579.
+                print("SKIPPING because unregistered:", cls)
+                continue
             elif cls in ret_cls_set:
                 continue
             else:
@@ -473,7 +484,7 @@ def dump_rna_messages(msgs, reports, settings, verbose=False):
 def dump_py_messages_from_files(msgs, reports, files, settings):
     """
     Dump text inlined in the python files given, e.g. "My Name" in:
-        layout.prop("someprop", text="My Name")
+        ``layout.prop("someprop", text="My Name")``
     """
     import ast
 
@@ -574,7 +585,7 @@ def dump_py_messages_from_files(msgs, reports, files, settings):
             op = getattr(op, n)
         try:
             return op.get_rna_type().translation_context
-        except BaseException as ex:
+        except Exception as ex:
             default_op_context = i18n_contexts.operator_default
             print("ERROR: ", str(ex))
             print("       Assuming default operator context '{}'".format(default_op_context))
@@ -867,11 +878,11 @@ def dump_src_messages(msgs, reports, settings):
     forced = set()
     if os.path.isfile(settings.SRC_POTFILES):
         with open(settings.SRC_POTFILES, encoding="utf8") as src:
-            for l in src:
-                if l[0] == '-':
-                    forbidden.add(l[1:].rstrip('\n'))
-                elif l[0] != '#':
-                    forced.add(l.rstrip('\n'))
+            for line in src:
+                if line[0] == '-':
+                    forbidden.add(line[1:].rstrip('\n'))
+                elif line[0] != '#':
+                    forced.add(line.rstrip('\n'))
     for root, dirs, files in os.walk(settings.POTFILES_SOURCE_DIR):
         if "/.git" in root:
             continue
@@ -1219,13 +1230,6 @@ def dump_addon_messages(addon_module_name, do_checks, settings):
 
 
 def main():
-    try:
-        import bpy
-    except ImportError:
-        print("This script must run from inside blender")
-        return
-
-    import sys
     import argparse
 
     # Get rid of Blender args!

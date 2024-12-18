@@ -12,6 +12,8 @@
 #include "BKE_curves.hh"
 #include "BKE_curves_utils.hh"
 
+#include "GEO_reorder.hh"
+
 #include "ED_curves.hh"
 
 namespace blender::ed::curves {
@@ -273,7 +275,7 @@ void resize_curves(bke::CurvesGeometry &curves,
   /* Accumulate the sizes written from `new_sizes` into offsets. */
   offset_indices::accumulate_counts_to_offsets(dst_curves.offsets_for_write());
 
-  /* Resize the points domain.*/
+  /* Resize the points domain. */
   dst_curves.resize(dst_curves.offsets().last(), dst_curves.curves_num());
 
   /* Copy point attributes and default initialize newly added point ranges. */
@@ -317,6 +319,11 @@ void resize_curves(bke::CurvesGeometry &curves,
   /* Move the result into `curves`. */
   curves = std::move(dst_curves);
   curves.tag_topology_changed();
+}
+
+void reorder_curves(bke::CurvesGeometry &curves, const Span<int> old_by_new_indices_map)
+{
+  curves = geometry::reorder_curves_geometry(curves, old_by_new_indices_map, {});
 }
 
 }  // namespace blender::ed::curves

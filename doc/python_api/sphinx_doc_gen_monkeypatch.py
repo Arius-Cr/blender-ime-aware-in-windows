@@ -7,7 +7,7 @@ bpy_types_Operator_bl_property__doc__ = (
 The name of a property to use as this operators primary property.
 Currently this is only used to select the default property when
 expanding an operator into a menu.
-:type: string
+:type: str
 """)
 
 
@@ -15,7 +15,7 @@ def main():
     import bpy
     from bpy.types import Operator
 
-    def dummy_func(test):
+    def dummy_func(_test):
         pass
 
     kw_dummy = dict(fget=dummy_func, fset=dummy_func, fdel=dummy_func)

@@ -37,6 +37,15 @@ enum eUSDMtlNameCollisionMode {
   USD_MTL_NAME_COLLISION_REFERENCE_EXISTING = 1,
 };
 
+/* Enums specifying the USD material purpose,
+ * corresponding to #pxr::UsdShadeTokens 'allPurpose',
+ * 'preview', and 'render', respectively. */
+enum eUSDMtlPurpose {
+  USD_MTL_PURPOSE_ALL = 0,
+  USD_MTL_PURPOSE_PREVIEW = 1,
+  USD_MTL_PURPOSE_FULL = 2
+};
+
 /**
  *  Behavior for importing of custom
  *  attributes / properties outside
@@ -127,6 +136,7 @@ struct USDExportParams {
   bool only_deform_bones = false;
 
   bool convert_world_material = true;
+  bool merge_parent_xform = false;
 
   bool use_instancing = false;
   bool export_custom_properties = true;
@@ -203,7 +213,9 @@ struct USDImportParams {
   bool set_material_blend;
 
   bool validate_meshes;
+  bool merge_parent_xform;
 
+  eUSDMtlPurpose mtl_purpose;
   eUSDMtlNameCollisionMode mtl_name_collision_mode;
   eUSDTexImportMode import_textures_mode;
 

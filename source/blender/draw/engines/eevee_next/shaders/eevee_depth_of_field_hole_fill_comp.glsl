@@ -12,7 +12,11 @@
  * rotation to ensure maximum coverage.
  */
 
-#pragma BLENDER_REQUIRE(eevee_depth_of_field_accumulator_lib.glsl)
+#include "infos/eevee_depth_of_field_info.hh"
+
+COMPUTE_SHADER_CREATE_INFO(eevee_depth_of_field_hole_fill)
+
+#include "eevee_depth_of_field_accumulator_lib.glsl"
 
 void main()
 {
@@ -25,13 +29,11 @@ void main()
   float min_intersectable_radius = dof_tile_large_coc;
   bool can_early_out = !prediction.do_hole_fill;
 
-  bool do_fast_gather = dof_do_fast_gather(base_radius, min_radius, is_foreground);
+  bool do_fast_gather = dof_do_fast_gather(base_radius, min_radius, IS_FOREGROUND);
 
   /* Gather at half resolution. Divide CoC by 2. */
   base_radius *= 0.5;
   min_intersectable_radius *= 0.5;
-
-  bool do_density_change = dof_do_density_change(base_radius, min_intersectable_radius);
 
   vec4 out_color = vec4(0.0);
   float out_weight = 0.0;

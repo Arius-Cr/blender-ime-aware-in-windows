@@ -60,14 +60,6 @@ static void init_data(ModifierData *md)
   md->ui_expand_flag = UI_PANEL_DATA_EXPAND_ROOT | UI_SUBPANEL_DATA_EXPAND_1;
 }
 
-static void required_data_mask(ModifierData *md, CustomData_MeshMasks *r_cddata_masks)
-{
-  MultiresModifierData *mmd = (MultiresModifierData *)md;
-  if (mmd->flags & eMultiresModifierFlag_UseCustomNormals) {
-    r_cddata_masks->lmask |= CD_MASK_CUSTOMLOOPNORMAL;
-  }
-}
-
 static void copy_data(const ModifierData *md_src, ModifierData *md_dst, const int flag)
 {
   BKE_modifier_copydata_generic(md_src, md_dst, flag);
@@ -316,7 +308,7 @@ static void panel_draw(const bContext *C, Panel *panel)
   uiItemR(col, ptr, "use_sculpt_base_mesh", UI_ITEM_NONE, IFACE_("Sculpt Base Mesh"), ICON_NONE);
   UI_block_lock_clear(block);
 
-  uiItemR(layout, ptr, "show_only_control_edges", UI_ITEM_NONE, nullptr, ICON_NONE);
+  uiItemR(layout, ptr, "show_only_control_edges", UI_ITEM_NONE, std::nullopt, ICON_NONE);
 
   modifier_panel_end(layout, ptr);
 }
@@ -353,7 +345,7 @@ static void subdivisions_panel_draw(const bContext * /*C*/, Panel *panel)
               WM_OP_EXEC_DEFAULT,
               UI_ITEM_NONE,
               &op_ptr);
-  RNA_enum_set(&op_ptr, "mode", MULTIRES_SUBDIVIDE_CATMULL_CLARK);
+  RNA_enum_set(&op_ptr, "mode", int8_t(MultiresSubdivideModeType::CatmullClark));
   RNA_string_set(&op_ptr, "modifier", ((ModifierData *)mmd)->name);
 
   row = uiLayoutRow(layout, false);
@@ -365,7 +357,7 @@ static void subdivisions_panel_draw(const bContext * /*C*/, Panel *panel)
               WM_OP_EXEC_DEFAULT,
               UI_ITEM_NONE,
               &op_ptr);
-  RNA_enum_set(&op_ptr, "mode", MULTIRES_SUBDIVIDE_SIMPLE);
+  RNA_enum_set(&op_ptr, "mode", int8_t(MultiresSubdivideModeType::Simple));
   RNA_string_set(&op_ptr, "modifier", ((ModifierData *)mmd)->name);
   uiItemFullO(row,
               "OBJECT_OT_multires_subdivide",
@@ -375,7 +367,7 @@ static void subdivisions_panel_draw(const bContext * /*C*/, Panel *panel)
               WM_OP_EXEC_DEFAULT,
               UI_ITEM_NONE,
               &op_ptr);
-  RNA_enum_set(&op_ptr, "mode", MULTIRES_SUBDIVIDE_LINEAR);
+  RNA_enum_set(&op_ptr, "mode", int8_t(MultiresSubdivideModeType::Linear));
   RNA_string_set(&op_ptr, "modifier", ((ModifierData *)mmd)->name);
 
   uiItemS(layout);
@@ -420,7 +412,7 @@ static void generate_panel_draw(const bContext * /*C*/, Panel *panel)
     uiItemO(row, IFACE_("Pack External"), ICON_NONE, "OBJECT_OT_multires_external_pack");
     uiLayoutSetPropSep(col, true);
     row = uiLayoutRow(col, false);
-    uiItemR(row, ptr, "filepath", UI_ITEM_NONE, nullptr, ICON_NONE);
+    uiItemR(row, ptr, "filepath", UI_ITEM_NONE, std::nullopt, ICON_NONE);
   }
   else {
     uiItemO(col, IFACE_("Save External..."), ICON_NONE, "OBJECT_OT_multires_external_save");
@@ -440,15 +432,15 @@ static void advanced_panel_draw(const bContext * /*C*/, Panel *panel)
 
   uiLayoutSetActive(layout, !has_displacement);
 
-  uiItemR(layout, ptr, "quality", UI_ITEM_NONE, nullptr, ICON_NONE);
+  uiItemR(layout, ptr, "quality", UI_ITEM_NONE, std::nullopt, ICON_NONE);
 
   col = uiLayoutColumn(layout, false);
   uiLayoutSetActive(col, true);
-  uiItemR(col, ptr, "uv_smooth", UI_ITEM_NONE, nullptr, ICON_NONE);
-  uiItemR(col, ptr, "boundary_smooth", UI_ITEM_NONE, nullptr, ICON_NONE);
+  uiItemR(col, ptr, "uv_smooth", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+  uiItemR(col, ptr, "boundary_smooth", UI_ITEM_NONE, std::nullopt, ICON_NONE);
 
-  uiItemR(layout, ptr, "use_creases", UI_ITEM_NONE, nullptr, ICON_NONE);
-  uiItemR(layout, ptr, "use_custom_normals", UI_ITEM_NONE, nullptr, ICON_NONE);
+  uiItemR(layout, ptr, "use_creases", UI_ITEM_NONE, std::nullopt, ICON_NONE);
+  uiItemR(layout, ptr, "use_custom_normals", UI_ITEM_NONE, std::nullopt, ICON_NONE);
 }
 
 static void panel_register(ARegionType *region_type)
@@ -484,7 +476,7 @@ ModifierTypeInfo modifierType_Multires = {
     /*modify_geometry_set*/ nullptr,
 
     /*init_data*/ init_data,
-    /*required_data_mask*/ required_data_mask,
+    /*required_data_mask*/ nullptr,
     /*free_data*/ free_data,
     /*is_disabled*/ nullptr,
     /*update_depsgraph*/ nullptr,

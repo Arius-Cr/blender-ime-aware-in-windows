@@ -15,11 +15,15 @@
  * https://www.ea.com/seed/news/seed-dd18-presentation-slides-raytracing
  */
 
-#pragma BLENDER_REQUIRE(draw_view_lib.glsl)
-#pragma BLENDER_REQUIRE(gpu_shader_codegen_lib.glsl)
-#pragma BLENDER_REQUIRE(gpu_shader_utildefines_lib.glsl)
-#pragma BLENDER_REQUIRE(gpu_shader_math_matrix_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_colorspace_lib.glsl)
+#include "infos/eevee_tracing_info.hh"
+
+COMPUTE_SHADER_CREATE_INFO(eevee_ray_denoise_temporal)
+
+#include "draw_view_lib.glsl"
+#include "eevee_colorspace_lib.glsl"
+#include "gpu_shader_codegen_lib.glsl"
+#include "gpu_shader_math_matrix_lib.glsl"
+#include "gpu_shader_utildefines_lib.glsl"
 
 struct LocalStatistics {
   vec3 mean;
@@ -59,7 +63,8 @@ LocalStatistics local_statistics_get(ivec2 texel, vec3 center_radiance)
       /* Weight corners less to avoid box artifacts.
        * Same idea as in "High Quality Temporal Supersampling" by Brian Karis at SIGGRAPH 2014
        * (Slide 32) Simple clamp to min/max of 8 neighbors results in 3x3 box artifacts. */
-      float weight = (x == y) ? 0.25 : 1.0;
+      /* TODO(@fclem): Evaluate if beneficial. Currently not use to soak more noise? Unsure. */
+      // float weight = (abs(x) == abs(y)) ? 0.25 : 1.0;
       /* Use YCoCg for clamping and accumulation to avoid color shift artifacts. */
       vec3 radiance_YCoCg = colorspace_YCoCg_from_scene_linear(radiance.rgb);
       result.mean += radiance_YCoCg;

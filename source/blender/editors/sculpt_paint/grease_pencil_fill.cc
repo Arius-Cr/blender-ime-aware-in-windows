@@ -18,11 +18,12 @@
 #include "BKE_crazyspace.hh"
 #include "BKE_curves.hh"
 #include "BKE_grease_pencil.hh"
-#include "BKE_image.h"
+#include "BKE_image.hh"
 #include "BKE_lib_id.hh"
 #include "BKE_material.h"
 #include "BKE_paint.hh"
 
+#include "DNA_brush_types.h"
 #include "DNA_curves_types.h"
 #include "DNA_grease_pencil_types.h"
 #include "DNA_material_types.h"
@@ -39,6 +40,8 @@
 #include "IMB_imbuf_types.hh"
 
 #include "GPU_state.hh"
+
+#include "grease_pencil_intern.hh"
 
 #include <list>
 #include <optional>
@@ -590,7 +593,8 @@ static bke::CurvesGeometry boundary_to_curves(const Scene &scene,
   MutableSpan<float3> positions = curves.positions_for_write();
   bke::MutableAttributeAccessor attributes = curves.attributes_for_write();
   /* Attributes that are defined explicitly and should not be set to default values. */
-  Set<std::string> skip_curve_attributes = {"curve_type", "material_index", "cyclic", "hardness"};
+  Set<std::string> skip_curve_attributes = {
+      "curve_type", "material_index", "cyclic", "hardness", "fill_opacity"};
   Set<std::string> skip_point_attributes = {"position", "radius", "opacity"};
 
   curves.curve_types_for_write().fill(CURVE_TYPE_POLY);
@@ -602,6 +606,10 @@ static bke::CurvesGeometry boundary_to_curves(const Scene &scene,
       "cyclic", bke::AttrDomain::Curve);
   bke::SpanAttributeWriter<float> hardnesses = attributes.lookup_or_add_for_write_span<float>(
       "hardness",
+      bke::AttrDomain::Curve,
+      bke::AttributeInitVArray(VArray<float>::ForSingle(1.0f, curves.curves_num())));
+  bke::SpanAttributeWriter<float> fill_opacities = attributes.lookup_or_add_for_write_span<float>(
+      "fill_opacity",
       bke::AttrDomain::Curve,
       bke::AttributeInitVArray(VArray<float>::ForSingle(1.0f, curves.curves_num())));
   bke::SpanAttributeWriter<float> radii = attributes.lookup_or_add_for_write_span<float>(
@@ -616,15 +624,18 @@ static bke::CurvesGeometry boundary_to_curves(const Scene &scene,
   cyclic.span.fill(true);
   materials.span.fill(material_index);
   hardnesses.span.fill(hardness);
+  /* TODO: `fill_opacities` are currently always 1.0f for the new strokes. Maybe this should be a
+   * parameter. */
 
   cyclic.finish();
   materials.finish();
   hardnesses.finish();
+  fill_opacities.finish();
 
   for (const int point_i : curves.points_range()) {
     const int pixel_index = boundary.pixels[point_i];
     const int2 pixel_coord = buffer.coord_from_index(pixel_index);
-    const float3 position = placement.project(float2(pixel_coord));
+    const float3 position = placement.project_with_shift(float2(pixel_coord));
     positions[point_i] = position;
 
     /* Calculate radius and opacity for the outline as if it was a user stroke with full pressure.
@@ -641,7 +652,9 @@ static bke::CurvesGeometry boundary_to_curves(const Scene &scene,
         pressure, &brush, brush.gpencil_settings);
   }
 
-  if (scene.toolsettings->gp_paint->mode == GPPAINT_FLAG_USE_VERTEXCOLOR) {
+  const bool use_vertex_color = ed::sculpt_paint::greasepencil::brush_using_vertex_color(
+      scene.toolsettings->gp_paint, &brush);
+  if (use_vertex_color) {
     ColorGeometry4f vertex_color;
     srgb_to_linearrgb_v3_v3(vertex_color, brush.rgb);
     vertex_color.a = brush.gpencil_settings->vertex_factor;
@@ -1008,6 +1021,7 @@ bke::CurvesGeometry fill_strokes(const ViewContext &view_context,
   BLI_assert(object.type == OB_GREASE_PENCIL);
   GreasePencil &grease_pencil = *static_cast<GreasePencil *>(object.data);
   const Object &object_eval = *DEG_get_evaluated_object(&depsgraph, &object);
+  const ed::greasepencil::DrawingPlacement placement(scene, region, view3d, object_eval, &layer);
 
   /* Zoom and offset based on bounds, to fit all strokes within the render. */
   const bool uniform_zoom = true;
@@ -1022,7 +1036,9 @@ bke::CurvesGeometry fill_strokes(const ViewContext &view_context,
                                                   max_zoom_factor,
                                                   margin);
   /* Scale stroke radius by half to hide gaps between filled areas and boundaries. */
-  const float radius_scale = 0.5f;
+  const float radius_scale = (brush.gpencil_settings->fill_draw_mode == GP_FILL_DMODE_CONTROL) ?
+                                 0.0f :
+                                 0.5f;
 
   constexpr const int min_image_size = 128;
   /* Pixel scale (aka. "fill_factor, aka. "Precision") to reduce image size. */
@@ -1030,12 +1046,8 @@ bke::CurvesGeometry fill_strokes(const ViewContext &view_context,
   const int2 region_size = int2(region.winx, region.winy);
   const int2 image_size = math::max(region_size * pixel_scale, int2(min_image_size));
 
-  /* Mouse coordinates are in region space, make relative to lower-left view plane corner. */
-  const float2 fill_point_image = (math::safe_divide((fill_point - float2(region_size) * 0.5f) -
-                                                         offset * float2(region_size),
-                                                     zoom) +
-                                   float2(region_size) * 0.5f) *
-                                  pixel_scale;
+  /* Transform mouse coordinates into layer space for rendering alongside strokes. */
+  const float3 fill_point_layer = placement.project(fill_point);
 
   /* Region size is used for DrawingPlacement projection. */
   image_render::RegionViewData region_view_data = image_render::region_init(region, image_size);
@@ -1052,7 +1064,6 @@ bke::CurvesGeometry fill_strokes(const ViewContext &view_context,
   const float4x4 layer_to_world = layer.to_world_space(object);
   const float4x4 world_to_view = float4x4(rv3d.viewmat);
   const float4x4 layer_to_view = world_to_view * layer_to_world;
-  const ed::greasepencil::DrawingPlacement placement(scene, region, view3d, object_eval, &layer);
 
   GPU_blend(GPU_BLEND_ALPHA);
   GPU_depth_mask(true);
@@ -1061,7 +1072,6 @@ bke::CurvesGeometry fill_strokes(const ViewContext &view_context,
 
   /* Draw blue point where click with mouse. */
   const float mouse_dot_size = 4.0f;
-  const float3 fill_point_layer = placement.project(fill_point_image);
   image_render::draw_dot(layer_to_view, fill_point_layer, mouse_dot_size, draw_seed_color);
 
   for (const DrawingInfo &info : src_drawings) {

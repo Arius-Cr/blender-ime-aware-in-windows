@@ -22,13 +22,6 @@ bool peelObjectsTransform(TransInfo *t,
                           float r_no[3],
                           float *r_thickness);
 
-bool snapNodesTransform(TransInfo *t,
-                        const blender::float2 &mval,
-                        /* Return args. */
-                        float r_loc[2],
-                        float *r_dist_px,
-                        char *r_node_border);
-
 bool transformModeUseSnap(const TransInfo *t);
 
 void tranform_snap_target_median_calc(const TransInfo *t, float r_median[3]);
@@ -43,6 +36,7 @@ bool transform_snap_is_active(const TransInfo *t);
 
 bool validSnap(const TransInfo *t);
 
+void transform_snap_grid_init(const TransInfo *t, float r_snap[3], float *r_snap_precision);
 void initSnapping(TransInfo *t, wmOperator *op);
 void freeSnapping(TransInfo *t);
 void initSnapAngleIncrements(TransInfo *t);
@@ -54,6 +48,8 @@ eRedrawFlag handleSnapping(TransInfo *t, const wmEvent *event);
 void drawSnapping(TransInfo *t);
 bool usingSnappingNormal(const TransInfo *t);
 bool validSnappingNormal(const TransInfo *t);
+
+short *transform_snap_flag_from_spacetype_ptr(TransInfo *t, const struct PropertyRNA **r_prop);
 
 void getSnapPoint(const TransInfo *t, float vec[3]);
 void addSnapPoint(TransInfo *t);
@@ -68,7 +64,7 @@ TransSeqSnapData *transform_snap_sequencer_data_alloc(const TransInfo *t);
 void transform_snap_sequencer_data_free(TransSeqSnapData *data);
 bool transform_snap_sequencer_calc(TransInfo *t);
 void transform_snap_sequencer_apply_seqslide(TransInfo *t, float *vec);
-void transform_snap_sequencer_image_apply_translate(TransInfo *t, float *vec);
+void transform_snap_sequencer_image_apply_translate(TransInfo *t, float vec[2]);
 
 /* `transform_snap_animation.cc` */
 void snapFrameTransform(

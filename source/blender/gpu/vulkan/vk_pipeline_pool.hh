@@ -141,9 +141,14 @@ struct VKGraphicsInfo {
     }
   };
   struct FragmentOut {
+    uint32_t color_attachment_size;
+
+    /* Dynamic rendering */
     VkFormat depth_attachment_format;
     VkFormat stencil_attachment_format;
     Vector<VkFormat> color_attachment_formats;
+    /* Render pass rendering */
+    VkRenderPass vk_render_pass;
 
     bool operator==(const FragmentOut &other) const
     {
@@ -152,7 +157,7 @@ struct VKGraphicsInfo {
 
     uint64_t hash() const
     {
-      uint64_t hash = 0;
+      uint64_t hash = uint64_t(vk_render_pass);
       hash = hash * 33 ^ uint64_t(depth_attachment_format);
       hash = hash * 33 ^ uint64_t(stencil_attachment_format);
       for (VkFormat color_attachment_format : color_attachment_formats) {
@@ -262,6 +267,8 @@ class VKPipelinePool : public NonCopyable {
   VkPipelineVertexInputStateCreateInfo vk_pipeline_vertex_input_state_create_info_;
 
   VkPipelineRasterizationStateCreateInfo vk_pipeline_rasterization_state_create_info_;
+  VkPipelineRasterizationProvokingVertexStateCreateInfoEXT
+      vk_pipeline_rasterization_provoking_vertex_state_info_;
   VkPipelineViewportStateCreateInfo vk_pipeline_viewport_state_create_info_;
   VkPipelineDepthStencilStateCreateInfo vk_pipeline_depth_stencil_state_create_info_;
 

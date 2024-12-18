@@ -2,10 +2,20 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
-#pragma BLENDER_REQUIRE(gpu_shader_math_vector_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_octahedron_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_spherical_harmonics_lib.glsl)
-#pragma BLENDER_REQUIRE(eevee_lightprobe_sphere_mapping_lib.glsl)
+#pragma once
+
+#include "infos/eevee_lightprobe_sphere_info.hh"
+
+/* TODO(fclem): Pass the lightprobe_sphere_buf around and avoid relying on interface.
+ * Currently in conflict with eevee_lightprobe_volume_load. */
+#ifndef SPHERE_PROBE_SELECT
+SHADER_LIBRARY_CREATE_INFO(eevee_lightprobe_sphere_data)
+#endif
+
+#include "eevee_lightprobe_sphere_mapping_lib.glsl"
+#include "eevee_octahedron_lib.glsl"
+#include "eevee_spherical_harmonics_lib.glsl"
+#include "gpu_shader_math_vector_lib.glsl"
 
 #ifdef SPHERE_PROBE
 vec4 lightprobe_spheres_sample(vec3 L, float lod, SphereProbeUvArea uv_area)

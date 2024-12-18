@@ -2,11 +2,16 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
+#pragma once
+
+#include "infos/eevee_common_info.hh"
+
 /**
  * Camera projection / uv functions and utils.
  */
 
-#pragma BLENDER_REQUIRE(gpu_shader_math_base_lib.glsl)
+#include "gpu_shader_math_base_lib.glsl"
+#include "gpu_shader_math_matrix_lib.glsl"
 
 /* -------------------------------------------------------------------- */
 /** \name Panoramic Projections

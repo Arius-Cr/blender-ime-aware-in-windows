@@ -2,6 +2,10 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later */
 
+#pragma once
+
+#include "gpu_glsl_cpp_stubs.hh"
+
 /* Must match eGPLayerBlendModes */
 #define MODE_REGULAR 0
 #define MODE_HARDLIGHT 1

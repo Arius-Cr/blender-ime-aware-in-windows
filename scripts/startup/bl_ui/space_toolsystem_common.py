@@ -43,7 +43,7 @@ def _keymap_fn_from_seq(keymap_data):
 
 
 def _item_is_fn(item):
-    return (not (type(item) is ToolDef) and callable(item))
+    return ((type(item) is not ToolDef) and callable(item))
 
 
 from collections import namedtuple
@@ -245,7 +245,7 @@ class ToolSelectPanelHelper:
                 filepath = os.path.join(dirname, icon_name + ".dat")
                 try:
                     icon_value = bpy.app.icons.new_triangles_from_file(filepath)
-                except BaseException as ex:
+                except Exception as ex:
                     if not os.path.exists(filepath):
                         print("Missing icons:", filepath, ex)
                     else:

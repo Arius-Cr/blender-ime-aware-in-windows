@@ -32,7 +32,7 @@
 #include "BKE_colortools.hh"
 #include "BKE_context.hh"
 #include "BKE_customdata.hh"
-#include "BKE_image.h"
+#include "BKE_image.hh"
 #include "BKE_layer.hh"
 #include "BKE_material.h"
 #include "BKE_mesh.hh"
@@ -205,6 +205,12 @@ void paint_stroke_operator_properties(wmOperatorType *ot)
                       "Stroke Mode",
                       "Action taken when a paint stroke is made");
   RNA_def_property_flag(prop, PropertyFlag(PROP_SKIP_SAVE));
+
+  /* TODO: Pen flip logic should likely be combined into the stroke mode logic instead of being
+   * an entirely separate concept. */
+  prop = RNA_def_boolean(
+      ot->srna, "pen_flip", false, "Pen Flip", "Whether a tablet's eraser mode is being used");
+  RNA_def_property_flag(prop, PropertyFlag(PROP_HIDDEN | PROP_SKIP_SAVE));
 }
 
 /* 3D Paint */
@@ -277,9 +283,7 @@ static int imapaint_pick_face(ViewContext *vc,
   const float3 start_object = math::transform_point(world_to_object, start_world);
   const float3 end_object = math::transform_point(world_to_object, end_world);
 
-  BVHTreeFromMesh mesh_bvh;
-  BKE_bvhtree_from_mesh_get(&mesh_bvh, &mesh, BVHTREE_FROM_CORNER_TRIS, 2);
-  BLI_SCOPED_DEFER([&]() { free_bvhtree_from_mesh(&mesh_bvh); });
+  BVHTreeFromMesh mesh_bvh = mesh.bvh_corner_tris();
 
   BVHTreeRayHit ray_hit;
   ray_hit.dist = FLT_MAX;
@@ -405,7 +409,7 @@ void paint_sample_color(
                 }
                 else {
                   linearrgb_to_srgb_v3_v3(rgba_f, rgba_f);
-                  BKE_brush_color_set(scene, br, rgba_f);
+                  BKE_brush_color_set(scene, paint, br, rgba_f);
                 }
               }
               else {
@@ -418,7 +422,7 @@ void paint_sample_color(
                 else {
                   float rgba_f[3];
                   rgb_uchar_to_float(rgba_f, rgba);
-                  BKE_brush_color_set(scene, br, rgba_f);
+                  BKE_brush_color_set(scene, paint, br, rgba_f);
                 }
               }
               BKE_image_release_ibuf(image, ibuf, nullptr);
@@ -445,7 +449,7 @@ void paint_sample_color(
         copy_v3_v3(color->rgb, rgba_f);
       }
       else {
-        BKE_brush_color_set(scene, br, rgba_f);
+        BKE_brush_color_set(scene, paint, br, rgba_f);
       }
       return;
     }
@@ -462,7 +466,7 @@ void paint_sample_color(
       copy_v3_v3(color->rgb, rgb_fl);
     }
     else {
-      BKE_brush_color_set(scene, br, rgb_fl);
+      BKE_brush_color_set(scene, paint, br, rgb_fl);
     }
   }
 }
@@ -526,6 +530,7 @@ static int brush_sculpt_curves_falloff_preset_exec(bContext *C, wmOperator *op)
   mapping->preset = RNA_enum_get(op->ptr, "shape");
   CurveMap *map = mapping->cm;
   BKE_curvemap_reset(map, &mapping->clipr, mapping->preset, CURVEMAP_SLOPE_POSITIVE);
+  BKE_brush_tag_unsaved_changes(brush);
   return OPERATOR_FINISHED;
 }
 

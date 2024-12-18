@@ -7,6 +7,9 @@
 #include "BLI_rand.hh"
 #include "BLI_task.hh"
 
+#include "DNA_brush_types.h"
+#include "DNA_gpencil_legacy_types.h"
+
 #include "BKE_context.hh"
 #include "BKE_crazyspace.hh"
 #include "BKE_curves.hh"
@@ -93,8 +96,8 @@ void RandomizeOperation::on_stroke_extended(const bContext &C, const InputSample
               return;
             }
             const float noise = 2.0f * hash_rng(seed, 5678, point_i) - 1.0f;
-            positions[point_i] = projection_fn(deformation.positions[point_i],
-                                               sideways * influence * noise);
+            positions[point_i] += compute_orig_delta(
+                projection_fn, deformation, point_i, sideways * influence * noise);
           });
 
           params.drawing.tag_positions_changed();

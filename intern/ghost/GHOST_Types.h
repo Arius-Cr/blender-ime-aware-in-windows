@@ -21,17 +21,9 @@
 /* This is used by `GHOST_C-api.h` too, cannot use C++ conventions. */
 // NOLINTBEGIN: modernize-use-using
 
-#ifdef WITH_CXX_GUARDEDALLOC
-#  include "MEM_guardedalloc.h"
-#else
-/* Convenience unsigned abbreviations (#WITH_CXX_GUARDEDALLOC defines these). */
-typedef unsigned int uint;
-typedef unsigned short ushort;
-typedef unsigned long ulong;
-typedef unsigned char uchar;
-#endif
+#include "MEM_guardedalloc.h"
 
-#if defined(WITH_CXX_GUARDEDALLOC) && defined(__cplusplus)
+#if defined(__cplusplus)
 #  define GHOST_DECLARE_HANDLE(name) \
     typedef struct name##__ { \
       int unused; \
@@ -730,8 +722,6 @@ typedef struct {
 
 #ifdef WITH_VULKAN_BACKEND
 typedef struct {
-  /** Identifier of the swap chain image in the swap chain. */
-  uint32_t swap_chain_index;
   /** Image handle to the image that will be presented to the user. */
   VkImage image;
   /** Format of the image. */

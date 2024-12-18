@@ -28,10 +28,9 @@ struct PointCloud;
 struct Volume;
 struct GreasePencil;
 namespace blender::bke {
-struct AttributeKind;
+struct AttributeDomainAndType;
 class AttributeAccessor;
 struct AttributeMetaData;
-class ComponentAttributeProviders;
 class CurvesEditHints;
 class Instances;
 class GeometryComponent;
@@ -255,16 +254,12 @@ struct GeometrySet {
                          bool include_instances,
                          AttributeForeachCallback callback) const;
 
-  static void propagate_attributes_from_layer_to_instances(
-      const AttributeAccessor src_attributes,
-      MutableAttributeAccessor dst_attributes,
-      const AttributeFilter &attribute_filter);
-
-  void gather_attributes_for_propagation(Span<GeometryComponent::Type> component_types,
-                                         GeometryComponent::Type dst_component_type,
-                                         bool include_instances,
-                                         const AttributeFilter &attribute_filter,
-                                         Map<StringRef, AttributeKind> &r_attributes) const;
+  void gather_attributes_for_propagation(
+      Span<GeometryComponent::Type> component_types,
+      GeometryComponent::Type dst_component_type,
+      bool include_instances,
+      const AttributeFilter &attribute_filter,
+      Map<StringRef, AttributeDomainAndType> &r_attributes) const;
 
   Vector<GeometryComponent::Type> gather_component_types(bool include_instances,
                                                          bool ignore_empty) const;
@@ -368,6 +363,10 @@ struct GeometrySet {
    */
   const CurvesEditHints *get_curve_edit_hints() const;
   /**
+   * Returns read-only Grease Pencil edit hints or null.
+   */
+  const GreasePencilEditHints *get_grease_pencil_edit_hints() const;
+  /**
    * Returns read-only gizmo edit hints or null.
    */
   const GizmoEditHints *get_gizmo_edit_hints() const;
@@ -400,6 +399,10 @@ struct GeometrySet {
    * Returns mutable curve edit hints or null.
    */
   CurvesEditHints *get_curve_edit_hints_for_write();
+  /**
+   * Returns mutable Grease Pencil edit hints or null.
+   */
+  GreasePencilEditHints *get_grease_pencil_edit_hints_for_write();
   /**
    * Returns mutable gizmo edit hints or null.
    */
@@ -658,6 +661,8 @@ class InstancesComponent : public GeometryComponent {
 
   bool is_empty() const final;
 
+  Instances *release();
+
   bool owns_direct_data() const override;
   void ensure_owns_direct_data() override;
 
@@ -801,5 +806,7 @@ class GreasePencilComponent : public GeometryComponent {
   std::optional<AttributeAccessor> attributes() const final;
   std::optional<MutableAttributeAccessor> attributes_for_write() final;
 };
+
+bool attribute_is_builtin_on_component_type(const GeometryComponent::Type type, StringRef name);
 
 }  // namespace blender::bke
