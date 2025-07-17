@@ -232,7 +232,7 @@ int WM_keymap_item_map_type_get(const wmKeyMapItem *kmi)
   if (ISNDOF(kmi->type)) {
     return KMI_TYPE_NDOF;
   }
-  if (kmi->type == KM_TEXTINPUT) {
+  if (ISTEXTINPUT(kmi->type)) {
     return KMI_TYPE_TEXTINPUT;
   }
   if (ELEM(kmi->type, TABLET_STYLUS, TABLET_ERASER)) {

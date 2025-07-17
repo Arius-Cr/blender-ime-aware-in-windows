@@ -73,6 +73,7 @@ blender_default = bpy.utils.execfile(os.path.join(DIRNAME, "keymap_data", "blend
 
 def load():
     from sys import platform
+    import bpy
     from bpy import context
     from bl_keymap_utils.io import keyconfig_init_from_data
 
@@ -91,6 +92,7 @@ def load():
             use_select_all_toggle=True,
             use_gizmo_drag=False,
             legacy=True,
+            use_ime_input_win32 = (platform == 'win32' and bpy.app.build_options.input_ime),
         ),
     )
 

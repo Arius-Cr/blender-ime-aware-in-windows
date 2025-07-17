@@ -55,6 +55,13 @@
 /* Only for cursor drawing. */
 #include "DRW_engine.hh"
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+#  include "ED_text.hh"
+#  include "wm_window.hh"
+#endif
+
+#include "printx.h"
+
 /* Own include. */
 #include "sequencer_intern.hh"
 
@@ -837,6 +844,61 @@ static bool is_cursor_visible(const SpaceSeq *sseq)
   return false;
 }
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+
+static void sequencer_enable_ime(const bContext *C, wmWindow *win, ScrArea *area, ARegion *region)
+{
+  /**
+   * Caller must check the following conditions:
+   * 1. `sequencer_text_editing_active_poll()`
+   */
+  bScreen *screen = WM_window_get_active_screen(win);
+  if (region != nullptr && screen->active_region == region) {
+    debug_ime(CCBP "SpaceSequencer " CCBG "meeting the conditions" CCBP ": Enable & Repositon IME");
+    wm_window_IME_begin(win);
+    sequencer_text_edit_reposition_ime_window(C, win, area, region, nullptr);
+  }
+}
+
+static void sequencer_disable_ime(const bContext */*C*/,
+                                  wmWindow *win,
+                                  ScrArea * /*area*/,
+                                  ARegion *region,
+                                  bool is_deactivated = false)
+{
+  if (is_deactivated) {
+    debug_ime(CCBP "SpaceSequencer " CCBR "Deactivated" CCBP ": Disable IME");
+    wm_window_IME_end(win);
+  }
+  else {
+    bScreen *screen = WM_window_get_active_screen(win);
+    if (region != nullptr && screen->active_region == region) {
+      debug_ime(CCBP "SpaceSequencer " CCBR "NOT meeting the conditions" CCBP ": Disable IME");
+      wm_window_IME_end(win);
+    }
+  }
+}
+
+static void sequencer_preview_region_on_activation_changed(
+    const bContext *C, wmWindow *win, ScrArea *area, ARegion *region, bool activated)
+{
+  if (activated) {
+    debug_ime(CCBP "SpaceSequencer Preview Region Active");
+    /* scene maybe null on startup. */
+    if (CTX_data_scene(C)) {
+      if (sequencer_text_editing_active_poll(const_cast<bContext *>(C))) {
+        sequencer_enable_ime(C, win, area, region);
+      }
+    }
+  }
+  else {
+    debug_ime(CCBP "SpaceSequencer Preview Region Deactive");
+    sequencer_disable_ime(C, win, area, region, true);
+  }
+}
+
+#endif /* WITH_INPUT_IME && WIN32 */
+
 static void sequencer_preview_region_draw(const bContext *C, ARegion *region)
 {
   ScrArea *area = CTX_wm_area(C);
@@ -905,6 +967,15 @@ static void sequencer_preview_region_draw(const bContext *C, ARegion *region)
 
     BLF_disable(font_id, BLF_SHADOW);
   }
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  if (sequencer_text_editing_active_poll(const_cast<bContext *>(C))) {
+    sequencer_enable_ime(C, CTX_wm_window(C), area, region);
+  }
+  else {
+    sequencer_disable_ime(C, CTX_wm_window(C), area, region);
+  }
+#endif
 }
 
 static void sequencer_preview_region_listener(const wmRegionListenerParams *params)
@@ -1131,6 +1202,9 @@ void ED_spacetype_sequencer()
   art->draw = sequencer_preview_region_draw;
   art->listener = sequencer_preview_region_listener;
   art->keymapflag = ED_KEYMAP_TOOL | ED_KEYMAP_GIZMO | ED_KEYMAP_GPENCIL;
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  art->on_activation_changed = sequencer_preview_region_on_activation_changed;
+#endif
   BLI_addhead(&st->regiontypes, art);
 
   /* List-view/buttons. */
