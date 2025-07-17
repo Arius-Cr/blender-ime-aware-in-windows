@@ -25,6 +25,10 @@
 
 #include "../space_info/textview.hh"
 
+#include "BLF_api.hh"
+
+#include "printx.h"
+
 static enum eTextViewContext_LineFlag console_line_data(TextViewContext *tvc,
                                                         uchar fg[4],
                                                         uchar /*bg*/[4],
@@ -251,4 +255,52 @@ int console_char_pick(SpaceConsole *sc, const ARegion *region, const int mval[2]
 
   console_textview_main__internal(sc, region, false, mval, &mval_pick_item, &r_mval_pick_offset);
   return r_mval_pick_offset;
+}
+
+bool ED_console_region_location_from_cursor(
+    const SpaceConsole *sc, const ARegion *region, int cursor, int r_pixel_co[2], bool is_offset)
+{
+  const ConsoleLine *line = (ConsoleLine *)sc->history.last;
+
+  if (!line || cursor < 0 || cursor > (is_offset ? line->len : BLI_strlen_utf8(line->line))) {
+    return false;
+  }
+
+  /* Convert character index to char byte offset if necessary. */
+  const int cur_ofs = is_offset ? cursor :
+                                  BLI_str_utf8_offset_from_index(line->line, line->len, cursor);
+
+  /* copy from console_textview_main__internal() */
+
+  rcti draw_rect = {0};
+  rcti draw_rect_outer = {0};
+  console_textview_draw_rect_calc(region, &draw_rect, &draw_rect_outer);
+  int lheight = sc->lheight * UI_SCALE_FAC;
+
+  /* copy from textview_draw() */
+
+  const int font_id = blf_mono_font;
+  int cwidth = int(BLF_fixed_width(font_id));
+  /* NOTE: scroll bar must be already subtracted. */
+  int columns = (draw_rect.xmax - draw_rect.xmin) / cwidth;
+  /* Avoid divide by zero on small windows. */
+  if (columns < 1) {
+    columns = 1;
+  }
+
+  /* copy from console_textview_draw_cursor() */
+
+  int offl = 0, offc = 0;
+  console_cursor_wrap_offset(sc->prompt, columns, &offl, &offc, nullptr);
+  console_cursor_wrap_offset(line->line, columns, &offl, &offc, line->line + cur_ofs);
+  r_pixel_co[0] = cwidth * offc;
+  r_pixel_co[1] = -lheight * offl;
+
+  console_cursor_wrap_offset(line->line + cur_ofs, columns, &offl, &offc, nullptr);
+  r_pixel_co[1] += lheight * offl;
+
+  r_pixel_co[0] += draw_rect.xmin;
+  r_pixel_co[1] += draw_rect.ymin;
+
+  return true;
 }

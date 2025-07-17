@@ -326,11 +326,18 @@ class GHOST_SystemWin32 : public GHOST_System {
 
   /**
    * Catches raw WIN32 key codes from WM_INPUT in the `wndproc`.
-   * \param raw: RawInput structure with detailed info about the key event.
+   * \param msg: Same as RAWKEYBOARD.Message.
+   * \param vk: Same as RAWKEYBOARD.VKey.
+   * \param make_code: Same as RAWKEYBOARD.MakeCode.
+   * \param flags: Same as RAWKEYBOARD.Flags.
    * \param r_key_down: Set true when the key is pressed, otherwise false.
    * \return The GHOST key (GHOST_kKeyUnknown if no match).
    */
-  GHOST_TKey hardKey(RAWINPUT const &raw, bool *r_key_down);
+  GHOST_TKey hardKey(const USHORT msg,
+                      const USHORT vk,
+                      const USHORT make_code,
+                      const USHORT flags,
+                      bool *r_key_down);
 
   /**
    * Creates mouse button event.
@@ -376,6 +383,12 @@ class GHOST_SystemWin32 : public GHOST_System {
    */
   static void processWheelEvent(GHOST_WindowWin32 *window, WPARAM wParam, LPARAM lParam);
 
+  static GHOST_EventKey *processKeyEvent(GHOST_WindowWin32 *window,
+                                          const USHORT msg,
+                                          const USHORT vkey,
+                                          const USHORT make_code,
+                                          const USHORT flags,
+                                          bool is_key_down_repeat);
   /**
    * Creates a key event and updates the key data stored locally (m_modifierKeys).
    * In most cases this is a straightforward conversion of key codes.
@@ -383,7 +396,15 @@ class GHOST_SystemWin32 : public GHOST_System {
    * \param window: The window receiving the event (the active window).
    * \param raw: RawInput structure with detailed info about the key event.
    */
-  static GHOST_EventKey *processKeyEvent(GHOST_WindowWin32 *window, RAWINPUT const &raw);
+  static GHOST_EventKey *processKeyEvent_raw(GHOST_WindowWin32 *window, RAWINPUT const &raw);
+
+  /**
+   * Same as #processKeyEvent_raw, but used for WM_KEYDOWN, WM_KEYUP etc.
+   * \param window: The window receiving the event (the active window).
+   * \param wparam: The wParam from the WM_KEYDOWN, WM_KEYUP etc.
+   * \param lparam: The lParam from the WM_KEYDOWN, WM_KEYUP etc.
+   */
+  static GHOST_EventKey *processKeyEvent_key(GHOST_WindowWin32 *window, USHORT msg, WPARAM wparam, LPARAM lparam);
 
   /**
    * Process special keys `VK_OEM_*`, to see if current key layout
