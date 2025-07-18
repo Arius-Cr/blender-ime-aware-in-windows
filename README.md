@@ -1,7 +1,13 @@
 Blender 输入法增强版
 =======
 
-本仓库仅用于展示 Blender 输入法增强版的源码和收集相关问题反馈。当 “输入法增强版” 项目结束后，本仓库将被删除。
+本项目通过修改源码完善 Blender 对输入法的支持（仅限 Windows 平台）。
+
+重新生成的 Blender 可以在以下链接中获取：
+
+[百度网盘](https://pan.baidu.com/s/1eRHoLE9Er2-UEQhADqzQoQ?pwd=fy2h)
+
+[夸克网盘](https://pan.quark.cn/s/03ae24866547?pwd=b5MC)
 
 详细请参考项目说明文档。
 
@@ -13,11 +19,11 @@ Blender 输入法增强版
 
 ---
 
-ime-aware-in-windows-4.3.1
+分支：
 
-    输入法增强版分支。基于 Blender 4.3.1 修改而来。
+ime-aware-X.Y
 
-    为了减少维护的工作量，仅以 Blender 4.3.1 为基础进行修改。
+    输入法增强版分支。基于 Blender X.Y.Z 修改而来。
 
 ime-aware-in-windows-docs
 
