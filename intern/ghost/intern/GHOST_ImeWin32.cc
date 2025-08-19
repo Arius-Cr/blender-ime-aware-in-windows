@@ -91,6 +91,15 @@ bool GHOST_ImeWin32::IsIgnoreKey(USHORT key)
   switch (key) {
     case VK_LWIN:
     case VK_RWIN:
+    case VK_SHIFT:
+    case VK_LSHIFT:
+    case VK_RSHIFT:
+    case VK_CONTROL:
+    case VK_LCONTROL:
+    case VK_RCONTROL:
+    case VK_MENU:
+    case VK_LMENU:
+    case VK_RMENU:
       return true;
     default:
       return false;
