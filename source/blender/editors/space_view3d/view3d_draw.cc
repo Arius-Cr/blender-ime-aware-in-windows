@@ -86,6 +86,13 @@
 
 #include "view3d_intern.hh" /* own include */
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+#  include "ED_curve.hh"
+#  include "wm_window.hh"
+#endif
+
+#include "printx.h"
+
 using blender::float4;
 
 #define M_GOLDEN_RATIO_CONJUGATE 0.618033988749895f
@@ -1690,6 +1697,21 @@ void view3d_main_region_draw(const bContext *C, ARegion *region)
 
   view3d_update_viewer_path(C);
   view3d_draw_view(C, region);
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  /* see `text_main_region_draw()` */
+  if (CTX_data_mode_enum(C) == CTX_MODE_EDIT_TEXT) {
+    bScreen *screen = CTX_wm_screen(C);
+    if (screen->active_region == region) {
+      wmWindow *win = CTX_wm_window(C);
+      if (wm_window_IME_is_enabled(win) && !wm_window_IME_is_composing(win)) {
+        debug_ime(CCBP "SpaceView3D Redraw [no comp]: Update IME Window");
+        ScrArea *area = CTX_wm_area(C);
+        ED_curve_editfont_reposition_ime_window(win, area, region);
+      }
+    }
+  }
+#endif
 
   DRW_cache_free_old_subdiv();
   DRW_cache_free_old_batches(bmain);

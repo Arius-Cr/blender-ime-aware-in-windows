@@ -66,6 +66,12 @@
 
 #include "curve_intern.hh"
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+#  include "wm_window.hh"
+#endif
+
+#include "printx.h"
+
 #define MAXTEXT 32766
 
 static int kill_selection(Object *obedit, int ins);
@@ -2649,3 +2655,333 @@ bool ED_curve_editfont_select_pick(
 }
 
 /** \} */
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+
+/* Note: Please check `TEXT_OT_ime_input` and `TEXT_OT_ime_insert` for more information. */
+
+struct ImeInputData {
+  /**
+   * Example: aaaccttccbbb ('ccttcc' is the composite string, 'tt' is the composite target string)
+   *     start_idx: 3
+   *     end_idx: 9 (3 + 6)
+   *     target_start_idx: 5
+   *     target_end_idx: 7 (5 + 2)
+   */
+
+  /* The character index of the start of composite string in text */
+  int start_idx;
+  /* The character index of the end of composite string in text */
+  int end_idx;
+  /* The character index of the start of composite target string in text */
+  int target_start_idx;
+  /* The character index of the end of composite target string in text */
+  int target_end_idx;
+};
+
+void ED_curve_editfont_reposition_ime_window(wmWindow *win, ScrArea * /*area*/, ARegion *region)
+{
+  int ime_window_pos[2];
+
+  /**
+   * Currently, the candidate window is located at a fixed relative position outside region.
+   * Because the cursor is in 3D space, no matter where it is located inside the region,
+   * it may cover the text being inputted.
+   */
+
+  ime_window_pos[0] = region->winrct.xmin + (int)(region->winx * 0.4);
+  ime_window_pos[1] = region->winrct.ymin;
+
+  wm_window_IME_move(win, ime_window_pos[0], ime_window_pos[1], 0, 0);
+}
+
+static int insert_text_into_textbuf(Object *obedit, char *inserted_utf8)
+{
+  char32_t *inserted_text;
+  int a, len;
+
+  len = BLI_strlen_utf8(inserted_utf8);
+
+  inserted_text = static_cast<char32_t *>(
+      MEM_callocN(sizeof(char32_t) * (len + 1), "insert_text_into_textbuf"));
+  len = BLI_str_utf8_as_utf32(inserted_text, inserted_utf8, MAXTEXT);
+
+  for (a = 0; a < len; a++) {
+    insert_into_textbuf(obedit, inserted_text[a]);
+  }
+
+  MEM_freeN(inserted_text);
+
+  return len;
+}
+
+/* -------------------------------------------------------------------- */
+/** \name Handle IME Composition Events Operator
+ * \{ */
+
+/* Note: Please check `TEXT_OT_ime_input` for more information. */
+
+static void ime_input_clean(bContext * /*C*/, wmOperator *op)
+{
+  ImeInputData *data = static_cast<ImeInputData *>(op->customdata);
+
+  MEM_freeN(data);
+
+  op->customdata = nullptr;
+}
+
+static wmOperatorStatus ime_input_invoke(bContext *C, wmOperator *op, const wmEvent *event)
+{
+  if (event->type == WM_IME_COMPOSITE_START) {
+    debug_ime("FONT_OT_ime_input: start\n");
+
+    Object *obedit = CTX_data_edit_object(C);
+    Curve *cu = static_cast<Curve *>(obedit->data);
+    EditFont *ef = cu->editfont;
+
+    /* Delete selection. */
+
+    kill_selection(obedit, 0);
+
+    /* Initialize IME input data. */
+
+    ImeInputData *data = static_cast<ImeInputData *>(MEM_callocN(sizeof(ImeInputData), __func__));
+    op->customdata = data;
+    data->start_idx = ef->pos;
+    data->end_idx = data->start_idx;
+    data->target_start_idx = -1;
+    data->target_end_idx = -1;
+
+    text_update_edited(C, obedit, FO_EDIT);
+
+    WM_event_add_modal_handler(C, op);
+    return OPERATOR_RUNNING_MODAL;
+  }
+  else if (event->type == WM_IME_COMPOSITE_EVENT) {
+    /* Capture the WM_IME_COMPOSITE_EVENT event that not between START and END,
+     * and then insert the result string carried by the event.
+     * This isolated event can occur when using the old (i.e. compatibility mode)
+     * Microsoft Korean IME.
+     */
+    WM_operator_name_call(C, "FONT_OT_ime_insert", blender::wm::OpCallContext::InvokeRegionWin, nullptr, event);
+  }
+
+  return OPERATOR_CANCELLED;
+}
+
+static wmOperatorStatus ime_input_modal(bContext *C, wmOperator *op, const wmEvent *event)
+{
+  wmWindow *win;
+  const wmIMEData *ime_data;
+  ImeInputData *data;
+
+  Object *obedit;
+  Curve *cu;
+  EditFont *ef;
+
+  bool changed = false;
+
+  if (ELEM(event->type, WM_IME_COMPOSITE_EVENT, WM_IME_COMPOSITE_END)) {
+    win = CTX_wm_window(C);
+    if (event->type == WM_IME_COMPOSITE_EVENT) {
+      ime_data = static_cast<const wmIMEData *>(event->customdata);
+    }
+    data = static_cast<ImeInputData *>(op->customdata);
+
+    obedit = CTX_data_edit_object(C);
+    cu = static_cast<Curve *>(obedit->data);
+    ef = cu->editfont;
+
+    /* Delete previous composite string. */
+
+    if (data->end_idx != data->start_idx) {
+      debug_ime(CCFG "FONT_OT_ime_input: delete previous composite string");
+
+      ef->selstart = data->start_idx + 1;
+      ef->selend = data->end_idx;
+      ef->pos = data->end_idx;
+      kill_selection(obedit, 0);
+
+      data->end_idx = data->start_idx;
+      data->target_start_idx = -1;
+      data->target_end_idx = -1;
+
+      changed = true;
+    }
+  }
+
+  if (event->type == WM_IME_COMPOSITE_EVENT) {
+
+    /* Insert result string. */
+
+    if (ime_data->result.size() != 0) {
+      debug_ime(CCFG "FONT_OT_ime_input: insert result string");
+      debug_ime(CCFG "  result_len: %zu", ime_data->result.size());
+
+      WM_operator_name_call(C, "FONT_OT_ime_insert", blender::wm::OpCallContext::InvokeRegionWin, nullptr, event);
+
+      /* Reinitialize IME input data. */
+
+      data->start_idx = ef->pos;
+      data->end_idx = data->start_idx;
+      data->target_start_idx = -1;
+      data->target_end_idx = -1;
+    }
+
+    /**
+     * Insert composite string.
+     * - Souround the composite string with "[]" (ie. ABC -> [ABC]) to make it more recognizable.
+     * - Use selection to hightlight the target string.
+     * The best practice is to underline the composite string, but it is not easily to do that.
+     */
+
+    if (ime_data->composite.size() != 0) {
+      debug_ime(CCFG "FONT_OT_ime_input: insert composite string");
+      debug_ime(CCFG "  composite_len: %zu", ime_data->composite.size());
+
+      char *inserted_utf8;
+      int inserted_utf8_lenb;
+      int inserted_utf8_lenu;
+      int inserted_text_lenu;
+
+      inserted_utf8_lenb = ime_data->composite.size() + 2 + 1;
+      inserted_utf8 = (char *)MEM_mallocN(inserted_utf8_lenb,
+                                          "FONT_OT_ime_input composite string");
+      inserted_utf8[0] = '[';
+      memcpy(&inserted_utf8[1], ime_data->composite.c_str(), ime_data->composite.size());
+      inserted_utf8[inserted_utf8_lenb - 2] = ']';
+      inserted_utf8[inserted_utf8_lenb - 1] = '\0';
+
+      inserted_utf8_lenu = BLI_strnlen_utf8(inserted_utf8, inserted_utf8_lenb);
+
+      inserted_text_lenu = insert_text_into_textbuf(obedit, inserted_utf8);
+
+      MEM_freeN(inserted_utf8);
+
+      if (inserted_text_lenu == inserted_utf8_lenu) {
+        data->end_idx = data->start_idx + inserted_text_lenu;
+
+        if (ime_data->sel_start != -1 && ime_data->sel_end != -1) {
+          data->target_start_idx = data->start_idx + 1 +
+                                   BLI_str_utf8_offset_to_index(ime_data->composite.c_str(),
+                                                                ime_data->composite.size(),
+                                                                ime_data->sel_start);
+          data->target_end_idx = data->start_idx + 1 +
+                                 BLI_str_utf8_offset_to_index(ime_data->composite.c_str(),
+                                                              ime_data->composite.size(),
+                                                              ime_data->sel_end);
+        }
+        else {
+          data->target_start_idx = -1;
+          data->target_end_idx = -1;
+        }
+
+        ef->pos = data->start_idx + 1 +
+                  BLI_str_utf8_offset_to_index(
+                      ime_data->composite.c_str(), ime_data->composite.size(), ime_data->cursor_pos);
+      }
+      else {
+        /* Ignore target if not all characters can be inserted. */
+        data->end_idx = data->start_idx + inserted_text_lenu;;
+        data->target_start_idx = -1;
+        data->target_end_idx = -1;
+
+        ef->pos = data->start_idx + inserted_text_lenu;
+      }
+
+      changed = true;
+    }
+
+    if (changed) {
+      text_update_edited(C, obedit, FO_EDIT);
+    }
+  }
+
+  else if (event->type == WM_IME_COMPOSITE_END) {
+    debug_ime(CCFG "FONT_OT_ime_input: end");
+
+    ime_input_clean(C, op);
+
+    return OPERATOR_FINISHED;
+  }
+
+  else if (ISMOUSE_BUTTON(event->type)) {
+    debug_ime(CCFG "FONT_OT_ime_input: MOUSE COMPLETE COMPOSITE");
+
+    wm_window_IME_complete(CTX_wm_window(C));
+  }
+
+  return OPERATOR_RUNNING_MODAL;
+}
+
+void FONT_OT_ime_input(wmOperatorType *ot)
+{
+  /* identifiers */
+  ot->name = "IME Input";
+  ot->idname = "FONT_OT_ime_input";
+  ot->description = "Handle IME composition events (Windows only)";
+
+  /* api callbacks */
+  ot->invoke = ime_input_invoke;
+  ot->modal = ime_input_modal;
+  ot->cancel = ime_input_clean;
+  ot->poll = ED_operator_editfont;
+
+  /* flags */
+  ot->flag = OPTYPE_INTERNAL;
+}
+
+/* -------------------------------------------------------------------- */
+/** \name Insert IME Result String Operator
+ * \{ */
+
+/* Note: Please check `TEXT_OT_ime_insert` for more information. */
+
+static wmOperatorStatus ime_insert_invoke(bContext *C, wmOperator * /*op*/, const wmEvent *event)
+{
+  wmWindow *win;
+  const wmIMEData *ime_data;
+
+  Object *obedit;
+
+  if (event->type == WM_IME_COMPOSITE_EVENT) {
+    debug_ime(CCFG "ime_text_insert_invoke");
+
+    win = CTX_wm_window(C);
+    ime_data = static_cast<const wmIMEData *>(event->customdata);
+
+    obedit = CTX_data_edit_object(C);
+
+    if (ime_data->result.size() != 0) {
+
+      kill_selection(obedit, 0);
+
+      insert_text_into_textbuf(obedit, const_cast<char *>(ime_data->result.c_str()));
+
+      text_update_edited(C, obedit, FO_EDIT);
+
+      return OPERATOR_FINISHED;
+    }
+  }
+
+  return OPERATOR_CANCELLED;
+}
+
+void FONT_OT_ime_insert(wmOperatorType *ot)
+{
+  /* identifiers */
+  ot->name = "Insert (IME)";
+  ot->idname = "FONT_OT_ime_insert";
+  ot->description = "Insert IME result string. (Windows only)";
+
+  /* api callbacks */
+  ot->invoke = ime_insert_invoke;
+  ot->poll = ED_operator_editfont;
+
+  /* flags */
+  ot->flag = OPTYPE_INTERNAL | OPTYPE_UNDO;
+}
+
+/** \} */
+
+#endif /* WITH_INPUT_IME && WIN32 */

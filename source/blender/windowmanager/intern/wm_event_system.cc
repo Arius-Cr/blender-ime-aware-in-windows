@@ -92,6 +92,8 @@
 
 using blender::StringRef;
 
+#include "printx.h"
+
 /**
  * When a gizmo is highlighted and uses click/drag events,
  * this prevents mouse button press events from being passed through to other key-maps
@@ -235,6 +237,12 @@ static void wm_event_custom_free(wmEvent *event)
     ListBase *lb = static_cast<ListBase *>(event->customdata);
     WM_drag_free_list(lb);
   }
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  else if (event->custom == EVT_DATA_IME) {
+    debug_ime(CCFR "wm_event_custom_free");
+    MEM_delete((GHOST_TEventImeData *)event->customdata);
+  }
+#endif
   else {
     MEM_freeN(event->customdata);
   }
@@ -6385,7 +6393,7 @@ void wm_event_add_ghostevent(wmWindowManager *wm,
       break;
     }
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
     case GHOST_kEventImeCompositionStart: {
       event.val = KM_PRESS;
       BLI_assert(customdata != nullptr);
@@ -6422,7 +6430,34 @@ void wm_event_add_ghostevent(wmWindowManager *wm,
       wm_event_add_intern(win, &event);
       break;
     }
-#endif /* WITH_INPUT_IME */
+#endif /* WITH_INPUT_IME && !WIN32 */
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+    case GHOST_kEventImeCompositionStart: {
+      debug_ime(CCFA "wmEvent: WM_IME_COMPOSITE_START");
+      event.val = KM_PRESS;
+      event.type = WM_IME_COMPOSITE_START;
+      wm_event_add_intern(win, &event);
+      break;
+    }
+    case GHOST_kEventImeComposition: {
+      debug_ime(CCFA "wmEvent: WM_IME_COMPOSITE_EVENT");
+      event.val = KM_PRESS;
+      event.custom = EVT_DATA_IME;
+      event.customdata = (void *)(customdata);
+      event.customdata_free = true;
+      event.type = WM_IME_COMPOSITE_EVENT;
+      wm_event_add_intern(win, &event);
+      break;
+    }
+    case GHOST_kEventImeCompositionEnd: {
+      debug_ime(CCFA "wmEvent: WM_IME_COMPOSITE_END");
+      event.val = KM_PRESS;
+      event.type = WM_IME_COMPOSITE_END;
+      wm_event_add_intern(win, &event);
+      break;
+    }
+#endif /* WITH_INPUT_IME && WIN32 */
   }
 
 #if 0

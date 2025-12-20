@@ -112,9 +112,72 @@ void wm_cursor_position_to_ghost_screen_coords(wmWindow *win, int *x, int *y);
 void wm_cursor_position_from_ghost_client_coords(wmWindow *win, int *x, int *y);
 void wm_cursor_position_to_ghost_client_coords(wmWindow *win, int *x, int *y);
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
 void wm_window_IME_begin(wmWindow *win, int x, int y, int w, int h, bool complete);
 void wm_window_IME_end(wmWindow *win);
+#endif
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+/**
+ * Enable IME attached to the given window, i.e. allows user-input
+ * events to be dispatched to the IME.
+ * \param win: The wmWindow of the caller.
+ */
+void wm_window_IME_begin(wmWindow *win);
+/**
+ * Disable the IME attached to the given window, i.e. prohibits any user-input
+ * events from being dispatched to the IME.
+ * \param win: The wmWindow of the caller.
+ */
+void wm_window_IME_end(wmWindow *win);
+/**
+ * Check if IME is enabled.
+ * \param win: The wmWindow of the caller.
+ */
+bool wm_window_IME_is_enabled(wmWindow *win);
+/**
+ * Is there an ongoing composition.
+ * \param win: The wmWindow of the caller.
+ */
+bool wm_window_IME_is_composing(wmWindow *win);
+/**
+ * Force complete the ongoing composition.
+ * \param win: The wmWindow of the caller.
+ */
+void wm_window_IME_complete(wmWindow *win);
+/**
+ * Force cancel the ongoing composition.
+ * \param win: The wmWindow of the caller.
+ */
+void wm_window_IME_cancel(wmWindow *win);
+/**
+ * Move the IME conversion candidate window.
+ * \param win: The wmWindow of the caller.
+ * \param c_l: The left of the caret in wmWindow coordinates.
+ * \param c_b: The bottom of the caret in wmWindow coordinates.
+ * \param c_w: The width of the caret.
+ * \param c_h: The height of the caret.
+ */
+void wm_window_IME_move(wmWindow *win, int c_l, int c_b, int c_w, int c_h);
+/**
+ * Move the IME conversion candidate window.
+ * \param win: The wmWindow of the caller.
+ * \param c_l: The left of the caret in wmWindow coordinates.
+ * \param c_b: The bottom of the caret in wmWindow coordinates.
+ * \param c_w: The width of the caret.
+ * \param c_h: The height of the caret.
+ * \param e_l: The left of the exclude rectangle in wmWindow coordinates.
+ * \param e_b: The bottom of the exclude rectangle in wmWindow coordinates.
+ * \param e_w: The width of the exclude rectangle.
+ * \param e_h: The height of the exclude rectangle.
+ */
+void wm_window_IME_move_with_exclude(
+    wmWindow *win, int c_l, int c_b, int c_w, int c_h, int e_l, int e_b, int e_w, int e_h);
+/**
+ * Send an alphabetic key to start the IME composition.
+ * \param win: The wmWindow of the caller.
+ * \param c: The alphabetic character (a-Z).
+ */
+void wm_window_IME_start_composition_by_char(wmWindow *win, char c);
 #endif
 
 /**

@@ -410,6 +410,12 @@ void SEQUENCER_OT_text_edit_cut(wmOperatorType *ot);
 blender::int2 strip_text_cursor_offset_to_position(const TextVarsRuntime *text, int cursor_offset);
 blender::IndexRange strip_text_selection_range_get(const TextVars *data);
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+void SEQUENCER_OT_ime_input(wmOperatorType *ot);
+void SEQUENCER_OT_ime_insert(wmOperatorType *ot);
+void sequencer_text_edit_reposition_ime_window(const bContext *C, wmWindow *win, ScrArea * area, ARegion *region, void *ime_input_data);
+#endif
+
 /* `sequencer_timeline_draw.cc` */
 blender::Vector<Strip *> sequencer_visible_strips_get(const bContext *C);
 blender::Vector<Strip *> sequencer_visible_strips_get(const Scene *scene, const View2D *v2d);
