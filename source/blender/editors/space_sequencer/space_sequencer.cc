@@ -854,13 +854,14 @@ static void sequencer_enable_ime(const bContext *C, wmWindow *win, ScrArea *area
    */
   bScreen *screen = WM_window_get_active_screen(win);
   if (region != nullptr && screen->active_region == region) {
-    debug_ime(CCBP "SpaceSequencer " CCBG "meeting the conditions" CCBP ": Enable & Repositon IME");
+    debug_ime(CCBP "SpaceSequencer " CCBG "meeting the conditions" CCBP
+                   ": Enable & Repositon IME");
     wm_window_IME_begin(win);
     sequencer_text_edit_reposition_ime_window(C, win, area, region, nullptr);
   }
 }
 
-static void sequencer_disable_ime(const bContext */*C*/,
+static void sequencer_disable_ime(const bContext * /*C*/,
                                   wmWindow *win,
                                   ScrArea * /*area*/,
                                   ARegion *region,
@@ -894,6 +895,26 @@ static void sequencer_preview_region_on_activation_changed(
   else {
     debug_ime(CCBP "SpaceSequencer Preview Region Deactive");
     sequencer_disable_ime(C, win, area, region, true);
+  }
+}
+
+static void sequencer_preview_region_on_popup_created_or_removed(
+    const bContext *C, wmWindow *win, ScrArea *area, ARegion *region, bool created, bool from_but)
+{
+  if (!from_but) {
+    if (created) {
+      debug_ime(CCBP "SpaceSequencer Preview Region Popup Created");
+      sequencer_disable_ime(C, win, area, region, true);
+    }
+    else {
+      debug_ime(CCBP "SpaceSequencer Preview Region Popup Removed");
+      /* scene maybe null on startup. */
+      if (CTX_data_scene(C)) {
+        if (sequencer_text_editing_active_poll(const_cast<bContext *>(C))) {
+          sequencer_enable_ime(C, win, area, region);
+        }
+      }
+    }
   }
 }
 
@@ -1204,6 +1225,7 @@ void ED_spacetype_sequencer()
   art->keymapflag = ED_KEYMAP_TOOL | ED_KEYMAP_GIZMO | ED_KEYMAP_GPENCIL;
 #if defined(WITH_INPUT_IME) && defined(WIN32)
   art->on_activation_changed = sequencer_preview_region_on_activation_changed;
+  art->on_popup_created_or_removed = sequencer_preview_region_on_popup_created_or_removed;
 #endif
   BLI_addhead(&st->regiontypes, art);
 
