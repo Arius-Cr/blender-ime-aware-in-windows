@@ -262,7 +262,20 @@ struct ARegionType {
    * Params `C` may be nullptr.
    * Params `win` and `area` always relate to the active region, not the deactive region.
    */
-  void (*on_activation_changed)(const bContext *C, wmWindow *win, ScrArea *area, ARegion *region, bool active);
+  void (*on_activation_changed)(
+      const bContext *C, wmWindow *win, ScrArea *area, ARegion *region, bool active);
+
+  /**
+   * Called when a popup is created or removed from region.
+   * \param created: true/false if popup is created/removed.
+   * \param from_but: true/false if popup is/isn't created from a button.
+   */
+  void (*on_popup_created_or_removed)(const bContext *C,
+                                      wmWindow *win,
+                                      ScrArea *area,
+                                      ARegion *region,
+                                      bool created,
+                                      bool from_but);
 
   /* custom drawing callbacks */
   ListBase drawcalls;

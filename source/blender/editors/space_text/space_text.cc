@@ -428,6 +428,28 @@ static void text_main_region_on_activation_changed(
   }
 }
 
+static void text_main_region_on_popup_created_or_removed(const bContext * /*C*/,
+                                                         wmWindow *win,
+                                                         ScrArea *area,
+                                                         ARegion *region,
+                                                         bool created,
+                                                         bool from_but)
+{
+  if (!from_but) {
+    if (created) {
+      debug_ime(CCBP "SpaceText Region Popup Created");
+      text_disable_ime(win, area, region, true);
+    }
+    else {
+      debug_ime(CCBP "SpaceText Region Popup Removed");
+      SpaceText *st = static_cast<SpaceText *>(area->spacedata.first);
+      if (st->text) {
+        text_enable_ime(win, area, region);
+      }
+    }
+  }
+}
+
 #endif /* WITH_INPUT_IME && WIN32 */
 
 /* ************* dropboxes ************* */
@@ -581,6 +603,7 @@ void ED_spacetype_text()
 #if defined(WITH_INPUT_IME) && defined(WIN32)
   art->listener = text_main_region_listener;
   art->on_activation_changed = text_main_region_on_activation_changed;
+  art->on_popup_created_or_removed = text_main_region_on_popup_created_or_removed;
 #endif
 
   BLI_addhead(&st->regiontypes, art);
