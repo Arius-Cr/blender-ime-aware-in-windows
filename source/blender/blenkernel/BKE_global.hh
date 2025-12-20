@@ -271,10 +271,6 @@ enum {
 
   G_DEBUG_GHOST = (1 << 24),  /* Debug GHOST module. */
   G_DEBUG_WINTAB = (1 << 25), /* Debug Wintab. */
-
-#if defined(_DEBUG) && !defined(_NDEBUG_IME)
-  G_DEBUG_IME = (1 << 31), /* IME (Input Method Editor) messages */
-#endif
 };
 
 #define G_DEBUG_ALL \
