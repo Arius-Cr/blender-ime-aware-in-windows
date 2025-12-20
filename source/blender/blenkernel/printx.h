@@ -22,7 +22,9 @@
 #  define CCBP "\033[1;37;45m"  // 白字，紫底
 #  define CCBA "\033[1;37;46m"  // 白字，青底
 
-#  if defined(_DEBUG)
+#  define FORCE_DEBUG 0
+
+#  if defined(_DEBUG) || FORCE_DEBUG
 #    define printx(message, ...) \
       { \
         printf("D: " message CCZL, ##__VA_ARGS__); \
@@ -31,16 +33,12 @@
 #    define printx(message, ...)
 #  endif
 
-#  if defined(_DEBUG)
-#    define DEBUG_IME (G.debug & G_DEBUG_IME)
+#  if defined(_DEBUG) || FORCE_DEBUG
 #    define debug_ime(message, ...) \
       { \
-        if (DEBUG_IME) { \
-          printf("IME: " message CCZL, ##__VA_ARGS__); \
-        } \
+        printf("IME: " message CCZL, ##__VA_ARGS__); \
       }
 #  else
-#    define DEBUG_IME 0
 #    define debug_ime(message, ...)
 #  endif
 
