@@ -2145,10 +2145,16 @@ static void widget_draw_textbox(const uiFontStyle *fstyle,
   /* Text button selection, cursor, composite underline. */
   if (but->editstr) {
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
     bool ime_reposition_window = false;
     int ime_win_x, ime_win_y;
-#endif
+#endif /* WITH_INPUT_IME && !WIN32 */
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+    bool ime_reposition_window = false;
+    int ime_creat_l, ime_creat_b, ime_creat_w, ime_creat_h;
+#endif /* WITH_INPUT_IME && WIN32 */
+
     struct LineSelection {
       int line;
       const char *start;
@@ -2203,7 +2209,7 @@ static void widget_draw_textbox(const uiFontStyle *fstyle,
       immUnbindProgram();
       GPU_blend(GPU_BLEND_NONE);
     }
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
     /* IME candidate window uses selection position. */
     if (!ime_reposition_window && lines_selection.size() > 0) {
       ime_reposition_window = true;
@@ -2213,7 +2219,27 @@ static void widget_draw_textbox(const uiFontStyle *fstyle,
                                   scroll + 1)) +
                   3;
     }
-#endif
+#endif /* WITH_INPUT_IME && !WIN32 */
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+    /* IME candidate window uses selection position. */
+    if (!ime_reposition_window && lines_selection.size() > 0) {
+      const int t = BLF_str_offset_to_cursor(fstyle->uifont_id,
+                                             lines[line_select_start].begin(),
+                                             lines[line_select_start].size(),
+                                             but->selsta -
+                                                 (lines[line_select_start].begin() - str),
+                                             caret_width);
+      ime_reposition_window = true;
+      ime_creat_l = rect.xmin + t;
+      ime_creat_b = rect.ymax -
+                    (line_height *
+                     (std::clamp(line_select_end, scroll, scroll + visible_lines - 1) - scroll +
+                      1)) -
+                    U.pixelsize;
+      ime_creat_w = caret_width;  // use the width of cursor
+      ime_creat_h = int(line_height + 2 * U.pixelsize);
+    }
+#endif /* WITH_INPUT_IME && WIN32 */
 
 #ifdef WITH_INPUT_IME
     /* Composite underline. */
@@ -2273,7 +2299,7 @@ static void widget_draw_textbox(const uiFontStyle *fstyle,
       immRectf(pos, rect.xmin + t, y - line_height, rect.xmin + t + caret_width, y);
 
       immUnbindProgram();
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
       /* IME candidate window uses cursor position. */
       if (!ime_reposition_window) {
         ime_reposition_window = true;
@@ -2283,15 +2309,69 @@ static void widget_draw_textbox(const uiFontStyle *fstyle,
                      (std::clamp(line_cursor, scroll, scroll + visible_lines - 1) - scroll + 1)) +
                     3;
       }
-#endif
+#endif /* WITH_INPUT_IME && !WIN32 */
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+      /* IME candidate window uses cursor position. */
+      if (!ime_reposition_window) {
+        ime_reposition_window = true;
+        ime_creat_l = rect.xmin + t;
+        ime_creat_b = rect.ymax -
+                      (line_height * (std::clamp(line_cursor, scroll, scroll + visible_lines - 1) -
+                                      scroll + 1)) -
+                      U.pixelsize;
+        ime_creat_w = caret_width;  // use the width of cursor
+        ime_creat_h = int(line_height + 2 * U.pixelsize);
+      }
+#endif /* WITH_INPUT_IME && WIN32 */
     }
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
     /* IME cursor following. */
     if (ime_reposition_window) {
       button_ime_reposition(but, ime_win_x, ime_win_y, false);
     }
-#endif
+#endif /* WITH_INPUT_IME && !WIN32 */
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+    /* IME cursor following. */
+
+    /* if no `ime_data`, align candidate window according selection or cursor.
+     * otherwise (i.e. compositing), algin it according the start of target.
+     */
+
+    if (ime_data && ime_data->composite.size() != 0 && ime_data->sel_start != -1) {
+      /* Caculate the position of the start of target.
+       * The logical is same as cursor above, except the `str_offset` param. */
+
+      if (but->pos >= but->ofs) {
+        const int t = BLF_str_offset_to_cursor(fstyle->uifont_id,
+                                               lines[line_cursor].begin(),
+                                               lines[line_cursor].size(),
+                                               (but->pos + ime_data->sel_start) -
+                                                   (lines[line_cursor].begin() - str),
+                                               caret_width);
+
+        ime_creat_l = rect.xmin + t;
+        ime_creat_b = rect.ymax -
+                      (line_height * (std::clamp(line_cursor, scroll, scroll + visible_lines - 1) -
+                                      scroll + 1)) -
+                      U.pixelsize;
+        ime_creat_w = caret_width;  // use the width of cursor
+        ime_creat_h = int(line_height + 2 * U.pixelsize);
+      }
+    }
+
+    if (ime_reposition_window) {
+      button_ime_reposition(but,
+                            ime_creat_l,
+                            ime_creat_b,
+                            ime_creat_w,
+                            ime_creat_h,
+                            rect.xmin,
+                            ime_creat_b,
+                            rect.xmax - rect.xmin,
+                            ime_creat_h);
+    }
+#endif /* WITH_INPUT_IME && WIN32 */
   }
   /* Draw text. */
   FontStyleDrawParams params{};

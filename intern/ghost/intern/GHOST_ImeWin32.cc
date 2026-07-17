@@ -11,6 +11,7 @@
 #  include "GHOST_ImeWin32.hh"
 #  include "GHOST_WindowWin32.hh"
 #  include "utfconv.hh"
+#  include <algorithm>
 
 #  include "printx.h"
 
@@ -251,12 +252,12 @@ void GHOST_ImeWin32::MoveIME(const GHOST_Rect &caret_rect, const GHOST_Rect &exc
      */
     int c_l = caret_rect.l_;
     int c_t = caret_rect.t_;
-    int c_w = max(0, caret_rect.getWidth());
-    int c_h = max(2, caret_rect.getHeight());
+    int c_w = std::max(0, caret_rect.getWidth());
+    int c_h = std::max(2, caret_rect.getHeight());
     int e_l = exclude_rect.l_;
     int e_t = exclude_rect.t_;
-    int e_w = max(0, exclude_rect.getWidth());
-    int e_h = max(2, exclude_rect.getHeight());
+    int e_w = std::max(0, exclude_rect.getWidth());
+    int e_h = std::max(2, exclude_rect.getHeight());
 
     caret_rect_.l_ = c_l;
     caret_rect_.t_ = c_t;

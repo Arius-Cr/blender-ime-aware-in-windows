@@ -3675,14 +3675,14 @@ const wmIMEData *button_ime_data_get(Button *but)
 
 #if defined(WITH_INPUT_IME) && defined(WIN32)
 /* Enable IME */
-static void ui_textedit_ime_begin(wmWindow *win, Button * /*but*/)
+static void textedit_ime_begin(wmWindow *win, Button * /*but*/)
 {
   debug_ime(CCBP "TextButton " CCBG "meeting the conditions" CCBP ": Enable & Repositon IME");
   wm_window_IME_begin(win);
 }
 
 /* Disable IME. */
-static void ui_textedit_ime_end(wmWindow *win, Button *but)
+static void textedit_ime_end(wmWindow *win, Button *but)
 {
   /* `but` maybe null. */
   if (but && but->ime_data) {
@@ -4050,7 +4050,7 @@ static void textedit_end(bContext *C, Button *but, HandleButtonData *data)
 
 #if defined(WITH_INPUT_IME) && defined(WIN32)
   if (!ELEM(but->type, ButtonType::Num, ButtonType::NumSlider)) {
-    ui_textedit_ime_end(win, but);
+    textedit_ime_end(win, but);
   }
 #endif /* WITH_INPUT_IME && WIN32 */
 }
@@ -4597,7 +4597,7 @@ static int do_but_textedit(
     }
 
     if (but->selend > but->selsta) {
-      ui_textedit_delete_selection(but, text_edit);
+      textedit_delete_selection(but, text_edit);
     }
   }
   else if (event->type == WM_IME_COMPOSITE_EVENT) {
@@ -4612,7 +4612,7 @@ static int do_but_textedit(
     const wmIMEData *ime_data = (wmIMEData *)event->customdata;
 
     if (ime_data->result.size() != 0) {
-      ui_textedit_insert_buf(but, text_edit, ime_data->result.c_str(), ime_data->result.size());
+      textedit_insert_buf(but, text_edit, ime_data->result.c_str(), ime_data->result.size());
     }
 
     if (ime_data->composite.size() != 0) {
