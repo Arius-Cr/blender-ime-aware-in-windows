@@ -12,227 +12,170 @@
 #  include "GHOST_WindowWin32.hh"
 #  include "utfconv.hh"
 
-/* ISO_639-1 2-Letter Abbreviations. */
-#  define IMELANG_ENGLISH "en"
-#  define IMELANG_CHINESE "zh"
-#  define IMELANG_JAPANESE "ja"
-#  define IMELANG_KOREAN "ko"
+#  include "printx.h"
 
 GHOST_ImeWin32::GHOST_ImeWin32()
-    : is_composing_(false),
-      language_(IMELANG_ENGLISH),
-      conversion_modes_(IME_CMODE_ALPHANUMERIC),
-      sentence_mode_(IME_SMODE_NONE),
-      system_caret_(false),
-      caret_rect_(-1, -1, 0, 0),
-      is_first(true),
-      is_enable(true)
+    : caret_rect_(0, 0, 0, 0),
+      exclude_rect_(0, 0, 0, 0),
+      h_wnd_(nullptr),
+      is_first_(true),
+      is_enabled_(true),
+      is_composing_(false)
 {
 }
 
 GHOST_ImeWin32::~GHOST_ImeWin32() {}
 
-void GHOST_ImeWin32::UpdateInputLanguage()
+void GHOST_ImeWin32::CheckFirst()
 {
-  /* Get the current input locale full name. */
-  WCHAR locale[LOCALE_NAME_MAX_LENGTH];
-  LCIDToLocaleName(
-      MAKELCID(LOWORD(::GetKeyboardLayout(0)), SORT_DEFAULT), locale, LOCALE_NAME_MAX_LENGTH, 0);
-  /* Get the 2-letter ISO-63901 abbreviation of the input locale name. */
-  WCHAR language_u16[W32_ISO639_LEN];
-  GetLocaleInfoEx(locale, LOCALE_SISO639LANGNAME, language_u16, W32_ISO639_LEN);
-  /* Store this as a UTF8 string. */
-  WideCharToMultiByte(
-      CP_UTF8, 0, language_u16, W32_ISO639_LEN, language_, W32_ISO639_LEN, nullptr, nullptr);
+  if (is_first_) {
+    is_first_ = false;
+
+    debug_ime(CCFY "GHOST_ImeWin32::CheckFirst");
+
+    /**
+     * The IME is enabled by default, but we want it disabled at default,
+     * because we application is not a Text Process Program.
+     */
+    EndIME();
+  }
 }
 
-BOOL GHOST_ImeWin32::IsLanguage(const char name[W32_ISO639_LEN])
+void GHOST_ImeWin32::OnWindowActivated()
 {
-  return (strcmp(name, language_) == 0);
+  debug_ime(CCFY "GHOST_ImeWin32::OnWindowActivated");
+
+  /* Ensure the system caret. */
+  MoveIME();
 }
 
-void GHOST_ImeWin32::UpdateConversionStatus(HWND window_handle)
+void GHOST_ImeWin32::OnWindowDeactivated()
 {
-  HIMC imm_context = ::ImmGetContext(window_handle);
-  if (imm_context) {
-    if (::ImmGetOpenStatus(imm_context)) {
-      ::ImmGetConversionStatus(imm_context, &conversion_modes_, &sentence_mode_);
-    }
-    else {
-      conversion_modes_ = IME_CMODE_ALPHANUMERIC;
-      sentence_mode_ = IME_SMODE_NONE;
-    }
-    ::ImmReleaseContext(window_handle, imm_context);
+  debug_ime(CCFY "GHOST_ImeWin32::OnWindowDeactivated");
+
+  /* WIN32 ignores this call if the system caret is not created.  */
+  ::DestroyCaret();
+}
+
+LRESULT GHOST_ImeWin32::OnSetContext(UINT message, WPARAM wparam, LPARAM lparam)
+{
+  /* Sync IME state(enable/disable). */
+
+  HIMC himc = ::ImmGetContext(h_wnd_);
+  if (himc) {
+    ::ImmReleaseContext(h_wnd_, himc);
+    is_enabled_ = true;
   }
   else {
-    conversion_modes_ = IME_CMODE_ALPHANUMERIC;
-    sentence_mode_ = IME_SMODE_NONE;
+    is_enabled_ = false;
   }
-}
 
-bool GHOST_ImeWin32::IsEnglishMode()
-{
-  return (conversion_modes_ & IME_CMODE_NOCONVERSION) ||
-         !(conversion_modes_ & (IME_CMODE_NATIVE | IME_CMODE_FULLSHAPE));
-}
-
-bool GHOST_ImeWin32::IsImeKeyEvent(char ascii, GHOST_TKey key)
-{
-  if (!(IsEnglishMode())) {
-    /* In Chinese, Japanese, Korean, all alpha keys are processed by IME. */
-    if ((ascii >= 'A' && ascii <= 'Z') || (ascii >= 'a' && ascii <= 'z')) {
-      return true;
-    }
-    if (IsLanguage(IMELANG_JAPANESE) && (ascii >= ' ' && ascii <= '~')) {
-      return true;
-    }
-    if (IsLanguage(IMELANG_CHINESE)) {
-      if (ascii && strchr("!\"$'(),.:;<>?[\\]^_`/", ascii) && !(key == GHOST_kKeyNumpadPeriod)) {
-        return true;
-      }
-      if (conversion_modes_ & IME_CMODE_FULLSHAPE && (ascii >= '0' && ascii <= '9')) {
-        /* When in Full Width mode the number keys are also converted. */
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-void GHOST_ImeWin32::CreateImeWindow(HWND window_handle)
-{
-  /**
-   * When a user disables TSF (Text Service Framework) and CUAS (Cicero
-   * Unaware Application Support), Chinese IMEs somehow ignore function calls
-   * to ::ImmSetCandidateWindow(), i.e. they do not move their candidate
-   * window to the position given as its parameters, and use the position
-   * of the current system caret instead, i.e. it uses ::GetCaretPos() to
-   * retrieve the position of their IME candidate window.
-   * Therefore, we create a temporary system caret for Chinese IMEs and use
-   * it during this input context.
-   * Since some third-party Japanese IME also uses ::GetCaretPos() to determine
-   * their window position, we also create a caret for Japanese IMEs.
-   */
-  if (!system_caret_ && (IsLanguage(IMELANG_CHINESE) || IsLanguage(IMELANG_JAPANESE))) {
-    system_caret_ = ::CreateCaret(window_handle, nullptr, 1, 1);
-  }
-  /* Restore the positions of the IME windows. */
-  UpdateImeWindow(window_handle);
-}
-
-void GHOST_ImeWin32::SetImeWindowStyle(
-    HWND window_handle, UINT message, WPARAM wparam, LPARAM lparam, BOOL *handled)
-{
   /**
    * To prevent the IMM (Input Method Manager) from displaying the IME
    * composition window, Update the styles of the IME windows and EXPLICITLY
    * call ::DefWindowProc() here.
-   * NOTE(hbono): We can NEVER let WTL call ::DefWindowProc() when we update
-   * the styles of IME windows because the 'lparam' variable is a local one
-   * and all its updates disappear in returning from this function, i.e. WTL
-   * does not call ::DefWindowProc() with our updated 'lparam' value but call
-   * the function with its original value and over-writes our window styles.
+   *
+   * NOTE:
+   *   It seems that the above-mentioned behavior has become invalid now.
+   *   According to testing, if the return of WM_IME_STARTCOMPOSITION message is 0,
+   *   the IME composition window will be hidden, otherwise, it will always display.
+   *   To avoid potential issues, we keep this code here.
    */
-  *handled = TRUE;
-  lparam &= ~ISC_SHOWUICOMPOSITIONWINDOW;
-  ::DefWindowProc(window_handle, message, wparam, lparam);
+
+  return ::DefWindowProcW(h_wnd_, message, wparam, lparam & ~ISC_SHOWUICOMPOSITIONWINDOW);
 }
 
-void GHOST_ImeWin32::DestroyImeWindow(HWND /*window_handle*/)
+bool GHOST_ImeWin32::IsIgnoreKey(USHORT key)
 {
-  /* Destroy the system caret if we have created for this IME input context. */
-  if (system_caret_) {
-    ::DestroyCaret();
-    system_caret_ = false;
+  switch (key) {
+    case VK_LWIN:
+    case VK_RWIN:
+    case VK_SHIFT:
+    case VK_LSHIFT:
+    case VK_RSHIFT:
+    case VK_CONTROL:
+    case VK_LCONTROL:
+    case VK_RCONTROL:
+    case VK_MENU:
+    case VK_LMENU:
+    case VK_RMENU:
+      return true;
+    default:
+      return false;
   }
 }
 
-void GHOST_ImeWin32::MoveImeWindow(HWND /*window_handle*/, HIMC imm_context)
+void GHOST_ImeWin32::BeginIME()
 {
-  int x = caret_rect_.l_;
-  int y = caret_rect_.t_;
-  const int kCaretMargin = 1;
+  debug_ime(CCFY "GHOST_ImeWin32::BeginIME");
+
+  debug_ime(CCFY "  HWND: %p", h_wnd_);
+
   /**
-   * As written in a comment in GHOST_ImeWin32::CreateImeWindow(),
-   * Chinese IMEs ignore function calls to ::ImmSetCandidateWindow()
-   * when a user disables TSF (Text Service Framework) and CUAS (Cicero
-   * Unaware Application Support).
-   * On the other hand, when a user enables TSF and CUAS, Chinese IMEs
-   * ignore the position of the current system caret and uses the
-   * parameters given to ::ImmSetCandidateWindow() with its 'dwStyle'
-   * parameter CFS_CANDIDATEPOS.
-   * Therefore, we do not only call ::ImmSetCandidateWindow() but also
-   * set the positions of the temporary system caret if it exists.
+   * Load the default IME context.
+   *
+   * NOTE:
+   *   IMM ignores this call if the IME context is loaded. Therefore, we do
+   *   not have to check whether or not the IME context is loaded.
    */
-  CANDIDATEFORM candidate_position = {0, CFS_CANDIDATEPOS, {x, y}, {0, 0, 0, 0}};
-  ::ImmSetCandidateWindow(imm_context, &candidate_position);
-  if (system_caret_) {
-    ::SetCaretPos(x, y);
-  }
-  if (IsLanguage(IMELANG_KOREAN)) {
+  ::ImmAssociateContextEx(h_wnd_, nullptr, IACE_DEFAULT);
+}
+
+void GHOST_ImeWin32::EndIME()
+{
+  debug_ime(CCFY "GHOST_ImeWin32::EndIME");
+
+  HIMC himc = ::ImmGetContext(h_wnd_);
+
+  if (himc) {
+    ::ImmReleaseContext(h_wnd_, himc);
+
+    debug_ime(CCFY "  HWND, HIMC: %p, %p", h_wnd_, himc);
+
     /**
-     * Chinese IMEs and Japanese IMEs require the upper-left corner of
-     * the caret to move the position of their candidate windows.
-     * On the other hand, Korean IMEs require the lower-left corner of the
-     * caret to move their candidate windows.
+     * Clean up the composition BEFORE DISABLING THE IME.
+     *
+     * IMM ignores this call if there is no ongoing composition.
      */
-    y += kCaretMargin;
+    CompleteComposition();
+
+    ::ImmAssociateContextEx(h_wnd_, nullptr, 0);
   }
-  /**
-   * Japanese IMEs and Korean IMEs also use the rectangle given to
-   * ::ImmSetCandidateWindow() with its 'dwStyle' parameter CFS_EXCLUDE
-   * to move their candidate windows when a user disables TSF and CUAS.
-   * Therefore, we also set this parameter here.
-   */
-  CANDIDATEFORM exclude_rectangle = {
-      0, CFS_EXCLUDE, {x, y}, {x, y, x + caret_rect_.getWidth(), y + caret_rect_.getHeight()}};
-  ::ImmSetCandidateWindow(imm_context, &exclude_rectangle);
+
+  /* Windows ignores this call if there is no system caret.  */
+  ::DestroyCaret();
 }
 
-void GHOST_ImeWin32::UpdateImeWindow(HWND window_handle)
+bool GHOST_ImeWin32::IsEnabled()
 {
-  /* Just move the IME window attached to the given window. */
-  if (caret_rect_.l_ >= 0 && caret_rect_.t_ >= 0) {
-    HIMC imm_context = ::ImmGetContext(window_handle);
-    if (imm_context) {
-      MoveImeWindow(window_handle, imm_context);
-      ::ImmReleaseContext(window_handle, imm_context);
-    }
-  }
+  debug_ime(CCFA "GHOST_ImeWin32::IsEnabled");
+  return is_enabled_;
 }
 
-void GHOST_ImeWin32::CleanupComposition(HWND window_handle)
+void GHOST_ImeWin32::OnCompositionStart()
 {
-  /**
-   * Notify the IMM attached to the given window to complete the ongoing
-   * composition, (this case happens when the given window is de-activated
-   * while composing a text and re-activated), and reset the composition status.
-   */
-  if (is_composing_) {
-    HIMC imm_context = ::ImmGetContext(window_handle);
-    if (imm_context) {
-      ::ImmNotifyIME(imm_context, NI_COMPOSITIONSTR, CPS_COMPLETE, 0);
-      ::ImmReleaseContext(window_handle, imm_context);
-    }
-    ResetComposition(window_handle);
-  }
+  debug_ime(CCFY "GHOST_ImeWin32::OnCompositionStart");
+  is_composing_ = true;
 }
 
-void GHOST_ImeWin32::CheckFirst(HWND window_handle)
+void GHOST_ImeWin32::OnCompositionUpdate(LPARAM lparam)
 {
-  if (is_first) {
-    this->EndIME(window_handle);
-    is_first = false;
-  }
+  debug_ime(CCFY "GHOST_ImeWin32::OnCompositionUpdate");
+  UpdateInfo(lparam);
 }
 
-void GHOST_ImeWin32::ResetComposition(HWND /*window_handle*/)
+void GHOST_ImeWin32::OnCompositionEnd()
 {
-  /* Currently, just reset the composition status. */
+  debug_ime(CCFY "GHOST_ImeWin32::OnCompositionEnd");
   is_composing_ = false;
 }
 
-void GHOST_ImeWin32::CompleteComposition(HWND window_handle, HIMC imm_context)
+bool GHOST_ImeWin32::IsComposing()
+{
+  return is_composing_;
+}
+
+void GHOST_ImeWin32::CompleteComposition()
 {
   /**
    * We have to confirm there is an ongoing composition before completing it.
@@ -240,240 +183,144 @@ void GHOST_ImeWin32::CompleteComposition(HWND window_handle, HIMC imm_context)
    * ongoing composition even if they do not have any ongoing compositions.
    */
   if (is_composing_) {
-    ::ImmNotifyIME(imm_context, NI_COMPOSITIONSTR, CPS_COMPLETE, 0);
-    ResetComposition(window_handle);
+    debug_ime(CCFY "CompleteComposition");
+    HIMC himc = ::ImmGetContext(h_wnd_);
+    if (himc) {
+      ::ImmNotifyIME(himc, NI_COMPOSITIONSTR, CPS_COMPLETE, 0);
+      ::ImmReleaseContext(h_wnd_, himc);
+    }
   }
 }
 
-void GHOST_ImeWin32::GetCaret(HIMC imm_context, LPARAM lparam, ImeComposition *composition)
+void GHOST_ImeWin32::CancelComposition()
 {
-  /**
-   * This operation is optional and language-dependent because the caret
-   * style is dependent on the language, e.g.:
-   *   * Korean IMEs: the caret is a blinking block,
-   *     (It contains only one hangul character);
-   *   * Chinese IMEs: the caret is a blinking line,
-   *     (i.e. they do not need to retrieve the target selection);
-   *   * Japanese IMEs: the caret is a selection (or underlined) block,
-   *     (which can contain one or more Japanese characters).
-   */
-  int target_start = -1;
-  int target_end = -1;
-  if (IsLanguage(IMELANG_KOREAN)) {
-    if (lparam & CS_NOMOVECARET) {
-      target_start = 0;
-      target_end = 1;
-    }
-  }
-  else if (IsLanguage(IMELANG_CHINESE)) {
-    int clause_size = ImmGetCompositionStringW(imm_context, GCS_COMPCLAUSE, nullptr, 0);
-    if (clause_size) {
-      static std::vector<ulong> clauses;
-      clause_size = clause_size / sizeof(clauses[0]);
-      clauses.resize(clause_size);
-      ImmGetCompositionStringW(
-          imm_context, GCS_COMPCLAUSE, &clauses[0], sizeof(clauses[0]) * clause_size);
-      if (composition->cursor_position == composition->ime_string.size()) {
-        target_start = clauses[clause_size - 2];
-        target_end = clauses[clause_size - 1];
-      }
-      else {
-        for (int i = 0; i < clause_size - 1; i++) {
-          if (clauses[i] == composition->cursor_position) {
-            target_start = clauses[i];
-            target_end = clauses[i + 1];
-            break;
-          }
-        }
-      }
-    }
-    else {
-      if (composition->cursor_position != -1) {
-        target_start = composition->cursor_position;
-        target_end = composition->ime_string.size();
-      }
-    }
-  }
-  else if (IsLanguage(IMELANG_JAPANESE)) {
-    /**
-     * For Japanese IMEs, the robustest way to retrieve the caret
-     * is scanning the attribute of the latest composition string and
-     * retrieving the beginning and the end of the target clause, i.e.
-     * a clause being converted.
-     */
-    if (lparam & GCS_COMPATTR) {
-      int attribute_size = ::ImmGetCompositionStringW(imm_context, GCS_COMPATTR, nullptr, 0);
-      if (attribute_size > 0) {
-        char *attribute_data = new char[attribute_size];
-        if (attribute_data) {
-          ::ImmGetCompositionStringW(imm_context, GCS_COMPATTR, attribute_data, attribute_size);
-          for (target_start = 0; target_start < attribute_size; ++target_start) {
-            if (IsTargetAttribute(attribute_data[target_start])) {
-              break;
-            }
-          }
-          for (target_end = target_start; target_end < attribute_size; ++target_end) {
-            if (!IsTargetAttribute(attribute_data[target_end])) {
-              break;
-            }
-          }
-          if (target_start == attribute_size) {
-            /**
-             * This composition clause does not contain any target clauses,
-             * i.e. this clauses is an input clause.
-             * We treat whole this clause as a target clause.
-             */
-            target_end = target_start;
-            target_start = 0;
-          }
-          if (target_start != -1 && target_start < attribute_size &&
-              attribute_data[target_start] == ATTR_TARGET_NOTCONVERTED)
-          {
-            composition->cursor_position = target_start;
-          }
-        }
-        delete[] attribute_data;
-      }
-    }
-  }
-  composition->target_start = target_start;
-  composition->target_end = target_end;
-}
-
-bool GHOST_ImeWin32::GetString(HIMC imm_context,
-                               WPARAM lparam,
-                               int type,
-                               ImeComposition *composition)
-{
-  bool result = false;
-  if (lparam & type) {
-    int string_size = ::ImmGetCompositionStringW(imm_context, type, nullptr, 0);
-    if (string_size > 0) {
-      int string_length = string_size / sizeof(wchar_t);
-      wchar_t *string_data = new wchar_t[string_length + 1];
-      string_data[string_length] = '\0';
-      if (string_data) {
-        /* Fill the given ImeComposition object. */
-        ::ImmGetCompositionStringW(imm_context, type, string_data, string_size);
-        composition->string_type = type;
-        composition->ime_string = string_data;
-        result = true;
-      }
-      delete[] string_data;
-    }
-  }
-  return result;
-}
-
-bool GHOST_ImeWin32::GetResult(HWND window_handle, LPARAM lparam, ImeComposition *composition)
-{
-  bool result = false;
-  HIMC imm_context = ::ImmGetContext(window_handle);
-  if (imm_context) {
-    /* Copy the result string to the ImeComposition object. */
-    result = GetString(imm_context, lparam, GCS_RESULTSTR, composition);
-    /**
-     * Reset all the other parameters because a result string does not
-     * have composition attributes.
-     */
-    composition->cursor_position = -1;
-    composition->target_start = -1;
-    composition->target_end = -1;
-    ::ImmReleaseContext(window_handle, imm_context);
-  }
-  return result;
-}
-
-bool GHOST_ImeWin32::GetComposition(HWND window_handle, LPARAM lparam, ImeComposition *composition)
-{
-  bool result = false;
-  HIMC imm_context = ::ImmGetContext(window_handle);
-  if (imm_context) {
-    /* Copy the composition string to the ImeComposition object. */
-    result = GetString(imm_context, lparam, GCS_COMPSTR, composition);
-
-    /* Retrieve the cursor position in the IME composition. */
-    int cursor_position = ::ImmGetCompositionStringW(imm_context, GCS_CURSORPOS, nullptr, 0);
-    composition->cursor_position = cursor_position;
-    composition->target_start = -1;
-    composition->target_end = -1;
-
-    /* Retrieve the target selection and Update the ImeComposition object. */
-    GetCaret(imm_context, lparam, composition);
-
-    /* Mark that there is an ongoing composition. */
-    is_composing_ = true;
-
-    ::ImmReleaseContext(window_handle, imm_context);
-  }
-  return result;
-}
-
-void GHOST_ImeWin32::EndIME(HWND window_handle)
-{
-  /**
-   * A renderer process have moved its input focus to a password input
-   * when there is an ongoing composition, e.g. a user has clicked a
-   * mouse button and selected a password input while composing a text.
-   * For this case, we have to cancel the ongoing composition and
-   * clean up the resources attached to this object BEFORE DISABLING THE IME.
-   */
-  if (!is_enable) {
-    return;
-  }
-  is_enable = false;
   if (is_composing_) {
-    HIMC imm_context = ::ImmGetContext(window_handle);
-    if (imm_context) {
-      /* Cancel composition  */
-      ::ImmNotifyIME(imm_context, NI_COMPOSITIONSTR, CPS_CANCEL, 0);
-      ::ImmNotifyIME(imm_context, NI_CLOSECANDIDATE, 0, 0);
-      ::ImmReleaseContext(window_handle, imm_context);
+    debug_ime(CCFY "CancelComposition");
+    HIMC himc = ::ImmGetContext(h_wnd_);
+    if (himc) {
+      ::ImmNotifyIME(himc, NI_COMPOSITIONSTR, CPS_CANCEL, 0);
+      ::ImmReleaseContext(h_wnd_, himc);
     }
-    ResetComposition(window_handle);
   }
-  ::ImmAssociateContextEx(window_handle, nullptr, 0);
-  eventImeData.composite.clear();
 }
 
-void GHOST_ImeWin32::BeginIME(HWND window_handle, const GHOST_Rect &caret_rect, bool complete)
+void GHOST_ImeWin32::MoveIME()
 {
-  if (is_enable && complete) {
-    return;
-  }
-  is_enable = true;
-  /**
-   * Load the default IME context.
-   * NOTE(hbono)
-   *   IMM ignores this call if the IME context is loaded. Therefore, we do
-   *   not have to check whether or not the IME context is loaded.
-   */
-  ::ImmAssociateContextEx(window_handle, nullptr, IACE_DEFAULT);
-  /* Complete the ongoing composition and move the IME windows. */
-  HIMC imm_context = ::ImmGetContext(window_handle);
-  if (imm_context) {
-    if (complete) {
-      /**
-       * A renderer process have moved its input focus to another edit
-       * control when there is an ongoing composition, e.g. a user has
-       * clicked a mouse button and selected another edit control while
-       * composing a text.
-       * For this case, we have to complete the ongoing composition and
-       * hide the IME windows BEFORE MOVING THEM.
-       */
-      CompleteComposition(window_handle, imm_context);
-    }
+  debug_ime(CCFY "GHOST_ImeWin32::MoveIME()");
+
+  MoveIME(caret_rect_, exclude_rect_);
+}
+
+void GHOST_ImeWin32::MoveIME(const GHOST_Rect &caret_rect, const GHOST_Rect &exclude_rect)
+{
+  debug_ime(CCFY "GHOST_ImeWin32::MoveIME(caret_rect, exclude_rect)");
+
+  HIMC himc = ::ImmGetContext(h_wnd_);
+
+  if (himc) {
+    caret_rect_ = caret_rect;
+    exclude_rect_ = exclude_rect;
+
+    debug_ime(CCFY "  1: (%d, %d, %d, %d), (%d, %d, %d, %d)",
+              caret_rect.l_,
+              caret_rect.t_,
+              caret_rect.getWidth(),
+              caret_rect.getHeight(),
+              exclude_rect.l_,
+              exclude_rect.t_,
+              exclude_rect.getWidth(),
+              exclude_rect.getHeight());
+
     /**
-     * Save the caret position, and Update the position of the IME window.
-     * This update is used for moving an IME window when a renderer process
-     * resize/moves the input caret.
+     * c_l, c_t, c_w, c_h is the rect of text caret,
+     * e_l, e_t, e_w, e_h is the rect of exclude area.
+     *
+     * NOTE: CANDIDATEFORM.ptCurrentPos containing the coordinates of the upper left corner
+     * of the candidate window or the caret position, depending on the value of dwStyle.
+     * CFS_CANDIDATEPOS - ptCurrentPos is the upper left corner of the candidate window.
+     * CFS_EXCLUDE - ptCurrentPos is the upper left corner of the text caret.
+     *
+     * Here we always use CFS_EXCLUDE:
+     * - It can simply treat as the text caret.
+     * - when the downward has not enought space, the candidate window will display to upperward,
+     * if we use CFS_CANDIDATEPOS, the candidate window may overlay the composing string,
+     * because IME don't know the height of the composing string.
+     *
+     * NOTE: If the height of system caret less than 2,
+     * some IMEs will ignore the position of system caret.
      */
-    if (caret_rect.l_ >= 0 && caret_rect.t_ >= 0) {
-      caret_rect_ = caret_rect;
-      MoveImeWindow(window_handle, imm_context);
-    }
-    ::ImmReleaseContext(window_handle, imm_context);
+    int c_l = caret_rect.l_;
+    int c_t = caret_rect.t_;
+    int c_w = max(0, caret_rect.getWidth());
+    int c_h = max(2, caret_rect.getHeight());
+    int e_l = exclude_rect.l_;
+    int e_t = exclude_rect.t_;
+    int e_w = max(0, exclude_rect.getWidth());
+    int e_h = max(2, exclude_rect.getHeight());
+
+    caret_rect_.l_ = c_l;
+    caret_rect_.t_ = c_t;
+    caret_rect_.r_ = c_l + c_w;
+    caret_rect_.b_ = c_t + c_h;
+    exclude_rect_.l_ = e_l;
+    exclude_rect_.t_ = e_t;
+    exclude_rect_.r_ = e_l + e_w;
+    exclude_rect_.b_ = e_t + e_h;
+
+    debug_ime(
+        CCFY "  2: (%d, %d, %d, %d), (%d, %d, %d, %d)", c_l, c_t, c_w, c_h, e_l, e_t, e_w, e_h);
+
+    CANDIDATEFORM candidate_position = {
+        0, CFS_EXCLUDE, {c_l, c_t}, {e_l, e_t, e_l + e_w, e_t + e_h}};
+    ::ImmSetCandidateWindow(himc, &candidate_position);
+
+    /**
+     * Some Chinese IMEs ignore function calls to ::ImmSetCandidateWindow()
+     * when a user disables TSF (Text Service Framework) and CUAS (Cicero
+     * Unaware Application Support).
+     * On the other hand, when a user enables TSF and CUAS, Chinese IMEs
+     * ignore the position of the current system caret and uses the
+     * parameters given to ::ImmSetCandidateWindow() with its 'dwStyle'
+     * parameter CFS_CANDIDATEPOS.
+     * Therefore, we do not only call ::ImmSetCandidateWindow() but also
+     * set the positions of the temporary system caret if it exists.
+     */
+
+    ::DestroyCaret();
+    ::CreateCaret(h_wnd_, NULL, c_w, c_h);
+    ::SetCaretPos(c_l, c_t);
+
+#  if defined(_DEBUG) || FORCE_DEBUG
+    ::ShowCaret(h_wnd_);
+#  endif
+
+    ::ImmReleaseContext(h_wnd_, himc);
   }
+  else {
+    debug_ime(CCFY "  !HIMC");
+  }
+}
+
+void GHOST_ImeWin32::StartIMEComplsitionByChar(char c)
+{
+  WORD key = LOBYTE(::VkKeyScan(c));
+  WORD scan = MapVirtualKey(key, MAPVK_VK_TO_VSC);
+
+  INPUT playback_key_events[2];
+
+  playback_key_events[0].type = INPUT_KEYBOARD;
+  playback_key_events[0].ki.wVk = key;
+  playback_key_events[0].ki.wScan = scan;
+  playback_key_events[0].ki.dwFlags = 0;
+  playback_key_events[0].ki.dwExtraInfo = 0;
+
+  playback_key_events[1].type = INPUT_KEYBOARD;
+  playback_key_events[1].ki.wVk = key;
+  playback_key_events[1].ki.wScan = scan;
+  playback_key_events[1].ki.dwFlags = KEYEVENTF_KEYUP;
+  playback_key_events[1].ki.dwExtraInfo = 0;
+
+  ::SendInput(2, (PINPUT)&playback_key_events, sizeof(INPUT));
 }
 
 static void convert_utf16_to_utf8_len(std::wstring s, int &len)
@@ -497,11 +344,13 @@ static size_t updateUtf8Buf(ImeComposition &info)
   return len - 1;
 }
 
-void GHOST_ImeWin32::UpdateInfo(HWND window_handle)
+void GHOST_ImeWin32::UpdateInfo(LPARAM lparam)
 {
-  int res = this->GetResult(window_handle, GCS_RESULTSTR, &resultInfo);
-  int comp = this->GetComposition(window_handle, GCS_COMPSTR | GCS_COMPATTR, &compInfo);
-  /* Convert wchar to UTF8. */
+  int res = this->GetResult(lparam, &resultInfo);
+  debug_ime("GHOST_ImeWin32 result str len: %d", res);
+  int comp = this->GetComposition(lparam, &compInfo);
+  debug_ime("GHOST_ImeWin32 composition str len: %d", comp);
+  /* convert wchar to utf8 */
   if (res) {
     updateUtf8Buf(resultInfo);
     eventImeData.result = std::string(&resultInfo.utf8_buf[0]);
@@ -522,6 +371,170 @@ void GHOST_ImeWin32::UpdateInfo(HWND window_handle)
     eventImeData.target_start = -1;
     eventImeData.target_end = -1;
   }
+}
+
+bool GHOST_ImeWin32::GetResult(LPARAM lparam, ImeComposition *composition)
+{
+  bool result = false;
+  HIMC himc = ::ImmGetContext(h_wnd_);
+  if (himc) {
+    /* Copy the result string to the ImeComposition object. */
+    result = GetString(himc, lparam, GCS_RESULTSTR, composition);
+
+    ::ImmReleaseContext(h_wnd_, himc);
+  }
+  return result;
+}
+
+bool GHOST_ImeWin32::GetComposition(LPARAM lparam, ImeComposition *composition)
+{
+  bool result = false;
+  HIMC himc = ::ImmGetContext(h_wnd_);
+  if (himc) {
+    /* Copy the composition string to the ImeComposition object. */
+    result = GetString(himc, lparam, GCS_COMPSTR, composition);
+
+    if (result) {
+      /* Retrieve the cursor position in the IME composition. */
+      int cursor_position = ::ImmGetCompositionStringW(himc, GCS_CURSORPOS, nullptr, 0);
+      composition->cursor_position = cursor_position;
+
+      /* Retrieve the target selection and Update the ImeComposition object. */
+      GetCaret(himc, lparam, composition);
+    }
+
+    ::ImmReleaseContext(h_wnd_, himc);
+  }
+  return result;
+}
+
+bool GHOST_ImeWin32::GetString(HIMC himc, WPARAM lparam, int type, ImeComposition *composition)
+{
+  bool result = false;
+  if (lparam & type) {
+    int string_size = ::ImmGetCompositionStringW(himc, type, nullptr, 0);
+    if (string_size > 0) {
+      int string_length = string_size / sizeof(wchar_t);
+      wchar_t *string_data = new wchar_t[string_length + 1];
+      string_data[string_length] = '\0';
+      if (string_data) {
+        /* Fill the given ImeComposition object. */
+        ::ImmGetCompositionStringW(himc, type, string_data, string_size);
+        composition->string_type = type;
+        composition->ime_string = string_data;
+        result = true;
+      }
+      delete[] string_data;
+    }
+  }
+  return result;
+}
+
+void GHOST_ImeWin32::GetCaret(HIMC himc, LPARAM lparam, ImeComposition *composition)
+{
+  int target_start = -1;
+  int target_end = -1;
+
+  /**
+   * The "Target" originally referred to the characters which have the ATTR_TARGET_NOTCONVERTED or
+   * ATTR_TARGET_CONVERTED attribute. That characters are always continuous.
+   *
+   * Usually only Japanese and some Traditional Chinese IMEs generate that attribute.
+   * So there will be no "Target" in other IMEs.
+   *
+   * It is OK, but in reality there is "Target" in other IMEs.
+   * We can observe the "Target" through the position of the candidate window.
+   * Usually their candidate window align to the start of "Target".
+   *
+   * To achieve the same effect, some rules have been added here to calculate
+   * the "Target" of other IMEs:
+   * 1. If IME generate `GCS_COMPCLAUSE`, use the clause that includes `GCS_CURSORPOS` as the
+   * target. This mainly applies to some Chinese IMEs.
+   * 2. Otherwire, we treat whole composition string as a target.
+   */
+
+  if (lparam & GCS_COMPATTR) {
+    int attrs_len = ::ImmGetCompositionStringW(himc, GCS_COMPATTR, nullptr, 0);
+    if (attrs_len > 0) {
+      char *attrs = new char[attrs_len];
+      if (attrs) {
+        ::ImmGetCompositionStringW(himc, GCS_COMPATTR, attrs, attrs_len);
+        for (target_start = 0; target_start < attrs_len; ++target_start) {
+          if (IsTargetAttribute(attrs[target_start]))
+            break;
+        }
+        for (target_end = target_start; target_end < attrs_len; ++target_end) {
+          if (!IsTargetAttribute(attrs[target_end]))
+            break;
+        }
+        /**
+         * `attrs_len` is equal to `composition->ime_string.size()`.
+         * If `target_start` equal to `attrs_len`, means `ATTR_TARGET_XXX` not exists.
+         */
+        if (target_start == attrs_len) {
+          target_start = -1;
+          target_end = -1;
+        }
+      }
+      delete[] attrs;
+    }
+  }
+
+  if (target_start == -1 && lparam & GCS_COMPCLAUSE) {
+    /**
+     * If `GCS_COMPCLAUSE` exists, use the clause that includes `GCS_CURSORPOS` as the target.
+     *
+     * About the Caluse:
+     * https://learn.microsoft.com/en-us/windows/win32/intl/composition-string
+     *
+     * If the composition string has two clause, then:
+     * clauses[0]: 0 - the start of clause-1 is 0, and the end is clause[1] - 1.
+     * clauses[1]: 2 - the start of clause-2 is 2, and the end is clause[2] - 1.
+     * clauses[2]: 5 - the length of the composition string is 5.
+     */
+    int clauses_buffer_len = ::ImmGetCompositionStringW(himc, GCS_COMPCLAUSE, nullptr, 0);
+    if (clauses_buffer_len) {
+      int clauses_len = clauses_buffer_len / sizeof(ulong);
+      ulong *clauses = new ulong[clauses_len];
+      if (clauses) {
+        ::ImmGetCompositionStringW(himc, GCS_COMPCLAUSE, clauses, clauses_buffer_len);
+
+        for (int i = 0; i < clauses_len; i++) {
+          debug_ime(CCFY "\t[%d]: %d", i, clauses[i]);
+        }
+
+        if (composition->cursor_position == clauses[clauses_len - 1]) {
+          target_start = clauses[clauses_len - 2];
+          target_end = clauses[clauses_len - 1];
+        }
+        else {
+          for (int i = 0; i < clauses_len - 1; i++) {
+            if (clauses[i] <= composition->cursor_position &&
+                composition->cursor_position < clauses[i + 1])
+            {
+              target_start = clauses[i];
+              target_end = clauses[i + 1];
+              break;
+            }
+          }
+        }
+      }
+      delete[] clauses;
+    }
+  }
+
+  if (target_start == -1) {
+    /**
+     * This composition string does not contain any target attribute or clauses,
+     * i.e. this composition string is an input string.
+     * We treat whole this string as a target.
+     */
+    target_start = 0;
+    target_end = composition->ime_string.size();
+  }
+
+  composition->target_start = target_start;
+  composition->target_end = target_end;
 }
 
 #endif /* WITH_INPUT_IME */

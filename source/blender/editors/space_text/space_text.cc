@@ -39,6 +39,13 @@
 #include "text_format.hh"
 #include "text_intern.hh" /* Own include. */
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+#  include "ED_text.hh"
+#  include "wm_window.hh"
+#endif
+
+#include "printx.h"
+
 namespace blender {
 
 /* -------------------------------------------------------------------- */
@@ -220,6 +227,11 @@ static void text_operatortypes()
   WM_operatortype_append(TEXT_OT_autocomplete);
 
   WM_operatortype_append(TEXT_OT_update_shader);
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  WM_operatortype_append(TEXT_OT_ime_input);
+  WM_operatortype_append(TEXT_OT_ime_insert);
+#endif
 }
 
 static void text_keymap(wmKeyConfig *keyconf)
@@ -290,6 +302,37 @@ static void text_main_region_draw(const bContext *C, ARegion *region)
   /* Data. */
   draw_text_main(st, region);
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  /**
+   * Reposition the IME candidate window.
+   *
+   * We just need to do that after the position of the text cursor changed,
+   * and before IME composition start.
+   *
+   * There is no way to know the position of the text cursor is changed,
+   * so every time after the text redraw, we reposition the candidate window.
+   *
+   * If we don't update the candidate window before composing,
+   * the candidate window will first display in the last position,
+   * and suddenly move to the new position set by the IME input operator,
+   * or just display in the last position untill composition end (Some
+   * IMEs ignore the reposition request untill composition end).
+   *
+   * Here we don't need to repostion the candidate window when IME is composing.
+   * Because we don't have the necessary IME data here.
+   * This task is finished by the IME input operator (e.g. TEXT_OT_ime_input).
+   */
+  bScreen *screen = CTX_wm_screen(C);
+  if (screen->active_region == region) {
+    wmWindow *win = CTX_wm_window(C);
+    if (!wm_window_IME_is_composing(win)) {
+      debug_ime(CCBP "SpaceText Redraw [no comp]: Reposition IME");
+      ScrArea *area = CTX_wm_area(C);
+      text_reposition_ime_window(win, area, region, nullptr);
+    }
+  }
+#endif
+
   /* Reset view matrix. */
   // view2d_view_restore(C);
 
@@ -310,6 +353,115 @@ static void text_cursor(wmWindow *win, ScrArea *area, ARegion *region)
 
   WM_cursor_set(win, wmcursor);
 }
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+
+static void text_enable_ime(wmWindow *win, ScrArea *area, ARegion *region)
+{
+  /**
+   * Caller must check the following conditions:
+   * 1. `st->text != nullptr`
+   */
+  bScreen *screen = WM_window_get_active_screen(win);
+  if (region != nullptr && screen->active_region == region) {
+    debug_ime(CCBP "SpaceText " CCBG "meeting the conditions" CCBP ": Enable & Repositon IME");
+    wm_window_IME_begin(win);
+    text_reposition_ime_window(win, area, region, nullptr);
+  }
+}
+
+static void text_disable_ime(wmWindow *win,
+                             ScrArea * /*area*/,
+                             ARegion *region,
+                             bool is_deactivated = false)
+{
+  if (is_deactivated) {
+    debug_ime(CCBP "SpaceText " CCBR "Deactivated" CCBP ": Disable IME");
+    wm_window_IME_end(win);
+  }
+  else {
+    bScreen *screen = WM_window_get_active_screen(win);
+    if (region != nullptr && screen->active_region == region) {
+      debug_ime(CCBP "SpaceText " CCBR "NOT meeting the conditions" CCBP ": Disable IME");
+      wm_window_IME_end(win);
+    }
+  }
+}
+
+static void text_main_region_listener(const wmRegionListenerParams *params)
+{
+  const wmNotifier *wmn = params->notifier;
+
+  wmWindow *win = params->window;
+  ScrArea *area = params->area;
+  ARegion *region = params->region;
+  SpaceText *st;
+
+  if (wmn->category == NC_TEXT) {
+    if (wmn->action == NA_ADDED) {
+      debug_ime(CCBP "SpaceText NA_ADDED");
+      text_enable_ime(win, area, region);
+    }
+    else if (wmn->action == NA_REMOVED) {
+      debug_ime(CCBP "SpaceText NA_REMOVED");
+      text_disable_ime(win, area, region);
+    }
+  }
+  else if (wmn->category == NC_WM) {
+    if (wmn->data == ND_UNDO) {
+      st = static_cast<SpaceText *>(area->spacedata.first);
+
+      if (st->text) {
+        debug_ime(CCBP "SpaceText ND_UNDO/REDO, st->text");
+        text_enable_ime(win, area, region);
+      }
+      else {
+        debug_ime(CCBP "SpaceText ND_UNDO/REDO, !st->text");
+        text_disable_ime(win, area, region);
+      }
+    }
+  }
+}
+
+static void text_main_region_on_activation_changed(
+    const bContext * /*C*/, wmWindow *win, ScrArea *area, ARegion *region, bool activated)
+{
+  if (activated) {
+    debug_ime(CCBP "SpaceText Region Active");
+    SpaceText *st = static_cast<SpaceText *>(area->spacedata.first);
+    if (st->text) {
+      text_enable_ime(win, area, region);
+    }
+  }
+  else {
+    debug_ime(CCBP "SpaceText Region Deactive");
+    text_disable_ime(win, area, region, true);
+  }
+}
+
+static void text_main_region_on_popup_created_or_removed(const bContext * /*C*/,
+                                                         wmWindow *win,
+                                                         ScrArea *area,
+                                                         ARegion *region,
+                                                         bool created,
+                                                         bool from_but)
+{
+  if (!from_but) {
+    if (created) {
+      debug_ime(CCBP "SpaceText Region Popup Created");
+      text_disable_ime(win, area, region, true);
+    }
+    else {
+      debug_ime(CCBP "SpaceText Region Popup Removed");
+      SpaceText *st = static_cast<SpaceText *>(area->spacedata.first);
+      if (st->text) {
+        text_enable_ime(win, area, region);
+      }
+    }
+  }
+}
+
+#endif /* WITH_INPUT_IME && WIN32 */
 
 /** \} */
 
@@ -473,6 +625,11 @@ void ED_spacetype_text()
   art->draw = text_main_region_draw;
   art->cursor = text_cursor;
   art->event_cursor = true;
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  art->listener = text_main_region_listener;
+  art->on_activation_changed = text_main_region_on_activation_changed;
+  art->on_popup_created_or_removed = text_main_region_on_popup_created_or_removed;
+#endif
 
   BLI_addhead(&st->regiontypes, art);
 

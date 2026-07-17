@@ -174,6 +174,13 @@ bool text_space_edit_poll(bContext *C);
 
 void TEXT_OT_update_shader(wmOperatorType *ot);
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+void TEXT_OT_ime_input(wmOperatorType *ot);
+void TEXT_OT_ime_insert(wmOperatorType *ot);
+
+void text_reposition_ime_window(wmWindow *win, ScrArea *area, ARegion *region, void* ime_input_data);
+#endif
+
 /* `text_autocomplete.cc` */
 
 void TEXT_OT_autocomplete(wmOperatorType *ot);

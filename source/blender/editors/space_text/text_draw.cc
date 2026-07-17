@@ -1818,7 +1818,8 @@ void space_text_update_cursor_moved(bContext *C)
 bool ED_space_text_region_location_from_cursor(const SpaceText *st,
                                                const ARegion *region,
                                                const int cursor_co[2],
-                                               int r_pixel_co[2])
+                                               int r_pixel_co[2],
+                                               bool is_offset)
 {
   Text *text = st->text;
 
@@ -1830,8 +1831,10 @@ bool ED_space_text_region_location_from_cursor(const SpaceText *st,
     return false;
   }
 
-  /* Convert character index to char byte offset. */
-  const int char_ofs = BLI_str_utf8_offset_from_index(line->line, line->len, cursor_co[1]);
+  /* Convert character index to char byte offset if necessary. */
+  const int char_ofs = is_offset ?
+                           cursor_co[1] :
+                           BLI_str_utf8_offset_from_index(line->line, line->len, cursor_co[1]);
   if (char_ofs < 0 || char_ofs > line->len) {
     return false;
   }

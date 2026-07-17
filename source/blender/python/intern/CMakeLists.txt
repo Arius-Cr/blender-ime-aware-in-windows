@@ -345,6 +345,10 @@ if(WITH_SDL)
   add_definitions(-DWITH_SDL)
 endif()
 
+if(WITH_INPUT_IME)
+  add_definitions(-DWITH_INPUT_IME)
+endif()
+
 if(WITH_HYDRA)
   list(APPEND LIB
     bf_render_hydra

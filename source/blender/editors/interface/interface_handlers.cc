@@ -88,6 +88,8 @@
 #  include "wm_window.hh"
 #endif
 
+#include "printx.h"
+
 namespace blender::ui {
 
 static CLG_LogRef LOG = {"ui.handler"};
@@ -3618,7 +3620,7 @@ static bool textedit_copypaste(Button *but, TextEdit &text_edit, const int mode)
   return changed;
 }
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
 /* Enable IME, and setup #Button IME data. */
 static void textedit_ime_begin(wmWindow *win, Button *but)
 {
@@ -3669,7 +3671,61 @@ const wmIMEData *button_ime_data_get(Button *but)
   }
   return nullptr;
 }
-#endif /* WITH_INPUT_IME */
+#endif /* WITH_INPUT_IME && !WIN32 */
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+/* Enable IME */
+static void ui_textedit_ime_begin(wmWindow *win, Button * /*but*/)
+{
+  debug_ime(CCBP "TextButton " CCBG "meeting the conditions" CCBP ": Enable & Repositon IME");
+  wm_window_IME_begin(win);
+}
+
+/* Disable IME. */
+static void ui_textedit_ime_end(wmWindow *win, Button *but)
+{
+  /* `but` maybe null. */
+  if (but && but->ime_data) {
+    MEM_delete(but->ime_data);
+    but->ime_data = nullptr;
+  }
+
+  debug_ime(CCBP "TextButton " CCBR "NOT meeting the conditions" CCBP ": Disable IME");
+  wm_window_IME_end(win);
+}
+
+void button_ime_reposition(Button *but,
+                           int creat_l,
+                           int creat_b,
+                           int creat_w,
+                           int creat_h,
+                           int exclude_l,
+                           int exclude_b,
+                           int exclude_w,
+                           int exclude_h)
+{
+  BLI_assert(but->active || but->semi_modal_state);
+  HandleButtonData *data = but->semi_modal_state ? but->semi_modal_state : but->active;
+
+  debug_ime(CCBP "TextButton Redraw: Reposition IME");
+  int region_win_x = data->region->winrct.xmin;
+  int region_win_y = data->region->winrct.ymin;
+  wm_window_IME_move_with_exclude(data->window,
+                                  creat_l + region_win_x,
+                                  creat_b + region_win_y,
+                                  creat_w,
+                                  creat_h,
+                                  exclude_l + region_win_x,
+                                  exclude_b + region_win_y,
+                                  exclude_w,
+                                  exclude_h);
+}
+
+const wmIMEData *button_ime_data_get(Button *but)
+{
+  return but->ime_data;
+}
+#endif /* WITH_INPUT_IME && WIN32 */
 
 std::optional<StringRef> button_edit_unit_hint_get(const Button &but)
 {
@@ -3982,7 +4038,7 @@ static void textedit_end(bContext *C, Button *but, HandleButtonData *data)
   textedit_undo_stack_destroy(text_edit.undo_stack_text);
   text_edit.undo_stack_text = nullptr;
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
   /* See #wm_window_IME_end code-comments for details. */
 #  ifdef __APPLE__
   if (win->runtime->ime_data)
@@ -3990,7 +4046,13 @@ static void textedit_end(bContext *C, Button *but, HandleButtonData *data)
   {
     textedit_ime_end(win, but);
   }
-#endif
+#endif /* WITH_INPUT_IME && !WIN32 */
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  if (!ELEM(but->type, ButtonType::Num, ButtonType::NumSlider)) {
+    ui_textedit_ime_end(win, but);
+  }
+#endif /* WITH_INPUT_IME && WIN32 */
 }
 
 static void textedit_next_but(Block *block, Button *actbut, HandleButtonData *data)
@@ -4094,16 +4156,34 @@ static int do_but_textedit(
   int retval = WM_UI_HANDLER_CONTINUE;
   bool changed = false, inbox = false, update = false, skip_undo_push = false;
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
   wmWindow *win = CTX_wm_window(C);
   const wmIMEData *ime_data = win->runtime->ime_data;
   const bool is_ime_composing = ime_data && win->runtime->ime_data_is_composing;
+#elif defined(WITH_INPUT_IME) && defined(WIN32)
+  wmWindow *win = CTX_wm_window(C);
+  const bool is_num_but = ELEM(but->type, ButtonType::Num, ButtonType::NumSlider);
+  const bool is_ime_composing = is_num_but ? false : wm_window_IME_is_composing(win);
 #else
   const bool is_ime_composing = false;
 #endif
   ButtonTextBox *textbox = but->type == ButtonType::TextBox ? static_cast<ButtonTextBox *>(but) :
                                                               nullptr;
   int prev_pos = but->pos;
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  /**
+   * For WIN32, ESC key will processed (blocked) by IME if composing.
+   * see `GHOST_SystemWin32::s_wndProc` for more information.
+   *
+   * By convention, mouse button down will force complete the ongoing
+   * composition.
+   */
+  if (is_ime_composing && ISMOUSE_BUTTON(event->type) && event->val == KM_PRESS) {
+    wm_window_IME_complete(win);
+    retval = WM_UI_HANDLER_BREAK;
+  }
+  else {
+#endif
   switch (event->type) {
     case MOUSEMOVE:
     case MOUSEPAN:
@@ -4141,7 +4221,7 @@ static int do_but_textedit(
           }
         }
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
         /* skips button handling since it is not wanted */
         if (is_ime_composing) {
           break;
@@ -4201,9 +4281,8 @@ static int do_but_textedit(
           if (data->searchbox) {
             data->cancel = data->escapecancel = true;
           }
-#ifdef WITH_INPUT_IME
-          else if (is_ime_composing && ime_data->composite.size() && but->type == ButtonType::Text)
-          {
+#if defined(WITH_INPUT_IME) && defined(__NOT_THE_FINAL_SOLUTION__)
+          else if (is_ime_composing && ime_data->composite.size() && but->type == ButtonType::Text) {
             textedit_insert_buf(
                 but, text_edit, ime_data->composite.c_str(), ime_data->composite.size());
           }
@@ -4247,6 +4326,9 @@ static int do_but_textedit(
       break;
     }
   }
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  }
+#endif
 
   if (event->val == KM_PRESS && !is_ime_composing) {
     switch (event->type) {
@@ -4478,7 +4560,7 @@ static int do_but_textedit(
     }
   }
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
   if (event->type == WM_IME_COMPOSITE_START) {
     changed = true;
     if (but->selend > but->selsta) {
@@ -4502,7 +4584,52 @@ static int do_but_textedit(
   else if (event->type == WM_IME_COMPOSITE_END) {
     changed = true;
   }
-#endif
+#endif /* WITH_INPUT_IME && !WIN32 */
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  if (event->type == WM_IME_COMPOSITE_START) {
+    debug_ime(CCFR "WM_IME_COMPOSITE_START");
+    changed = true;
+
+    if (but->ime_data) {
+      MEM_delete(but->ime_data);
+      but->ime_data = nullptr;
+    }
+
+    if (but->selend > but->selsta) {
+      ui_textedit_delete_selection(but, text_edit);
+    }
+  }
+  else if (event->type == WM_IME_COMPOSITE_EVENT) {
+    debug_ime(CCFR "WM_IME_COMPOSITE_EVENT");
+    changed = true;
+
+    if (but->ime_data) {
+      MEM_delete(but->ime_data);
+      but->ime_data = nullptr;
+    }
+
+    const wmIMEData *ime_data = (wmIMEData *)event->customdata;
+
+    if (ime_data->result.size() != 0) {
+      ui_textedit_insert_buf(but, text_edit, ime_data->result.c_str(), ime_data->result.size());
+    }
+
+    if (ime_data->composite.size() != 0) {
+      /* Copy the ime data, otherwise it will lost after #wm_event_free. */
+      but->ime_data = MEM_new<wmIMEData>(__func__, *ime_data);
+    }
+  }
+  else if (event->type == WM_IME_COMPOSITE_END) {
+    debug_ime(CCFR "WM_IME_COMPOSITE_END");
+    changed = true;
+
+    if (but->ime_data) {
+      MEM_delete(but->ime_data);
+      but->ime_data = nullptr;
+    }
+  }
+#endif /* WITH_INPUT_IME && WIN32 */
   if (textbox && changed) {
     /* Text changed, invalidate cache now. */
     textbox->wrap_cache.reset();

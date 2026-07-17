@@ -78,6 +78,13 @@
 #include "view3d_intern.hh" /* own include */
 #include "view3d_navigate.hh"
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+#  include "ED_curve.hh"
+#  include "wm_window.hh"
+#endif
+
+#include "printx.h"
+
 namespace blender {
 
 /* ******************** manage regions ********************* */
@@ -554,6 +561,90 @@ static void *view3d_main_region_duplicate(void *poin)
   return nullptr;
 }
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+
+static void view3d_enable_ime(wmWindow *win, ScrArea *area, ARegion *region)
+{
+  /**
+   * Caller must check the following conditions:
+   * 1. `CTX_data_mode_enum(C) == CTX_MODE_EDIT_TEXT`
+   */
+  bScreen *screen = WM_window_get_active_screen(win);
+  if (region != nullptr && screen->active_region == region) {
+    debug_ime(CCBP "SpaceView3d " CCBG "meeting the conditions" CCBP ": Enable & Repositon IME");
+    wm_window_IME_begin(win);
+    ED_curve_editfont_reposition_ime_window(win, area, region);
+  }
+}
+
+static void view3d_disable_ime(wmWindow *win,
+                               ScrArea * /*area*/,
+                               ARegion *region,
+                               bool is_deactivated = false)
+{
+  if (is_deactivated) {
+    debug_ime(CCBP "SpaceView3d " CCBR "Deactivated" CCBP ": Disable IME");
+    wm_window_IME_end(win);
+  }
+  else {
+    bScreen *screen = WM_window_get_active_screen(win);
+    if (region != nullptr && screen->active_region == region) {
+      debug_ime(CCBP "SpaceView3d " CCBR "NOT meeting the conditions" CCBP ": Disable IME");
+      wm_window_IME_end(win);
+    }
+  }
+}
+
+static void view3d_main_region_on_activation_changed(
+    const bContext *C, wmWindow *win, ScrArea *area, ARegion *region, bool activated)
+{
+  if (activated) {
+    if (C) {
+      debug_ime(CCBP "SpaceView3d Region Active 1");
+      if (CTX_data_mode_enum(C) == CTX_MODE_EDIT_TEXT) {
+        view3d_enable_ime(win, area, region);
+      }
+    }
+    else {
+      /* The first time init, param `C` may be null. */
+      debug_ime(CCBP "SpaceView3d Region Active 2");
+      Scene *scene = win->scene;
+      if (scene) {
+        ViewLayer *view_layer = BKE_view_layer_find(scene, win->view_layer_name);
+        if (view_layer) {
+          Object *ob = BKE_view_layer_active_object_get(view_layer);
+          if (ob && ob->type == OB_FONT && ob->mode == OB_MODE_EDIT) {
+            view3d_enable_ime(win, area, region);
+          }
+        }
+      }
+    }
+  }
+  else {
+    debug_ime(CCBP "SpaceView3d Region Deactive");
+    view3d_disable_ime(win, area, region, true);
+  }
+}
+
+static void view3d_main_region_on_popup_created_or_removed(
+    const bContext *C, wmWindow *win, ScrArea *area, ARegion *region, bool created, bool from_but)
+{
+  if (!from_but) {
+    if (created) {
+      debug_ime(CCBP "SpaceView3d Region Popup Created");
+      view3d_disable_ime(win, area, region, true);
+    }
+    else {
+      debug_ime(CCBP "SpaceView3d Region Popup Removed");
+      if (CTX_data_mode_enum(C) == CTX_MODE_EDIT_TEXT) {
+        view3d_enable_ime(win, area, region);
+      }
+    }
+  }
+}
+
+#endif /* WITH_INPUT_IME && WIN32 */
+
 static void view3d_main_region_listener(const wmRegionListenerParams *params)
 {
   wmWindow *window = params->window;
@@ -569,6 +660,19 @@ static void view3d_main_region_listener(const wmRegionListenerParams *params)
   switch (wmn->category) {
     case NC_WM:
       if (ELEM(wmn->data, ND_UNDO)) {
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+        debug_ime(CCBP "SpaceView3d ND_UNDO");
+        ViewLayer *view_layer = WM_window_get_active_view_layer(window);
+        if (view_layer) {
+          Base *base = BKE_view_layer_active_base_get(view_layer);
+          if (base && base->object->type == OB_FONT && base->object->mode & OB_MODE_EDIT) {
+            view3d_enable_ime(window, area, region);
+          }
+          else {
+            view3d_disable_ime(window, area, region);
+          }
+        }
+#endif
         WM_gizmomap_tag_refresh(gzmap);
       }
       else if (ELEM(wmn->data, ND_XR_DATA_CHANGED)) {
@@ -623,10 +727,23 @@ static void view3d_main_region_listener(const wmRegionListenerParams *params)
         case ND_OB_VISIBLE:
         case ND_RENDER_OPTIONS:
         case ND_MARKERS:
-        case ND_MODE:
+        case ND_MODE: {
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+          debug_ime(CCBP "SpaceView3d ND_MODE");
+          ViewLayer *view_layer = WM_window_get_active_view_layer(window);
+          if (view_layer) {
+            Base *base = BKE_view_layer_active_base_get(view_layer);
+            if (base && base->object->type == OB_FONT && base->object->mode & OB_MODE_EDIT) {
+              view3d_enable_ime(window, area, region);
+            }
+            else {
+              view3d_disable_ime(window, area, region);
+            }
+          }
+#endif
           ED_region_tag_redraw(region);
           WM_gizmomap_tag_refresh(gzmap);
-          break;
+        } break;
         case ND_WORLD:
           /* handled by space_view3d_listener() for v3d access */
           break;
@@ -1625,6 +1742,10 @@ void ED_spacetype_view3d()
   art->exit = view3d_main_region_exit;
   art->free = view3d_main_region_free;
   art->duplicate = view3d_main_region_duplicate;
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  art->on_activation_changed = view3d_main_region_on_activation_changed;
+  art->on_popup_created_or_removed = view3d_main_region_on_popup_created_or_removed;
+#endif
   art->listener = view3d_main_region_listener;
   art->message_subscribe = view3d_main_region_message_subscribe;
   art->cursor = view3d_main_region_cursor;

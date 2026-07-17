@@ -166,6 +166,10 @@ GHOST_WindowWin32::GHOST_WindowWin32(GHOST_SystemWin32 *system,
     return;
   }
 
+#ifdef WITH_INPUT_IME
+  ime_input_.SetHwnd(h_wnd_);
+#endif
+
   RegisterTouchWindow(h_wnd_, 0);
 
   /* Register as drop-target. #OleInitialize(0) required first, done in GHOST_SystemWin32. */
@@ -257,6 +261,10 @@ GHOST_TTrackpadInfo GHOST_WindowWin32::getTrackpadInfo()
 
 GHOST_WindowWin32::~GHOST_WindowWin32()
 {
+#ifdef WITH_INPUT_IME
+  ime_input_.SetHwnd(nullptr);
+#endif
+
   if (h_wnd_) {
     unregisterWindowAppUserModelProperties();
   }
@@ -1213,14 +1221,59 @@ GHOST_TSuccess GHOST_WindowWin32::endProgressBar()
 }
 
 #ifdef WITH_INPUT_IME
-void GHOST_WindowWin32::beginIME(int32_t x, int32_t y, int32_t /*w*/, int32_t h, bool completed)
+void GHOST_WindowWin32::beginIME()
 {
-  ime_input_.BeginIME(h_wnd_, GHOST_Rect(x, y - h, x, y), completed);
+  ime_input_.BeginIME();
 }
 
 void GHOST_WindowWin32::endIME()
 {
-  ime_input_.EndIME(h_wnd_);
+  ime_input_.EndIME();
+}
+
+bool GHOST_WindowWin32::isIMEEnabled()
+{
+  return ime_input_.IsEnabled();
+}
+
+bool GHOST_WindowWin32::isIMEComposing()
+{
+  return ime_input_.IsComposing();
+}
+
+void GHOST_WindowWin32::completeIME()
+{
+  ime_input_.CompleteComposition();
+}
+
+void GHOST_WindowWin32::cancelIME()
+{
+  ime_input_.CancelComposition();
+}
+
+void GHOST_WindowWin32::moveIME(int32_t c_l, int32_t c_t, int32_t c_w, int32_t c_h)
+{
+
+  ime_input_.MoveIME(GHOST_Rect(c_l, c_t, c_l + c_w, c_t + c_h),
+                     GHOST_Rect(c_l, c_t, c_l + c_w, c_t + c_h));
+}
+
+void GHOST_WindowWin32::moveIMEWithExclude(int32_t c_l,
+                                           int32_t c_t,
+                                           int32_t c_w,
+                                           int32_t c_h,
+                                           int32_t e_l,
+                                           int32_t e_t,
+                                           int32_t e_w,
+                                           int32_t e_h)
+{
+  ime_input_.MoveIME(GHOST_Rect(c_l, c_t, c_l + c_w, c_t + c_h),
+                     GHOST_Rect(e_l, e_t, e_l + e_w, e_t + e_h));
+}
+
+void GHOST_WindowWin32::startIMEComplsitionByChar(char c)
+{
+  ime_input_.StartIMEComplsitionByChar(c);
 }
 #endif /* WITH_INPUT_IME */
 

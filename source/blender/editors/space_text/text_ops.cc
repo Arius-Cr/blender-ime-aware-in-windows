@@ -64,6 +64,17 @@
 #include "text_format.hh"
 #include "text_intern.hh"
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+#  include "BKE_screen.hh"
+#  include "ED_space_api.hh"
+#  include "GPU_immediate.hh"
+#  include "GPU_state.hh"
+#  include "UI_view2d.hh"
+#  include "wm_window.hh"
+#endif
+
+#include "printx.h"
+
 namespace blender {
 
 static void space_text_screen_clamp(SpaceText *st, const ARegion *region);
@@ -4439,5 +4450,569 @@ void TEXT_OT_update_shader(wmOperatorType *ot)
 }
 
 /** \} */
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+
+struct ImeInputData {
+  /**
+   * Example: aaaccttccbbb ('ccttcc' is the composite string, 'tt' is the composite target string)
+   *     start_ofs: 3
+   *     end_ofs: 9 (3 + 6)
+   *     target_start_ofs: 5
+   *     target_end_ofs: 7 (5 + 2)
+   */
+
+  /* Index of editing line */
+  int line_index;
+  /* The byte offset of the start of composite string in text */
+  int start_ofs;
+  /* The byte offset of the end of composite string in text */
+  int end_ofs;
+  /* The byte offset of the start of composite target string in text */
+  int target_start_ofs;
+  /* The byte offset of the end of composite target string in text */
+  int target_end_ofs;
+  Text *text;
+  ARegion *region;
+  void *draw_handle;
+};
+
+void text_reposition_ime_window(wmWindow *win,
+                                ScrArea *area,
+                                ARegion *region,
+                                void *ime_input_data)
+{
+  SpaceText *st = static_cast<SpaceText *>(area->spacedata.first);
+  Text *text = st->text;
+  if (!text)
+    return;
+
+  int line_height = TXT_LINE_HEIGHT(st);
+  /* Add a little space to make the candidate window not too close to string. */
+  int margin = 2 * UI_SCALE_FAC;
+
+  int creat_l;
+  int creat_b;
+  int creat_h = line_height;
+  int exclude_t;
+  int exclude_b;
+
+  if (ime_input_data == nullptr) {
+    /**
+     * If not compositing:
+     * - If selection exists, locate the candidate window to the start of the selection,
+     *   which is closer to the beginning of the text.
+     * - Otherwise, locate to the cursor.
+     */
+
+    int curl = 0;
+    int curc = 0;
+    if (text->sell < text->curl || (text->sell == text->curl && text->selc < text->curc)) {
+      curl = BLI_findindex(&text->lines, text->sell);
+      curc = text->selc;
+    }
+    else {
+      curl = BLI_findindex(&text->lines, text->curl);
+      curc = text->curc;
+    }
+
+    const int cursor_co[2] = {curl, curc};
+    int creat_pos[2];
+
+    ED_space_text_region_location_from_cursor(st, region, cursor_co, creat_pos, true);
+    creat_pos[0] += region->winrct.xmin;
+    creat_pos[1] += region->winrct.ymin;
+
+    creat_l = creat_pos[0];
+    creat_b = creat_pos[1];
+
+    creat_b -= margin;
+    creat_h += 2 * margin;
+
+    exclude_t = creat_pos[1] + line_height;
+    exclude_b = creat_pos[1];
+    exclude_t += margin;
+    exclude_b -= margin;
+
+    wm_window_IME_move_with_exclude(win,
+                                    creat_l,
+                                    creat_b,
+                                    0,
+                                    creat_h,
+                                    region->winrct.xmin,
+                                    exclude_b,
+                                    region->winrct.xmax - region->winrct.xmin,
+                                    exclude_t - exclude_b);
+  }
+  else {
+    /**
+     * If compositing:
+     * - If target exists, locate the candidate window to the start of the target.
+     * - Otherwise, locate to the start of the composite string.
+     */
+
+    ImeInputData *data = static_cast<ImeInputData *>(ime_input_data);
+    const int start_co[2] = {data->line_index, data->start_ofs};
+    const int end_co[2] = {data->line_index, data->end_ofs};
+    int start_pixel_pos[2];
+    int end_pixel_pos[2];
+    ED_space_text_region_location_from_cursor(st, region, start_co, start_pixel_pos, true);
+    ED_space_text_region_location_from_cursor(st, region, end_co, end_pixel_pos, true);
+    start_pixel_pos[0] += region->winrct.xmin;
+    start_pixel_pos[1] += region->winrct.ymin;
+    end_pixel_pos[0] += region->winrct.xmin;
+    end_pixel_pos[1] += region->winrct.ymin;
+
+    if (data->target_start_ofs != -1) {
+      const int target_co[2] = {data->line_index, data->target_start_ofs};
+      int target_pixel_pos[2];
+      ED_space_text_region_location_from_cursor(st, region, target_co, target_pixel_pos, true);
+      target_pixel_pos[0] += region->winrct.xmin;
+      target_pixel_pos[1] += region->winrct.ymin;
+
+      creat_l = target_pixel_pos[0];
+      creat_b = target_pixel_pos[1];
+    }
+    else {
+      if (end_pixel_pos[1] == start_pixel_pos[1]) {
+        /* In the same line, locate to the start. */
+        creat_l = start_pixel_pos[0];
+        creat_b = start_pixel_pos[1];
+      }
+      else {
+        /* In the different line, locate to the end. */
+        creat_l = end_pixel_pos[0];
+        creat_b = end_pixel_pos[1];
+      }
+    }
+
+    creat_b -= margin;
+    creat_h += 2 * margin;
+
+    exclude_t = start_pixel_pos[1] + line_height;
+    exclude_b = end_pixel_pos[1];
+    exclude_t += margin;
+    exclude_b -= margin;
+
+    wm_window_IME_move_with_exclude(win,
+                                    creat_l,
+                                    creat_b,
+                                    0,
+                                    creat_h,
+                                    region->winrct.xmin,
+                                    exclude_b,
+                                    region->winrct.xmax - region->winrct.xmin,
+                                    exclude_t - exclude_b);
+  }
+}
+
+static bool insert_str_into_text(SpaceText *st, Text *text, const char *str, size_t str_len)
+{
+  bool done = false;
+  size_t i = 0;
+  uint code;
+
+  if (st && st->overwrite) {
+    while (str[i]) {
+      code = BLI_str_utf8_as_unicode_step_safe(str, str_len, &i);
+      done |= txt_replace_char(text, code);
+    }
+  }
+  else {
+    while (str[i]) {
+      code = BLI_str_utf8_as_unicode_step_safe(str, str_len, &i);
+      done |= txt_add_char(text, code);
+    }
+  }
+
+  return done;
+}
+
+/* -------------------------------------------------------------------- */
+/** \name Handle IME Composition Events Operator
+ * \{ */
+
+/**
+ * Note: TEXT_OT_ime_input is not a `OPTYPE_UNDO` operator, but TEXT_OT_ime_insert is.
+ */
+
+static void ime_input_draw_underline(SpaceText *st,
+                                     ARegion *region,
+                                     int line_index,
+                                     int start_ofs,
+                                     int end_ofs,
+                                     int draw_rect_xmin,
+                                     int draw_rect_xmax,
+                                     int lheight,
+                                     float uheight,
+                                     uint pos)
+{
+  if (start_ofs != -1 && start_ofs != end_ofs) {
+    int start_co[2] = {line_index, start_ofs};
+    int end_co[2] = {line_index, end_ofs};
+    int start_pos[2];
+    int end_pos[2];
+    ED_space_text_region_location_from_cursor(st, region, start_co, start_pos, true);
+    ED_space_text_region_location_from_cursor(st, region, end_co, end_pos, true);
+
+    if (end_pos[1] == start_pos[1]) {
+      /* single line */
+      immRectf(pos, start_pos[0], start_pos[1], end_pos[0], end_pos[1] + uheight);
+    }
+    else {
+      /* multiLine */
+      immRectf(pos, start_pos[0], start_pos[1], draw_rect_xmax, start_pos[1] + uheight);
+      immRectf(pos, draw_rect_xmin, end_pos[1], end_pos[0], end_pos[1] + uheight);
+      int y = end_pos[1] + lheight;
+      while (y < start_pos[1]) {
+        immRectf(pos, draw_rect_xmin, y, draw_rect_xmax, y + uheight);
+        y += lheight;
+      }
+    }
+  }
+}
+
+static void ime_input_draw(const bContext *C, ARegion *region, void *customdata)
+{
+  /** Note: `ime_input_draw` will call for all SpaceText, not only the one we focusing on. */
+
+  SpaceText *st = CTX_wm_space_text(C);
+  ImeInputData *data = static_cast<ImeInputData *>(customdata);
+
+  /** Only draw for all SpaceText associated with the same Text object. */
+  if (st->text != data->text) {
+    return;
+  }
+
+  /* If the region is the one we focusing on, update the candidate window position. */
+  if (region == data->region) {
+    debug_ime(CCBP "SpaceText Redraw [comp]: Enable & Reposition IME");
+    text_reposition_ime_window(CTX_wm_window(C), CTX_wm_area(C), region, data);
+  }
+
+  int draw_rect_xmin = TXT_BODY_LEFT(st);
+  int draw_rect_xmax = region->winx - TXT_SCROLL_WIDTH;
+  int lheight = TXT_LINE_HEIGHT(st);
+
+  uchar color[4] = {255, 255, 255, 255};
+  blender::ui::theme::get_color_4ubv(TH_TEXT, color);
+
+  GPU_blend(GPU_BLEND_ALPHA);
+
+  GPUVertFormat *format = immVertexFormat();
+  uint pos = GPU_vertformat_attr_add(format, "pos", blender::gpu::VertAttrType::SFLOAT_32_32);
+  immBindBuiltinProgram(GPU_SHADER_3D_UNIFORM_COLOR);
+
+  immUniformColor4ubv(color);
+
+  debug_ime(CCFR "start_ofs: %d, %d", data->start_ofs, data->end_ofs);
+  debug_ime(CCFR "target_start_ofs: %d, %d", data->target_start_ofs, data->target_end_ofs);
+
+  ime_input_draw_underline(st,
+                           region,
+                           data->line_index,
+                           data->start_ofs,
+                           data->end_ofs,
+                           draw_rect_xmin,
+                           draw_rect_xmax,
+                           lheight,
+                           max_ff(1.0f, lheight * 0.04f),
+                           pos);
+
+  ime_input_draw_underline(st,
+                           region,
+                           data->line_index,
+                           data->target_start_ofs,
+                           data->target_end_ofs,
+                           draw_rect_xmin,
+                           draw_rect_xmax,
+                           lheight,
+                           max_ff(2.0f, lheight * 0.08f),
+                           pos);
+
+  immUnbindProgram();
+
+  GPU_blend(GPU_BLEND_NONE);
+}
+
+static void ime_input_clean(bContext * /*C*/, wmOperator *op)
+{
+  ImeInputData *data = static_cast<ImeInputData *>(op->customdata);
+  if (data->draw_handle) {
+    ED_region_draw_cb_exit(data->region->runtime->type, data->draw_handle);
+  }
+
+  MEM_delete(data);
+
+  op->customdata = data = nullptr;
+}
+
+static wmOperatorStatus ime_input_invoke(bContext *C, wmOperator *op, const wmEvent *event)
+{
+  wmWindow *win;
+
+  ARegion *region;
+  SpaceText *st;
+  Text *text;
+
+  if (event->type == WM_IME_COMPOSITE_START) {
+    debug_ime(CCFG "TEXT_OT_ime_input: start");
+
+    win = CTX_wm_window(C);
+    region = BKE_area_find_region_type(CTX_wm_area(C), RGN_TYPE_WINDOW);
+    st = CTX_wm_space_text(C);
+    text = CTX_data_edit_text(C);
+
+    /* Delete selection. */
+
+    txt_delete_selected(text);
+
+    /* Initialize IME input data. */
+
+    ImeInputData *data = static_cast<ImeInputData *>(MEM_new_zeroed(sizeof(ImeInputData), __func__));
+    op->customdata = data;
+
+    data->line_index = BLI_findindex(&text->lines, text->curl);
+    data->start_ofs = text->curc;
+    data->end_ofs = data->start_ofs;
+    data->target_start_ofs = -1;
+    data->target_end_ofs = -1;
+
+    data->text = text;
+    data->region = region;
+    data->draw_handle = ED_region_draw_cb_activate(
+        region->runtime->type, ime_input_draw, data, REGION_DRAW_POST_PIXEL);
+
+    space_text_update_cursor_moved(C);
+    WM_event_add_notifier(C, NC_TEXT | NA_EDITED, text);
+
+    WM_event_add_modal_handler(C, op);
+    return OPERATOR_RUNNING_MODAL;
+  }
+
+  else if (event->type == WM_IME_COMPOSITE_EVENT) {
+    /* Capture the WM_IME_COMPOSITE_EVENT event that not between START and END,
+     * and then insert the result string carried by the event.
+     * This isolated event can occur when using the old (i.e. compatibility mode)
+     * Microsoft Korean IME.
+     */
+    WM_operator_name_call(
+        C, "TEXT_OT_ime_insert", blender::wm::OpCallContext::InvokeRegionWin, nullptr, event);
+  }
+
+  return OPERATOR_CANCELLED;
+}
+
+static wmOperatorStatus ime_input_modal(bContext *C, wmOperator *op, const wmEvent *event)
+{
+  wmWindow *win;
+  const wmIMEData *ime_data;
+  ImeInputData *data;
+
+  SpaceText *st;
+  Text *text;
+
+  bool changed = false;
+
+  if (ELEM(event->type, WM_IME_COMPOSITE_EVENT, WM_IME_COMPOSITE_END)) {
+
+    win = CTX_wm_window(C);
+    if (event->type == WM_IME_COMPOSITE_EVENT) {
+      ime_data = static_cast<const wmIMEData *>(event->customdata);
+    }
+    data = static_cast<ImeInputData *>(op->customdata);
+
+    st = CTX_wm_space_text(C);
+    text = CTX_data_edit_text(C);
+
+    space_text_drawcache_tag_update(st, false);
+
+    /* Delete previous composite string. */
+
+    if (data->end_ofs != data->start_ofs) {
+      debug_ime(CCFG "TEXT_OT_ime_input: delete previous composite string");
+      int startc_i = BLI_str_utf8_offset_to_index(
+          text->curl->line, text->curl->len, data->start_ofs);
+      int endc_i = BLI_str_utf8_offset_to_index(text->curl->line, text->curl->len, data->end_ofs);
+      txt_sel_set(text, data->line_index, startc_i, data->line_index, endc_i);
+      txt_delete_selected(text);
+
+      data->end_ofs = data->start_ofs;
+      data->target_start_ofs = -1;
+      data->target_end_ofs = -1;
+
+      changed = true;
+    }
+  }
+
+  if (event->type == WM_IME_COMPOSITE_EVENT) {
+
+    /* Insert result string. */
+
+    if (ime_data->result.size() != 0) {
+      debug_ime(CCFG "TEXT_OT_ime_input: insert result string");
+      debug_ime(CCFG "  result_len: %zu", ime_data->result.size());
+
+      WM_operator_name_call(
+          C, "TEXT_OT_ime_insert", blender::wm::OpCallContext::InvokeRegionWin, nullptr, event);
+
+      /* Reinitialize IME input data. */
+
+      data->line_index = BLI_findindex(&text->lines, text->curl);
+      data->start_ofs = text->curc;
+      data->end_ofs = data->start_ofs;
+      data->target_start_ofs = -1;
+      data->target_end_ofs = -1;
+    }
+
+    /* Insert composite string. */
+
+    if (ime_data->composite.size() != 0) {
+      debug_ime(CCFG "TEXT_OT_ime_input: insert composite string");
+      debug_ime(CCFG "  composite_len: %zu", ime_data->composite.size());
+
+      bool overwrite = st->overwrite;
+      st->overwrite = false;
+      bool all_insterd = insert_str_into_text(
+          st, text, ime_data->composite.c_str(), ime_data->composite.size());
+      st->overwrite = overwrite;
+
+      if (all_insterd) {
+        data->end_ofs = data->start_ofs + ime_data->composite.size();
+        if (ime_data->sel_start != -1 && ime_data->sel_end != -1) {
+          data->target_start_ofs = data->start_ofs + ime_data->sel_start;
+          data->target_end_ofs = data->start_ofs + ime_data->sel_end;
+        }
+        else {
+          data->target_start_ofs = -1;
+          data->target_end_ofs = -1;
+        }
+
+        text->curc = data->start_ofs + ime_data->cursor_pos;
+        text->selc = text->curc;
+      }
+      else {
+        /* Ignore target if not all characters can be inserted. */
+        data->end_ofs = text->curc;
+        data->target_start_ofs = -1;
+        data->target_end_ofs = -1;
+      }
+
+      changed = true;
+    }
+
+    if (changed) {
+      text_update_line_edited(text->curl);
+      space_text_update_cursor_moved(C);
+      WM_event_add_notifier(C, NC_TEXT | NA_EDITED, text);
+    }
+  }
+
+  else if (event->type == WM_IME_COMPOSITE_END) {
+    debug_ime(CCFG "TEXT_OT_ime_input: end");
+
+    ime_input_clean(C, op);
+
+    return OPERATOR_FINISHED;
+  }
+
+  else if (ISMOUSE_BUTTON(event->type)) {
+    debug_ime(CCFG "TEXT_OT_ime_input: MOUSE COMPLETE COMPOSITE");
+
+    /* Force complete the ongoing composition.
+     * Subsequently, IMM will trigger some IME Composition Event, and
+     * we finish the operator on that event, not here.
+     */
+    wm_window_IME_complete(CTX_wm_window(C));
+  }
+
+  return OPERATOR_RUNNING_MODAL;
+}
+
+void TEXT_OT_ime_input(wmOperatorType *ot)
+{
+  /* identifiers */
+  ot->name = "Input (IME)";
+  ot->idname = "TEXT_OT_ime_input";
+  ot->description = "Handle IME composition events. (Windows only)";
+
+  /* api callbacks */
+  ot->invoke = ime_input_invoke;
+  ot->modal = ime_input_modal;
+  ot->cancel = ime_input_clean;
+  ot->poll = text_data_poll;
+
+  /* flags */
+  ot->flag = OPTYPE_INTERNAL;
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Insert IME Result String Operator
+ * \{ */
+
+/**
+ * Note: TEXT_OT_ime_input will call this operator to insert the IME result string.
+ * This allows users to Undo/Redo the insert operation.
+ */
+
+static wmOperatorStatus ime_insert_invoke(bContext *C, wmOperator * /*op*/, const wmEvent *event)
+{
+  wmWindow *win;
+  const wmIMEData *ime_data;
+
+  SpaceText *st;
+  Text *text;
+
+  if (event->type == WM_IME_COMPOSITE_EVENT) {
+    debug_ime(CCFG "ime_text_insert_invoke");
+
+    win = CTX_wm_window(C);
+    ime_data = static_cast<const wmIMEData *>(event->customdata);
+
+    if (ime_data->result.size() != 0) {
+
+      st = CTX_wm_space_text(C);
+      text = CTX_data_edit_text(C);
+
+      space_text_drawcache_tag_update(st, false);
+
+      ED_text_undo_push_init(C);
+
+      txt_delete_selected(text);
+
+      insert_str_into_text(st, text, ime_data->result.c_str(), ime_data->result.size());
+
+      text_update_line_edited(text->curl);
+
+      space_text_update_cursor_moved(C);
+      WM_event_add_notifier(C, NC_TEXT | NA_EDITED, text);
+
+      return OPERATOR_FINISHED;
+    }
+  }
+
+  return OPERATOR_CANCELLED;
+}
+
+void TEXT_OT_ime_insert(wmOperatorType *ot)
+{
+  /* identifiers */
+  ot->name = "Insert (IME)";
+  ot->idname = "TEXT_OT_ime_insert";
+  ot->description = "Insert IME result string. (Windows only)";
+
+  /* api callbacks */
+  ot->invoke = ime_insert_invoke;
+  ot->poll = text_data_poll;
+
+  /* flags */
+  ot->flag = OPTYPE_INTERNAL | OPTYPE_UNDO;
+}
+
+/** \} */
+
+#endif /* WITH_INPUT_IME && WIN32 */
 
 }  // namespace blender
