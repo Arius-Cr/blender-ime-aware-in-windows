@@ -286,10 +286,8 @@ void GHOST_ImeWin32::MoveIME(const GHOST_Rect &caret_rect, const GHOST_Rect &exc
     ::CreateCaret(m_hwnd, NULL, c_w, c_h);
     ::SetCaretPos(c_l, c_t);
 
-#  if defined(_DEBUG) && !defined(_NDEBUG_IME)
-    if (DEBUG_IME) {
-      ::ShowCaret(m_hwnd);
-    }
+#  if defined(_DEBUG) || FORCE_DEBUG
+    ::ShowCaret(m_hwnd);
 #  endif
 
     ::ImmReleaseContext(m_hwnd, himc);
