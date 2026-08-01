@@ -1652,19 +1652,17 @@ LRESULT WINAPI GHOST_SystemWin32::s_wndProc(HWND hwnd, uint msg, WPARAM wParam, 
             case RIM_TYPEKEYBOARD: {
 
 #ifdef WITH_INPUT_IME
-#  if defined(_DEBUG) && !defined(_NDEBUG_IME)
-              if (DEBUG_IME) {
-                uint _msg = raw.data.keyboard.Message;
-                bool _key_down = !(raw.data.keyboard.Flags & RI_KEY_BREAK) && _msg != WM_KEYUP &&
-                                 _msg != WM_SYSKEYUP;
-                wchar_t key_name[256] = L"??";
-                bool _extended = raw.data.keyboard.Flags & (RI_KEY_E0 | RI_KEY_E1);
-                LPARAM _key_lp = MAKELPARAM(
-                    0, (_extended ? KF_EXTENDED : 0) | (raw.data.keyboard.MakeCode & 0xff));
-                GetKeyNameTextW(_key_lp, (LPWSTR)&key_name, 256);
-                debug_ime(CCFR "====================");
-                debug_ime(CCFR "WM_INPUT: \"%ls\", %s", key_name, _key_down ? "Down" : "Up");
-              }
+#  if defined(_DEBUG) || FORCE_DEBUG
+              uint _msg = raw.data.keyboard.Message;
+              bool _key_down = !(raw.data.keyboard.Flags & RI_KEY_BREAK) && _msg != WM_KEYUP &&
+                               _msg != WM_SYSKEYUP;
+              wchar_t key_name[256] = L"??";
+              bool _extended = raw.data.keyboard.Flags & (RI_KEY_E0 | RI_KEY_E1);
+              LPARAM _key_lp = MAKELPARAM(
+                  0, (_extended ? KF_EXTENDED : 0) | (raw.data.keyboard.MakeCode & 0xff));
+              GetKeyNameTextW(_key_lp, (LPWSTR)&key_name, 256);
+              debug_ime(CCFR "====================");
+              debug_ime(CCFR "WM_INPUT: \"%ls\", %s", key_name, _key_down ? "Down" : "Up");
 #  endif
 
               /**
