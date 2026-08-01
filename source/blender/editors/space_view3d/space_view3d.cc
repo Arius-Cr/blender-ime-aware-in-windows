@@ -1133,6 +1133,23 @@ static void view3d_main_region_on_activation_changed(
   }
 }
 
+static void view3d_main_region_on_popup_created_or_removed(
+    const bContext *C, wmWindow *win, ScrArea *area, ARegion *region, bool created, bool from_but)
+{
+  if (!from_but) {
+    if (created) {
+      debug_ime(CCBP "SpaceView3d Region Popup Created");
+      view3d_disable_ime(win, area, region, true);
+    }
+    else {
+      debug_ime(CCBP "SpaceView3d Region Popup Removed");
+      if (CTX_data_mode_enum(C) == CTX_MODE_EDIT_TEXT) {
+        view3d_enable_ime(win, area, region);
+      }
+    }
+  }
+}
+
 #endif /* WITH_INPUT_IME && WIN32 */
 
 static void view3d_main_region_listener(const wmRegionListenerParams *params)
@@ -2218,6 +2235,7 @@ void ED_spacetype_view3d()
   art->duplicate = view3d_main_region_duplicate;
 #if defined(WITH_INPUT_IME) && defined(WIN32)
   art->on_activation_changed = view3d_main_region_on_activation_changed;
+  art->on_popup_created_or_removed = view3d_main_region_on_popup_created_or_removed;
 #endif
   art->listener = view3d_main_region_listener;
   art->message_subscribe = view3d_main_region_message_subscribe;

@@ -589,6 +589,15 @@ static void ui_popup_block_remove(bContext *C, uiPopupBlockHandle *handle)
   if (handle->scrolltimer) {
     WM_event_timer_remove(wm, win, handle->scrolltimer);
   }
+
+  if (ctx_region) {
+    if (ctx_region->type) {
+      if (ctx_region->type->on_popup_created_or_removed) {
+        ctx_region->type->on_popup_created_or_removed(
+            C, ctx_win, ctx_area, ctx_region, false, handle->popup_create_vars.but != nullptr);
+      }
+    }
+  }
 }
 
 void ui_layout_panel_popup_scroll_apply(Panel *panel, const float dy)
@@ -945,6 +954,15 @@ uiPopupBlockHandle *ui_popup_block_create(bContext *C,
   /* keep centered on window resizing */
   if (block->bounds_type == UI_BLOCK_BOUNDS_POPUP_CENTER) {
     type.listener = ui_block_region_popup_window_listener;
+  }
+
+  if (handle->ctx_region) {
+    if (handle->ctx_region->type) {
+      if (handle->ctx_region->type->on_popup_created_or_removed) {
+        handle->ctx_region->type->on_popup_created_or_removed(
+            C, window, handle->ctx_area, handle->ctx_region, true, but != nullptr);
+      }
+    }
   }
 
   return handle;

@@ -197,6 +197,26 @@ static void console_main_region_on_activation_changed(
   }
 }
 
+static void console_main_region_on_popup_created_or_removed(const bContext * /*C*/,
+                                                            wmWindow *win,
+                                                            ScrArea *area,
+                                                            ARegion *region,
+                                                            bool created,
+                                                            bool from_but)
+{
+  if (!from_but) {
+    if (created) {
+      debug_ime(CCBP "SpaceConsole Region Popup Created");
+      console_disable_ime(win, area, region, true);
+    }
+    else {
+      debug_ime(CCBP "SpaceConsole Region Popup Removed");
+      /* scene maybe null on startup. */
+      console_enable_ime(win, area, region);
+    }
+  }
+}
+
 #endif /* WITH_INPUT_IME && WIN32 */
 
 /* ************* dropboxes ************* */
@@ -442,6 +462,7 @@ void ED_spacetype_console()
   art->listener = console_main_region_listener;
 #if defined(WITH_INPUT_IME) && defined(WIN32)
   art->on_activation_changed = console_main_region_on_activation_changed;
+  art->on_popup_created_or_removed = console_main_region_on_popup_created_or_removed;
 #endif
 
   BLI_addhead(&st->regiontypes, art);
