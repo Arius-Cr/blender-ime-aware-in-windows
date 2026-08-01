@@ -3517,12 +3517,13 @@ void ui_but_ime_reposition(uiBut *but,
                            int exclude_w,
                            int exclude_h)
 {
-  BLI_assert(but->active);
+  BLI_assert(but->active || but->semi_modal_state);
+  uiHandleButtonData *data = but->semi_modal_state ? but->semi_modal_state : but->active;
 
   debug_ime(CCBP "TextButton Redraw: Reposition IME");
-  int region_win_x = but->active->region->winrct.xmin;
-  int region_win_y = but->active->region->winrct.ymin;
-  wm_window_IME_move_with_exclude(but->active->window,
+  int region_win_x = data->region->winrct.xmin;
+  int region_win_y = data->region->winrct.ymin;
+  wm_window_IME_move_with_exclude(data->window,
                                   creat_l + region_win_x,
                                   creat_b + region_win_y,
                                   creat_w,
