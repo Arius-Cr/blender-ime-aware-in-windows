@@ -1668,10 +1668,10 @@ LRESULT WINAPI GHOST_SystemWin32::s_wndProc(HWND hwnd, uint msg, WPARAM wParam, 
 #  endif
 
               /**
-               * - If IME off, process the key.
+               * - If IME off, process the key by processKeyEvent_raw() in WM_INPUT.
                * - If IME on, ingnore the key (except Win(OS) and modifier keys).
                *   - If the key is not processed by IME (checked in WM_KEYDOWN message),
-               *     finaly it will be processed by processKeyEvent() in WM_KEYDOWN.
+               *     finaly it will be processed by processKeyEvent_key() in WM_KEYDOWN.
                *   - If the key is processed by IME,
                *     finaly it will be processed by processImeEvent() in WM_IME_STARTCOMPOSITION.
                *
