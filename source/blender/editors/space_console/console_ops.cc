@@ -38,6 +38,16 @@
 
 #include "console_intern.hh"
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+#  include "ED_space_api.hh"
+#  include "GPU_immediate.hh"
+#  include "GPU_state.hh"
+#  include "UI_resources.hh"
+#  include "wm_window.hh"
+#endif
+
+#include "printx.h"
+
 #define TAB_LENGTH 4
 
 /* -------------------------------------------------------------------- */
@@ -1500,3 +1510,468 @@ void CONSOLE_OT_select_word(wmOperatorType *ot)
   ot->invoke = console_selectword_invoke;
   ot->poll = ED_operator_console_active;
 }
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+
+/* Note: Please check `TEXT_OT_ime_input` and `TEXT_OT_ime_insert` for more information. */
+
+struct ImeInputData {
+  int start_ofs;
+  int end_ofs;
+  int target_start_ofs;
+  int target_end_ofs;
+  ARegion *region;
+  void *draw_handle;
+};
+
+void console_reposition_ime_window(wmWindow *win,
+                                   ScrArea *area,
+                                   ARegion *region,
+                                   void *ime_input_data)
+{
+  SpaceConsole *sc = static_cast<SpaceConsole *>(area->spacedata.first);
+  ConsoleLine *line = (ConsoleLine *)sc->history.last;
+  if (!line)
+    return;
+
+  int line_height = sc->lheight * UI_SCALE_FAC;
+  int margin = 2 * UI_SCALE_FAC;
+
+  int creat_l;
+  int creat_b;
+  int creat_h = line_height;
+  int exclude_t;
+  int exclude_b;
+
+  if (ime_input_data == nullptr) {
+    int curc = 0;
+    if (sc->sel_start != sc->sel_end) {
+      curc = sc->sel_end > line->len ? 0 : line->len - sc->sel_end;
+    }
+    else {
+      curc = line->cursor;
+    }
+
+    int creat_pos[2] = {0};
+    ED_console_region_location_from_cursor(sc, region, curc, creat_pos, true);
+    creat_pos[0] += region->winrct.xmin;
+    creat_pos[1] += region->winrct.ymin;
+
+    creat_l = creat_pos[0];
+    creat_b = creat_pos[1];
+
+    creat_b -= margin;
+    creat_h += 2 * margin;
+
+    exclude_t = creat_pos[1] + line_height;
+    exclude_b = creat_pos[1];
+    exclude_t += margin;
+    exclude_b -= margin;
+
+    wm_window_IME_move_with_exclude(win,
+                                    creat_l,
+                                    creat_b,
+                                    0,
+                                    creat_h,
+                                    region->winrct.xmin,
+                                    exclude_b,
+                                    region->winrct.xmax - region->winrct.xmin,
+                                    exclude_t - exclude_b);
+  }
+  else {
+    ImeInputData *data = static_cast<ImeInputData *>(ime_input_data);
+
+    int start_pixel_pos[2] = {0};
+    int end_pixel_pos[2] = {0};
+    ED_console_region_location_from_cursor(sc, region, data->start_ofs, start_pixel_pos, true);
+    ED_console_region_location_from_cursor(sc, region, data->end_ofs, end_pixel_pos, true);
+    start_pixel_pos[0] += region->winrct.xmin;
+    start_pixel_pos[1] += region->winrct.ymin;
+    end_pixel_pos[0] += region->winrct.xmin;
+    end_pixel_pos[1] += region->winrct.ymin;
+
+    if (data->target_start_ofs != -1) {
+      int clause_pixel_pos[2] = {0};
+      ED_console_region_location_from_cursor(
+          sc, region, data->target_start_ofs, clause_pixel_pos, true);
+      clause_pixel_pos[0] += region->winrct.xmin;
+      clause_pixel_pos[1] += region->winrct.ymin;
+      creat_l = clause_pixel_pos[0];
+      creat_b = clause_pixel_pos[1];
+    }
+    else {
+      if (end_pixel_pos[1] == start_pixel_pos[1]) {
+        creat_l = start_pixel_pos[0];
+        creat_b = start_pixel_pos[1];
+      }
+      else {
+        creat_l = end_pixel_pos[0];
+        creat_b = end_pixel_pos[1];
+      }
+    }
+
+    creat_b -= margin;
+    creat_h += 2 * margin;
+
+    exclude_t = start_pixel_pos[1] + line_height;
+    exclude_b = end_pixel_pos[1];
+    exclude_t += margin;
+    exclude_b -= margin;
+
+    wm_window_IME_move_with_exclude(win,
+                                    creat_l,
+                                    creat_b,
+                                    0,
+                                    creat_h,
+                                    region->winrct.xmin,
+                                    exclude_b,
+                                    region->winrct.xmax - region->winrct.xmin,
+                                    exclude_t - exclude_b);
+  }
+}
+
+/* -------------------------------------------------------------------- */
+/** \name Handle IME Composition Events Operator
+ * \{ */
+
+/* Note: Please check `TEXT_OT_ime_input` for more information. */
+
+static void ime_input_draw_underline(SpaceConsole *sc,
+                                     ARegion *region,
+                                     int start_ofs,
+                                     int end_ofs,
+                                     int draw_rect_xmin,
+                                     int draw_rect_xmax,
+                                     int lheight,
+                                     float uheight,
+                                     uint pos)
+{
+  if (start_ofs != -1 && start_ofs != end_ofs) {
+    int start_pos[2] = {0};
+    int end_pos[2] = {0};
+    ED_console_region_location_from_cursor(sc, region, start_ofs, start_pos, true);
+    ED_console_region_location_from_cursor(sc, region, end_ofs, end_pos, true);
+
+    if (end_pos[1] == start_pos[1]) {
+      immRectf(pos, start_pos[0], start_pos[1], end_pos[0], end_pos[1] + uheight);
+    }
+    else {
+      immRectf(pos, start_pos[0], start_pos[1], draw_rect_xmax, start_pos[1] + uheight);
+      immRectf(pos, draw_rect_xmin, end_pos[1], end_pos[0], end_pos[1] + uheight);
+      int y = end_pos[1] + lheight;
+      while (y < start_pos[1]) {
+        immRectf(pos, draw_rect_xmin, y, draw_rect_xmax, y + uheight);
+        y += lheight;
+      }
+    }
+  }
+}
+
+static void ime_input_draw(const bContext *C, ARegion *region, void *customdata)
+{
+  SpaceConsole *sc = CTX_wm_space_console(C);
+  ImeInputData *data = static_cast<ImeInputData *>(customdata);
+
+  if (region != data->region) {
+    return;
+  }
+
+  debug_ime(CCBP "SpaceConsole Redraw [comp]: Repositon IME");
+  console_reposition_ime_window(CTX_wm_window(C), CTX_wm_area(C), region, data);
+
+  const int margin = 4 * UI_SCALE_FAC;
+  int draw_rect_xmin = margin;
+  int draw_rect_xmax = region->winx - V2D_SCROLL_WIDTH;
+  int lheight = sc->lheight * UI_SCALE_FAC;
+
+  uchar color[4] = {255, 255, 255, 255};
+  UI_GetThemeColor4ubv(TH_TEXT, color);
+
+  GPU_blend(GPU_BLEND_ALPHA);
+
+  GPUVertFormat *format = immVertexFormat();
+  uint pos = GPU_vertformat_attr_add(format, "pos", GPU_COMP_F32, 2, GPU_FETCH_FLOAT);
+  immBindBuiltinProgram(GPU_SHADER_3D_UNIFORM_COLOR);
+
+  immUniformColor4ubv(color);
+
+  ime_input_draw_underline(sc,
+                           region,
+                           data->start_ofs,
+                           data->end_ofs,
+                           draw_rect_xmin,
+                           draw_rect_xmax,
+                           lheight,
+                           max_ff(1.0f, lheight * 0.04f),
+                           pos);
+
+  ime_input_draw_underline(sc,
+                           region,
+                           data->target_start_ofs,
+                           data->target_end_ofs,
+                           draw_rect_xmin,
+                           draw_rect_xmax,
+                           lheight,
+                           max_ff(2.0f, lheight * 0.08f),
+                           pos);
+
+  immUnbindProgram();
+
+  GPU_blend(GPU_BLEND_NONE);
+}
+
+static void ime_input_clean(bContext * /*C*/, wmOperator *op)
+{
+  ImeInputData *data = static_cast<ImeInputData *>(op->customdata);
+  if (data->draw_handle) {
+    ED_region_draw_cb_exit(data->region->runtime->type, data->draw_handle);
+  }
+
+  MEM_freeN(data);
+
+  op->customdata = data = nullptr;
+}
+
+static wmOperatorStatus ime_input_invoke(bContext *C, wmOperator *op, const wmEvent *event)
+{
+  if (event->type == WM_IME_COMPOSITE_START) {
+    debug_ime(CCFG "CONSOLE_OT_ime_input: start\n");
+
+    SpaceConsole *sc = CTX_wm_space_console(C);
+    ScrArea *area = CTX_wm_area(C);
+    ARegion *region = BKE_area_find_region_type(area, RGN_TYPE_WINDOW);
+    ConsoleLine *ci = console_history_verify(C);
+
+    /* Delete selection. */
+
+    console_delete_editable_selection(sc);
+
+    /* Initialize IME input data. */
+
+    ImeInputData *data = static_cast<ImeInputData *>(MEM_callocN(sizeof(ImeInputData), __func__));
+    op->customdata = data;
+
+    data->start_ofs = ci->cursor;
+    data->end_ofs = data->start_ofs;
+    data->target_start_ofs = -1;
+    data->target_end_ofs = -1;
+
+    data->region = region;
+    data->draw_handle = ED_region_draw_cb_activate(
+        data->region->runtime->type, ime_input_draw, data, REGION_DRAW_POST_PIXEL);
+
+    console_textview_update_rect(sc, region);
+    ED_area_tag_redraw(CTX_wm_area(C));
+    console_scroll_bottom(region);
+
+    WM_event_add_modal_handler(C, op);
+    return OPERATOR_RUNNING_MODAL;
+  }
+  else if (event->type == WM_IME_COMPOSITE_EVENT) {
+    /* Capture the WM_IME_COMPOSITE_EVENT event that not between START and END,
+     * and then insert the result string carried by the event.
+     * This isolated event can occur when using the old (i.e. compatibility mode)
+     * Microsoft Korean IME.
+     */
+    WM_operator_name_call(C, "CONSOLE_OT_ime_insert", WM_OP_INVOKE_REGION_WIN, nullptr, event);
+  }
+
+  return OPERATOR_CANCELLED;
+}
+
+static wmOperatorStatus ime_input_modal(bContext *C, wmOperator *op, const wmEvent *event)
+{
+  wmWindow *win;
+  const wmIMEData *ime_data;
+  ImeInputData *data;
+  ARegion *region;
+
+  SpaceConsole *sc;
+  ConsoleLine *ci;
+
+  bool changed = false;
+
+  if (ELEM(event->type, WM_IME_COMPOSITE_EVENT, WM_IME_COMPOSITE_END)) {
+
+    win = CTX_wm_window(C);
+    if (event->type == WM_IME_COMPOSITE_EVENT) {
+      ime_data = static_cast<const wmIMEData *>(event->customdata);
+    }
+    data = static_cast<ImeInputData *>(op->customdata);
+    region = data->region;
+
+    sc = CTX_wm_space_console(C);
+    ci = console_history_verify(C);
+
+    /* Delete previous composite string. */
+
+    if (data->end_ofs != data->start_ofs) {
+      debug_ime(CCFG "CONSOLE_OT_ime_input: delete previous composite string");
+      ci->cursor = data->end_ofs;
+      sc->sel_start = ci->len - data->end_ofs;
+      sc->sel_end = ci->len - data->start_ofs;
+      console_delete_editable_selection(sc);
+
+      data->end_ofs = data->start_ofs;
+      data->target_start_ofs = -1;
+      data->target_end_ofs = -1;
+
+      changed = true;
+    }
+  }
+
+  if (event->type == WM_IME_COMPOSITE_EVENT) {
+
+    /* Insert result string. */
+
+    if (ime_data->result.size() != 0) {
+      debug_ime(CCFG "CONSOLE_OT_ime_input: insert result string");
+      debug_ime(CCFG "  result_len: %zu", ime_data->result.size());
+
+      WM_operator_name_call(C, "CONSOLE_OT_ime_insert", WM_OP_INVOKE_REGION_WIN, nullptr, event);
+
+      /* Reinitialize IME input data. */
+
+      data->start_ofs = BLI_str_utf8_offset_to_index(ci->line, ci->len, ci->cursor);
+      data->end_ofs = data->start_ofs;
+      data->target_start_ofs = -1;
+      data->target_end_ofs = -1;
+    }
+
+    /* Insert composite string. */
+
+    if (ime_data->composite.size() != 0) {
+      debug_ime(CCFG "CONSOLE_OT_ime_input: insert composite string");
+      debug_ime(CCFG "  composite_len: %zu", ime_data->composite.size());
+
+      console_line_insert(ci, ime_data->composite.c_str(), ime_data->composite.size());
+
+      if (ci->cursor == data->start_ofs + ime_data->composite.size()) {
+        data->end_ofs = ci->cursor;
+        if (ime_data->sel_start != -1 && ime_data->sel_end != -1) {
+          data->target_start_ofs = data->start_ofs + ime_data->sel_start;
+          data->target_end_ofs = data->start_ofs + ime_data->sel_end;
+        }
+        else {
+          data->target_start_ofs = -1;
+          data->target_end_ofs = -1;
+        }
+
+        ci->cursor = data->start_ofs + ime_data->cursor_pos;
+      }
+      else {
+        /* Ignore target if not all characters can be inserted. */
+        data->end_ofs = ci->cursor;
+        data->target_start_ofs = -1;
+        data->target_end_ofs = -1;
+      }
+
+      changed = true;
+    }
+
+    if (changed) {
+      console_textview_update_rect(sc, region);
+      ED_area_tag_redraw(CTX_wm_area(C));
+      console_scroll_bottom(region);
+    }
+  }
+
+  else if (event->type == WM_IME_COMPOSITE_END) {
+    debug_ime(CCFG "CONSOLE_OT_ime_input: end");
+
+    ime_input_clean(C, op);
+
+    return OPERATOR_FINISHED;
+  }
+
+  else if (ISMOUSE_BUTTON(event->type)) {
+    debug_ime(CCFG "CONSOLE_OT_ime_input: MOUSE COMPLETE COMPOSITE");
+
+    wm_window_IME_complete(CTX_wm_window(C));
+  }
+
+  return OPERATOR_RUNNING_MODAL;
+}
+
+void CONSOLE_OT_ime_input(wmOperatorType *ot)
+{
+  /* identifiers */
+  ot->name = "Input (IME)";
+  ot->idname = "CONSOLE_OT_ime_input";
+  ot->description = "Handle IME composition events (Windows only)";
+
+  /* api callbacks */
+  ot->invoke = ime_input_invoke;
+  ot->modal = ime_input_modal;
+  ot->poll = ED_operator_console_active;
+
+  /* flags */
+  ot->flag = OPTYPE_INTERNAL;
+}
+
+/* -------------------------------------------------------------------- */
+/** \name Insert IME Result String Operator
+ * \{ */
+
+/* Note: Please check `TEXT_OT_ime_insert` for more information. */
+
+static wmOperatorStatus ime_insert_invoke(bContext *C, wmOperator * /*op*/, const wmEvent *event)
+{
+  wmWindow *win;
+  const wmIMEData *ime_data;
+  ScrArea *area;
+  ARegion *region;
+
+  SpaceConsole *sc;
+  ConsoleLine *ci;
+
+  if (event->type == WM_IME_COMPOSITE_EVENT) {
+    debug_ime(CCFG "ime_insert_invoke");
+
+    win = CTX_wm_window(C);
+    region = CTX_wm_region(C);
+    area = CTX_wm_area(C);
+    if (region->regiontype != RGN_TYPE_WINDOW) {
+      region = BKE_area_find_region_type(area, RGN_TYPE_WINDOW);
+    }
+
+    ime_data = static_cast<const wmIMEData *>(event->customdata);
+
+    if (ime_data->result.size() != 0) {
+
+      sc = CTX_wm_space_console(C);
+      ci = console_history_verify(C);
+
+      console_delete_editable_selection(sc);
+
+      console_line_insert(ci, ime_data->result.c_str(), ime_data->result.size());
+
+      console_textview_update_rect(sc, region);
+      ED_area_tag_redraw(area);
+      console_scroll_bottom(region);
+
+      return OPERATOR_FINISHED;
+    }
+  }
+
+  return OPERATOR_CANCELLED;
+}
+
+void CONSOLE_OT_ime_insert(wmOperatorType *ot)
+{
+  /* identifiers */
+  ot->name = "Insert (IME)";
+  ot->idname = "CONSOLE_OT_ime_insert";
+  ot->description = "Insert IME result string. (Windows only)";
+
+  /* api callbacks */
+  ot->invoke = ime_insert_invoke;
+  ot->poll = ED_operator_console_active;
+
+  /* flags */
+  ot->flag = OPTYPE_INTERNAL | OPTYPE_UNDO;
+}
+
+/** \} */
+
+#endif

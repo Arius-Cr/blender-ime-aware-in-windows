@@ -362,7 +362,7 @@ class GHOST_IWindow {
    */
   virtual uint16_t getDPIHint() = 0;
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
   /**
    * Enable IME attached to the given window, i.e. allows user-input
    * events to be dispatched to the IME.
@@ -381,7 +381,76 @@ class GHOST_IWindow {
    * events from being dispatched to the IME.
    */
   virtual void endIME() = 0;
-#endif /* WITH_INPUT_IME */
+#endif /* WITH_INPUT_IME && !WIN32 */
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  /**
+   * Enable IME attached to the given window, i.e. allows user-input
+   * events to be dispatched to the IME.
+   */
+  virtual void beginIME() = 0;
+
+  /**
+   * Disable the IME attached to the given window, i.e. prohibits any user-input
+   * events from being dispatched to the IME.
+   */
+  virtual void endIME() = 0;
+
+  /**
+   * Check if IME is enabled.
+   */
+  virtual bool isIMEEnabled() = 0;
+
+  /**
+   * Is there an ongoing composition.
+   */
+  virtual bool isIMEComposing() = 0;
+
+  /**
+   * Force complete the ongoing composition.
+   */
+  virtual void completeIME() = 0;
+
+  /**
+   * Force cancel the ongoing composition.
+   */
+  virtual void cancelIME() = 0;
+
+  /**
+   * Move the IME conversion candidate window.
+   * \param c_l: The left of the caret in native OS window coordinates.
+   * \param c_t: The top of the caret in native OS window coordinates.
+   * \param c_w: The width of the caret.
+   * \param c_h: The height of the caret.
+   */
+  virtual void moveIME(int32_t c_l, int32_t c_t, int32_t c_w, int32_t c_h) = 0;
+
+  /**
+   * Move the IME conversion candidate window.
+   * \param c_l: The left of the caret in native OS window coordinates.
+   * \param c_t: The top of the caret in native OS window coordinates.
+   * \param c_w: The width of the caret.
+   * \param c_h: The height of the caret.
+   * \param e_l: The left of the exclude rectangle in native OS window coordinates.
+   * \param e_t: The top of the exclude rectangle in native OS window coordinates.
+   * \param e_w: The width of the exclude rectangle.
+   * \param e_h: The height of the exclude rectangle.
+   */
+  virtual void moveIMEWithExclude(int32_t c_l,
+                                  int32_t c_t,
+                                  int32_t c_w,
+                                  int32_t c_h,
+                                  int32_t e_l,
+                                  int32_t e_t,
+                                  int32_t e_w,
+                                  int32_t e_h) = 0;
+
+  /**
+   * Send an alphabetic key to start the IME composition.
+   * \param c: The alphabetic character (a-Z).
+   */
+  virtual void startIMEComplsitionByChar(char c) = 0;
+#endif /* WITH_INPUT_IME && WIN32 */
 
   MEM_CXX_CLASS_ALLOC_FUNCS("GHOST:GHOST_IWindow")
 };

@@ -430,6 +430,36 @@ int main(int argc,
 
   BKE_callback_global_init();
 
+#if defined(_DEBUG) && !defined(_NDEBUG_IME)
+  /**
+   * 本分支包含用于调试的源码和第三方修改版标记，请在合并分支前或后删除这些内容：
+   * 1. 删除任何 `debug_ime(...)` 语句。
+   * 2. 删除任何 `#if defined(_DEBUG) && !defined(_NDEBUG_IME) ... #endif` 包括的内容。
+   * 3. 删除任何 `BEGIN [Only for debugging] ... END` 包括的内容。
+   * 4. 删除 printx.h 文件和任何 `#include "printx.h"` 语句。
+   * 5. 删除 wm_splash_screen.cc 中 `#if defined(_MOD_MARK_) ... #else` 包括的内容。
+   * This branch contains source code for debugging and a third-party modified version tags. Please
+   * delete these contents before or after merging the branch:
+   * 1. Delete any `debug_ime(...)` sentences.
+   * 2. Delete any content within `#if defined(_DEBUG) && !defined(_NDEBUG_IME) ... #endif`.
+   * 3. Delete any content within `BEGIN [Only for debugging] ... END`。
+   * 4. Delete the printx.h file and any `#include "printx.h"` sentences.
+   * 5. Delete the content included in the `#if defined(_MOD_MARK_) ... #else` block in
+   *    `wm_splash_screen.cc`.
+   *
+   * 通过 DEBUG_IME 环境变量可以开关 IME 相关的调试信息的输出。
+   * You can turn on/off the output of IME-related debugging information through the DEBUG_IME
+   * environment variable.
+   */
+  {
+    size_t requiredSize = 0;
+    getenv_s(&requiredSize, NULL, 0, "DEBUG_IME");
+    if (requiredSize != 0) {
+      G.debug |= G_DEBUG_IME;
+    }
+  }
+#endif
+
 /* First test for background-mode (#Global.background). */
 #ifndef WITH_PYTHON_MODULE
   ba = BLI_args_create(argc, argv); /* Skip binary path. */

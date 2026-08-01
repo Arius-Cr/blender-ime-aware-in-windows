@@ -63,6 +63,7 @@ static PyStructSequence_Field app_builtopts_info_fields[] = {
     {"pugixml", nullptr},
     {"haru", nullptr},
     {"experimental_features", nullptr},
+    {"input_ime", nullptr},
     /* Sentinel (this line prevents `clang-format` wrapping into columns). */
     {nullptr},
 };
@@ -337,6 +338,12 @@ static PyObject *make_builtopts_info()
 #endif
 
 #ifdef WITH_EXPERIMENTAL_FEATURES
+  SetObjIncref(Py_True);
+#else
+  SetObjIncref(Py_False);
+#endif
+
+#ifdef WITH_INPUT_IME
   SetObjIncref(Py_True);
 #else
   SetObjIncref(Py_False);
