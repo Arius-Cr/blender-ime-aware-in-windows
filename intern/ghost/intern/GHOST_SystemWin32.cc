@@ -1669,7 +1669,7 @@ LRESULT WINAPI GHOST_SystemWin32::s_wndProc(HWND hwnd, uint msg, WPARAM wParam, 
 
               /**
                * - If IME off, process the key.
-               * - If IME on, ingnore the key (except Win(OS) key).
+               * - If IME on, ingnore the key (except Win(OS) and modifier keys).
                *   - If the key is not processed by IME (checked in WM_KEYDOWN message),
                *     finaly it will be processed by processKeyEvent() in WM_KEYDOWN.
                *   - If the key is processed by IME,
@@ -1688,11 +1688,11 @@ LRESULT WINAPI GHOST_SystemWin32::s_wndProc(HWND hwnd, uint msg, WPARAM wParam, 
                *
                * The events of Win+Space was:
                * WM_INPUT   [Win  , press]
-               * WM_KEYDOWN [Win  , press, not ime key]
+               * WM_KEYDOWN [Win  , press, not IME key]
                * WM_INPUT   [Space, press] <- can not received
                * WM_KEYDOWN [Space, press] <- can not received
                * WM_INPUT   [Space, release]
-               * WM_KEYUP   [Space, release, not ime key]
+               * WM_KEYUP   [Space, release, not IME key]
                * WM_INPUT   [Win  , release]
                * WM_KEYUP   [Win  , release] <- can not received
                *
@@ -1700,6 +1700,24 @@ LRESULT WINAPI GHOST_SystemWin32::s_wndProc(HWND hwnd, uint msg, WPARAM wParam, 
                * If we don't process the Win(OS) key on WM_INPUT,
                * we will lost the Win(OS) key release event,
                * and #event.modifier will out of sync.
+               *
+               * We process all modifier keys in WM_INPUT,
+               * because some IMEs just process the release of the modifier key,
+               * so the program cannot know that the modifier key has been released.
+               *
+               * The events of Shift+A was (e.g. Microsoft Pinyin IME compatibility mode):
+               * WM_INPUT   [Shift, press]
+               * WM_KEYDOWN [Shift, press, not IME key]
+               * WM_INPUT   [A    , press]
+               * WM_KEYDOWN [A    , press, IME key]
+               * WM_INPUT   [A    , release]
+               * WM_KEYUP   [A    , release, IME key]
+               * WM_INPUT   [Shift, release]
+               * WM_KEYUP   [Shift, release, IME key]
+               *
+               * If a key is a IME key, in principle, the program does not need to handle it.
+               * But we have already processed the Shift press event, and we must also handle
+               * the Shift release event, whether it is an IME key or not.
                */
               GHOST_ImeWin32 *ime = window->getImeInput();
               if (ime->IsEnabled() && !ime->IsIgnoreKey(raw.data.keyboard.VKey)) {
