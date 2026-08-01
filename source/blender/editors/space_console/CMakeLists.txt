@@ -35,5 +35,9 @@ if(WITH_PYTHON)
   add_definitions(-DWITH_PYTHON)
 endif()
 
+if(WITH_INPUT_IME)
+  add_definitions(-DWITH_INPUT_IME)
+endif()
+
 
 blender_add_lib(bf_editor_space_console "${SRC}" "${INC}" "${INC_SYS}" "${LIB}")

@@ -397,7 +397,15 @@ static uiBlock *wm_block_about_create(bContext *C, ARegion *region, void * /*arg
 
   uiLayout *col = uiLayoutColumn(layout, true);
 
+#if defined(_MOD_MARK_)
+  /**
+   * _MOD_MARK_ 是生成时通过 `CL` 环境变量传入的宏。
+   * _MOD_MARK_ is a macro passed in through the `CL` environment variable during generation.
+   */
+  uiItemL_ex(col, IFACE_("Blender IME-Aware in Windows (Blender 输入法增强版)"), ICON_NONE, true, false);
+#else
   uiItemL_ex(col, IFACE_("Blender"), ICON_NONE, true, false);
+#endif
 
   MenuType *mt = WM_menutype_find("WM_MT_splash_about", true);
   if (mt) {

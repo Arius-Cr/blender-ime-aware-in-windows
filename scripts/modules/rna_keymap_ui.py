@@ -142,6 +142,8 @@ def draw_kmi(display_keymaps, kc, km, kmi, layout, level):
         subrow = row.row()
         subrow.prop(kmi, "type", text="")
         subrow.prop(kmi, "value", text="")
+    elif map_type == 'TEXTINPUT':
+        row.prop(kmi, "type", text="")
     elif map_type == 'TIMER':
         row.prop(kmi, "type", text="")
     else:

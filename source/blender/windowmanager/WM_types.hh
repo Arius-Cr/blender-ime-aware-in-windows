@@ -763,6 +763,8 @@ struct wmEvent {
    * - #EVT_XR_ACTION: uses #wmXrActionData (also #wmEvent::custom == #EVT_DATA_XR).
    * - #NDOF_MOTION: uses #wmNDOFMotionData (also #wmEvent::custom == #EVT_DATA_NDOF_MOTION).
    * - #TIMER: uses #wmTimer (also #wmEvent::custom == #EVT_DATA_TIMER).
+   * - #WM_IME_COMPOSITE_EVENT: uses #wmIMEData (also #wmEvent::custom == #EVT_DATA_IME).
+   *   Currently only used for WIN32.
    */
   void *customdata;
 

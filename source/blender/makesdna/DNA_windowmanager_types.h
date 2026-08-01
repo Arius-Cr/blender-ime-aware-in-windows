@@ -390,6 +390,7 @@ typedef struct wmWindow {
   /**
    * Input Method Editor data - complex character input (especially for Asian character input)
    * Only used when `WITH_INPUT_IME` is defined, runtime-only data.
+   * `ime_data` and `ime_data_is_composing` is not used for WIN32.
    */
   const struct wmIMEData *ime_data;
   char ime_data_is_composing;

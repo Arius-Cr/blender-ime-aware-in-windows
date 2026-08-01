@@ -26,11 +26,14 @@ int ED_space_text_visible_lines_get(const SpaceText *st);
 void ED_space_text_scroll_to_cursor(SpaceText *st, ARegion *region, bool center);
 /**
  * Takes a cursor (row, character) and returns x,y pixel coords.
+ * \param is_offset - True indicates that cursor_co[1] is the character offset, otherwise it is
+ * the character index.
  */
 bool ED_space_text_region_location_from_cursor(const SpaceText *st,
                                                const ARegion *region,
                                                const int cursor_co[2],
-                                               int r_pixel_co[2]);
+                                               int r_pixel_co[2],
+                                               bool is_offset = false);
 
 /* `text_undo.cc` */
 
