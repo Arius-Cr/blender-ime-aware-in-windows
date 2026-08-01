@@ -2719,14 +2719,14 @@ static int insert_text_into_textbuf(Object *obedit, char *inserted_utf8)
   len = BLI_strlen_utf8(inserted_utf8);
 
   inserted_text = static_cast<char32_t *>(
-      MEM_callocN(sizeof(char32_t) * (len + 1), "insert_text_into_textbuf"));
+      MEM_new_zeroed(sizeof(char32_t) * (len + 1), "insert_text_into_textbuf"));
   len = BLI_str_utf8_as_utf32(inserted_text, inserted_utf8, MAXTEXT);
 
   for (a = 0; a < len; a++) {
     insert_into_textbuf(obedit, inserted_text[a]);
   }
 
-  MEM_freeN(inserted_text);
+  MEM_delete(inserted_text);
 
   return len;
 }
@@ -2741,7 +2741,7 @@ static void ime_input_clean(bContext * /*C*/, wmOperator *op)
 {
   ImeInputData *data = static_cast<ImeInputData *>(op->customdata);
 
-  MEM_freeN(data);
+  MEM_delete(data);
 
   op->customdata = nullptr;
 }
@@ -2752,7 +2752,7 @@ static wmOperatorStatus ime_input_invoke(bContext *C, wmOperator *op, const wmEv
     debug_ime("FONT_OT_ime_input: start\n");
 
     Object *obedit = CTX_data_edit_object(C);
-    Curve *cu = static_cast<Curve *>(obedit->data);
+    Curve *cu = id_cast<Curve *>(obedit->data);
     EditFont *ef = cu->editfont;
 
     /* Delete selection. */
@@ -2761,7 +2761,7 @@ static wmOperatorStatus ime_input_invoke(bContext *C, wmOperator *op, const wmEv
 
     /* Initialize IME input data. */
 
-    ImeInputData *data = static_cast<ImeInputData *>(MEM_callocN(sizeof(ImeInputData), __func__));
+    ImeInputData *data = static_cast<ImeInputData *>(MEM_new_zeroed(sizeof(ImeInputData), __func__));
     op->customdata = data;
     data->start_idx = ef->pos;
     data->end_idx = data->start_idx;
@@ -2805,7 +2805,7 @@ static wmOperatorStatus ime_input_modal(bContext *C, wmOperator *op, const wmEve
     data = static_cast<ImeInputData *>(op->customdata);
 
     obedit = CTX_data_edit_object(C);
-    cu = static_cast<Curve *>(obedit->data);
+    cu = id_cast<Curve *>(obedit->data);
     ef = cu->editfont;
 
     /* Delete previous composite string. */
@@ -2861,7 +2861,7 @@ static wmOperatorStatus ime_input_modal(bContext *C, wmOperator *op, const wmEve
       int inserted_text_lenu;
 
       inserted_utf8_lenb = ime_data->composite.size() + 2 + 1;
-      inserted_utf8 = (char *)MEM_mallocN(inserted_utf8_lenb,
+      inserted_utf8 = (char *)MEM_new_zeroed(inserted_utf8_lenb,
                                           "FONT_OT_ime_input composite string");
       inserted_utf8[0] = '[';
       memcpy(&inserted_utf8[1], ime_data->composite.c_str(), ime_data->composite.size());
@@ -2872,7 +2872,7 @@ static wmOperatorStatus ime_input_modal(bContext *C, wmOperator *op, const wmEve
 
       inserted_text_lenu = insert_text_into_textbuf(obedit, inserted_utf8);
 
-      MEM_freeN(inserted_utf8);
+      MEM_delete(inserted_utf8);
 
       if (inserted_text_lenu == inserted_utf8_lenu) {
         data->end_idx = data->start_idx + inserted_text_lenu;

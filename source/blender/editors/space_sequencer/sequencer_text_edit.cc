@@ -1034,7 +1034,7 @@ void sequencer_text_edit_reposition_ime_window(
 {
   const Strip *strip = seq::select_active_get(CTX_data_sequencer_scene(C));
   const TextVars *strip_data = static_cast<TextVars *>(strip->effectdata);
-  const TextVarsRuntime *text = strip_data->runtime;
+  const seq::TextVarsRuntime *text = strip_data->runtime;
   const Scene *scene = CTX_data_scene(C);
   const View2D *v2d = &region->v2d;
 
@@ -1154,7 +1154,7 @@ static bool text_insert_utf8(TextVars *data, const char *buf, int buf_len)
    * Return `false` if not all characters can be inserted.
    */
 
-  const TextVarsRuntime *text = data->runtime;
+  const seq::TextVarsRuntime *text = data->runtime;
 
   if (buf_len == 0) {
     return true;
@@ -1162,7 +1162,7 @@ static bool text_insert_utf8(TextVars *data, const char *buf, int buf_len)
 
   delete_selected_text(data);
   size_t needed_size = data->text_len_bytes + buf_len + 1;
-  char *new_text = MEM_malloc_arrayN<char>(needed_size, "text");
+  char *new_text = MEM_new_array_uninitialized<char>(needed_size, "text");
 
   const seq::CharInfo cur_char = character_at_cursor_offset_get(text, data->cursor_offset);
   BLI_assert(cur_char.offset >= 0 && cur_char.offset <= data->text_len_bytes);
@@ -1172,7 +1172,7 @@ static bool text_insert_utf8(TextVars *data, const char *buf, int buf_len)
               data->text_ptr + cur_char.offset,
               data->text_len_bytes - cur_char.offset + 1);
   data->text_len_bytes += buf_len;
-  MEM_freeN(data->text_ptr);
+  MEM_delete(data->text_ptr);
   data->text_ptr = new_text;
 
   data->cursor_offset += BLI_strlen_utf8(buf);
@@ -1192,7 +1192,7 @@ static void ime_input_draw_underline(
   /* Copy from `text_selection_draw`. */
 
   const TextVars *data = static_cast<TextVars *>(strip->effectdata);
-  const TextVarsRuntime *text = data->runtime;
+  const seq::TextVarsRuntime *text = data->runtime;
   const Scene *scene = CTX_data_scene(C);
 
   if (start_idx != -1 && end_idx != start_idx) {
@@ -1213,9 +1213,9 @@ static void ime_input_draw_underline(
     debug_ime(CCFA "selection_end: %d, %d", selection_end.x, selection_end.y);
 
     for (int line_index = line_start; line_index <= line_end; line_index++) {
-      const blender::seq::LineInfo line = text->lines[line_index];
-      blender::seq::CharInfo character_start = line.characters.first();
-      blender::seq::CharInfo character_end = line.characters.last();
+      const seq::LineInfo line = text->lines[line_index];
+      seq::CharInfo character_start = line.characters.first();
+      seq::CharInfo character_end = line.characters.last();
 
       if (line_index == selection_start.y) {
         character_start = line.characters[selection_start.x];
@@ -1352,7 +1352,7 @@ static void ime_input_clean(bContext * /*C*/, wmOperator *op)
     ED_region_draw_cb_exit(data->region->runtime->type, data->draw_handle);
   }
 
-  MEM_freeN(data);
+  MEM_delete(data);
 
   op->customdata = nullptr;
 }
@@ -1375,7 +1375,7 @@ static wmOperatorStatus ime_input_invoke(bContext *C, wmOperator *op, const wmEv
 
     /* Initialize IME input data. */
 
-    ImeInputData *data = static_cast<ImeInputData *>(MEM_callocN(sizeof(ImeInputData), __func__));
+    ImeInputData *data = static_cast<ImeInputData *>(MEM_new_zeroed(sizeof(ImeInputData), __func__));
     op->customdata = data;
     data->start_idx = strip_data->cursor_offset;
     data->end_idx = data->start_idx;
@@ -1397,7 +1397,8 @@ static wmOperatorStatus ime_input_invoke(bContext *C, wmOperator *op, const wmEv
      * This isolated event can occur when using the old (i.e. compatibility mode)
      * Microsoft Korean IME.
      */
-    WM_operator_name_call(C, "SEQUENCER_OT_ime_insert", blender::wm::OpCallContext::InvokeRegionWin, nullptr, event);
+    WM_operator_name_call(
+        C, "SEQUENCER_OT_ime_insert", blender::wm::OpCallContext::InvokeRegionWin, nullptr, event);
   }
 
   return OPERATOR_CANCELLED;
@@ -1447,7 +1448,11 @@ static wmOperatorStatus ime_input_modal(bContext *C, wmOperator *op, const wmEve
       debug_ime(CCFG "SEQUENCER_OT_ime_input: insert result string");
       debug_ime(CCFG "  result_len: %zu", ime_data->result.size());
 
-      WM_operator_name_call(C, "SEQUENCER_OT_ime_insert", blender::wm::OpCallContext::InvokeRegionWin, nullptr, event);
+      WM_operator_name_call(C,
+                            "SEQUENCER_OT_ime_insert",
+                            blender::wm::OpCallContext::InvokeRegionWin,
+                            nullptr,
+                            event);
 
       /* Reinitialize IME input data. */
 

@@ -1076,9 +1076,11 @@ static void text_selection_draw(const bContext *C, const Strip *strip, uint pos)
     return;
   }
 
-  const IndexRange sel_range = strip_text_selection_range_get(data);
-  const int2 selection_start = strip_text_cursor_offset_to_position(runtime, sel_range.first());
-  const int2 selection_end = strip_text_cursor_offset_to_position(runtime, sel_range.last());
+  const blender::IndexRange sel_range = strip_text_selection_range_get(data);
+  const blender::int2 selection_start = strip_text_cursor_offset_to_position(runtime,
+                                                                             sel_range.first());
+  const blender::int2 selection_end = strip_text_cursor_offset_to_position(runtime,
+                                                                           sel_range.last());
   const int line_start = selection_start.y;
   const int line_end = selection_end.y;
 
@@ -1096,10 +1098,10 @@ static void text_selection_draw(const bContext *C, const Strip *strip, uint pos)
 
     const float line_y = character_start.position.y + runtime->font_descender;
 
-    const float2 view_offs{-scene->r.xsch / 2.0f, -scene->r.ysch / 2.0f};
+    const blender::float2 view_offs{-scene->r.xsch / 2.0f, -scene->r.ysch / 2.0f};
     const float view_aspect = scene->r.xasp / scene->r.yasp;
-    float3x3 transform_mat = seq::image_transform_matrix_get(scene, strip);
-    float2 selection_quad[4] = {
+    blender::float3x3 transform_mat = seq::image_transform_matrix_get(scene, strip);
+    blender::float2 selection_quad[4] = {
         {character_start.position.x, line_y},
         {character_start.position.x, line_y + runtime->line_height},
         {character_end.position.x + character_end.advance_x, line_y + runtime->line_height},
@@ -1109,7 +1111,7 @@ static void text_selection_draw(const bContext *C, const Strip *strip, uint pos)
     immBegin(GPU_PRIM_TRIS, 6);
     immUniformThemeColor(TH_SEQ_SELECTED_TEXT);
 
-    for (int i : IndexRange(0, 4)) {
+    for (int i : blender::IndexRange(0, 4)) {
       selection_quad[i] += view_offs;
       selection_quad[i] = math::transform_point(transform_mat, selection_quad[i]);
       selection_quad[i].x *= view_aspect;

@@ -1734,7 +1734,7 @@ static void ime_input_clean(bContext * /*C*/, wmOperator *op)
     ED_region_draw_cb_exit(data->region->runtime->type, data->draw_handle);
   }
 
-  MEM_freeN(data);
+  MEM_delete(data);
 
   op->customdata = data = nullptr;
 }
@@ -1755,7 +1755,7 @@ static wmOperatorStatus ime_input_invoke(bContext *C, wmOperator *op, const wmEv
 
     /* Initialize IME input data. */
 
-    ImeInputData *data = static_cast<ImeInputData *>(MEM_callocN(sizeof(ImeInputData), __func__));
+    ImeInputData *data = static_cast<ImeInputData *>(MEM_new_zeroed(sizeof(ImeInputData), __func__));
     op->customdata = data;
 
     data->start_ofs = ci->cursor;

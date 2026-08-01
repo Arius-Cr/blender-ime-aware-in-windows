@@ -3445,50 +3445,64 @@ void wm_window_IME_begin(wmWindow *win)
 {
   BLI_assert(win);
 
-  GHOST_BeginIME(static_cast<GHOST_WindowHandle>(win->runtime->ghostwin));
+  GHOST_IWindow *ghost_window = static_cast<GHOST_IWindow *>(win->runtime->ghostwin);
+
+  ghost_window->beginIME();
 }
 
 void wm_window_IME_end(wmWindow *win)
 {
   BLI_assert(win);
 
-  GHOST_EndIME(static_cast<GHOST_WindowHandle>(win->runtime->ghostwin));
+  GHOST_IWindow *ghost_window = static_cast<GHOST_IWindow *>(win->runtime->ghostwin);
+
+  ghost_window->endIME();
 }
 
 bool wm_window_IME_is_enabled(wmWindow *win)
 {
   BLI_assert(win);
 
-  return GHOST_IsIMEEnabled(static_cast<GHOST_WindowHandle>(win->runtime->ghostwin));
+  GHOST_IWindow *ghost_window = static_cast<GHOST_IWindow *>(win->runtime->ghostwin);
+
+  return ghost_window->isIMEEnabled();
 }
 
 bool wm_window_IME_is_composing(wmWindow *win)
 {
   BLI_assert(win);
 
-  return GHOST_IsIMEComposing(static_cast<GHOST_WindowHandle>(win->runtime->ghostwin));
+  GHOST_IWindow *ghost_window = static_cast<GHOST_IWindow *>(win->runtime->ghostwin);
+
+  return ghost_window->isIMEComposing();
 }
 
 void wm_window_IME_complete(wmWindow *win)
 {
   BLI_assert(win);
 
-  GHOST_CompleteIME(static_cast<GHOST_WindowHandle>(win->runtime->ghostwin));
+  GHOST_IWindow *ghost_window = static_cast<GHOST_IWindow *>(win->runtime->ghostwin);
+
+  ghost_window->completeIME();
 }
 
 void wm_window_IME_cancel(wmWindow *win)
 {
   BLI_assert(win);
 
-  GHOST_CancelIME(static_cast<GHOST_WindowHandle>(win->runtime->ghostwin));
+  GHOST_IWindow *ghost_window = static_cast<GHOST_IWindow *>(win->runtime->ghostwin);
+
+  ghost_window->cancelIME();
 }
 
 void wm_window_IME_move(wmWindow *win, int c_l, int c_b, int c_w, int c_h)
 {
   BLI_assert(win);
 
+  GHOST_IWindow *ghost_window = static_cast<GHOST_IWindow *>(win->runtime->ghostwin);
+
   /* Convert to native OS window coordinates. */
-  float fac = GHOST_GetNativePixelSize(static_cast<GHOST_WindowHandle>(win->runtime->ghostwin));
+  float fac = ghost_window->getNativePixelSize();
 
   c_l /= fac;
   c_b /= fac;
@@ -3497,7 +3511,7 @@ void wm_window_IME_move(wmWindow *win, int c_l, int c_b, int c_w, int c_h)
   /* convert to top */
   c_b = win->sizey - (c_b + c_h);
 
-  GHOST_MoveIME(static_cast<GHOST_WindowHandle>(win->runtime->ghostwin), c_l, c_b, c_w, c_h);
+  ghost_window->moveIME(c_l, c_b, c_w, c_h);
 }
 
 void wm_window_IME_move_with_exclude(
@@ -3505,8 +3519,10 @@ void wm_window_IME_move_with_exclude(
 {
   BLI_assert(win);
 
+  GHOST_IWindow *ghost_window = static_cast<GHOST_IWindow *>(win->runtime->ghostwin);
+
   /* Convert to native OS window coordinates. */
-  float fac = GHOST_GetNativePixelSize(static_cast<GHOST_WindowHandle>(win->runtime->ghostwin));
+  float fac = ghost_window->getNativePixelSize();
 
   c_l /= fac;
   c_b /= fac;
@@ -3522,13 +3538,16 @@ void wm_window_IME_move_with_exclude(
   /* convert to top */
   e_b = win->sizey - (e_b + e_h);
 
-  GHOST_MoveIMEWithExclude(
-      static_cast<GHOST_WindowHandle>(win->runtime->ghostwin), c_l, c_b, c_w, c_h, e_l, e_b, e_w, e_h);
+  ghost_window->moveIMEWithExclude(c_l, c_b, c_w, c_h, e_l, e_b, e_w, e_h);
 }
 
 void wm_window_IME_start_composition_by_char(wmWindow *win, char c)
 {
-  GHOST_StartIMECompositionByChar(static_cast<GHOST_WindowHandle>(win->runtime->ghostwin), c);
+  BLI_assert(win);
+
+  GHOST_IWindow *ghost_window = static_cast<GHOST_IWindow *>(win->runtime->ghostwin);
+
+  ghost_window->startIMEComplsitionByChar(c);
 }
 #endif /* WITH_INPUT_IME && WIN32 */
 
