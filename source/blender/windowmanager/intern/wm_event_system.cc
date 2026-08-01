@@ -237,7 +237,7 @@ static void wm_event_custom_free(wmEvent *event)
     WM_drag_free_list(lb);
   }
 #if defined(WITH_INPUT_IME) && defined(WIN32)
-  if (event->custom == EVT_DATA_IME) {
+  else if (event->custom == EVT_DATA_IME) {
     debug_ime(CCFR "wm_event_custom_free");
     wmIMEData *ime_data = static_cast<wmIMEData *>(event->customdata);
     if (ime_data->str_result != nullptr) {
