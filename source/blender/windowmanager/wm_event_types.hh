@@ -23,6 +23,7 @@ enum {
   EVT_DATA_DRAGDROP = 3,
   EVT_DATA_NDOF_MOTION = 4,
   EVT_DATA_XR = 5,
+  EVT_DATA_IME = 6, /* Currently only used for WIN32 */
 };
 
 /**
@@ -441,6 +442,11 @@ enum wmEventType : int16_t {
 #define ISNDOF(event_type) ((event_type) >= _NDOF_MIN && (event_type) <= _NDOF_MAX)
 #define ISNDOF_BUTTON(event_type) \
   ((event_type) >= _NDOF_BUTTON_MIN && (event_type) <= _NDOF_BUTTON_MAX)
+
+/** Test whether the event is a text input event. */
+#  define ISTEXTINPUT(event_type) \
+    (event_type) == KM_TEXTINPUT || \
+        ELEM(event_type, WM_IME_COMPOSITE_START, WM_IME_COMPOSITE_EVENT, WM_IME_COMPOSITE_END)
 
 #define IS_EVENT_ACTIONZONE(event_type) \
   ELEM(event_type, \

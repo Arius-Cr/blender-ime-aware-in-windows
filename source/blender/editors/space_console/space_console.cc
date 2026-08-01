@@ -36,6 +36,12 @@
 
 #include "console_intern.hh" /* own include */
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+#  include "wm_window.hh"
+#endif
+
+#include "printx.h"
+
 namespace blender {
 
 /* ******************** default callbacks for console space ***************** */
@@ -151,6 +157,71 @@ static void console_cursor(wmWindow *win, ScrArea * /*area*/, ARegion *region)
   WM_cursor_set(win, wmcursor);
 }
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+
+static void console_enable_ime(wmWindow *win, ScrArea *area, ARegion *region)
+{
+  bScreen *screen = WM_window_get_active_screen(win);
+  if (region != nullptr && screen->active_region == region) {
+    debug_ime(CCBP "SpaceConsole " CCBG "meeting the conditions" CCBP ": Enable & Repositon IME");
+    wm_window_IME_begin(win);
+    console_reposition_ime_window(win, area, region, nullptr);
+  }
+}
+
+static void console_disable_ime(wmWindow *win,
+                                ScrArea * /*area*/,
+                                ARegion *region,
+                                bool is_deactivated = false)
+{
+  if (is_deactivated) {
+    debug_ime(CCBP "SpaceConsole " CCBR "Deactivated" CCBP ": Disable IME");
+    wm_window_IME_end(win);
+  }
+  else {
+    bScreen *screen = WM_window_get_active_screen(win);
+    if (region != nullptr && screen->active_region == region) {
+      debug_ime(CCBP "SpaceConsole " CCBR "NOT meeting the conditions" CCBP ": Disable IME");
+      wm_window_IME_end(win);
+    }
+  }
+}
+
+static void console_main_region_on_activation_changed(
+    const bContext * /*C*/, wmWindow *win, ScrArea *area, ARegion *region, bool activated)
+{
+  if (activated) {
+    debug_ime(CCBP "SpaceConsole Region Active");
+    console_enable_ime(win, area, region);
+  }
+  else {
+    debug_ime(CCBP "SpaceConsole Region Deactive");
+    console_disable_ime(win, area, region, true);
+  }
+}
+
+static void console_main_region_on_popup_created_or_removed(const bContext * /*C*/,
+                                                            wmWindow *win,
+                                                            ScrArea *area,
+                                                            ARegion *region,
+                                                            bool created,
+                                                            bool from_but)
+{
+  if (!from_but) {
+    if (created) {
+      debug_ime(CCBP "SpaceConsole Region Popup Created");
+      console_disable_ime(win, area, region, true);
+    }
+    else {
+      debug_ime(CCBP "SpaceConsole Region Popup Removed");
+      /* scene maybe null on startup. */
+      console_enable_ime(win, area, region);
+    }
+  }
+}
+
+#endif /* WITH_INPUT_IME && WIN32 */
+
 /* ************* dropboxes ************* */
 
 static bool console_drop_id_poll(bContext * /*C*/, wmDrag *drag, const wmEvent * /*event*/)
@@ -237,6 +308,19 @@ static void console_main_region_draw(const bContext *C, ARegion *region)
   console_history_verify(C); /* make sure we have some command line */
   console_textview_main(sc, region);
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  /* see `text_main_region_draw()` */
+  bScreen *screen = CTX_wm_screen(C);
+  if (screen->active_region == region) {
+    wmWindow *win = CTX_wm_window(C);
+    if (!wm_window_IME_is_composing(win)) {
+      debug_ime(CCBP "SpaceConsole Redraw [no comp]: Repositon IME");
+      ScrArea *area = CTX_wm_area(C);
+      console_reposition_ime_window(win, area, region, nullptr);
+    }
+  }
+#endif
+
   /* reset view matrix */
   ui::view2d_view_restore(C);
 
@@ -267,6 +351,11 @@ static void console_operatortypes()
   WM_operatortype_append(CONSOLE_OT_select_set);
   WM_operatortype_append(CONSOLE_OT_select_all);
   WM_operatortype_append(CONSOLE_OT_select_word);
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  WM_operatortype_append(CONSOLE_OT_ime_input);
+  WM_operatortype_append(CONSOLE_OT_ime_insert);
+#endif
 }
 
 static void console_keymap(wmKeyConfig *keyconf)
@@ -377,6 +466,10 @@ void ED_spacetype_console()
   art->cursor = console_cursor;
   art->event_cursor = true;
   art->listener = console_main_region_listener;
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  art->on_activation_changed = console_main_region_on_activation_changed;
+  art->on_popup_created_or_removed = console_main_region_on_popup_created_or_removed;
+#endif
 
   BLI_addhead(&st->regiontypes, art);
 

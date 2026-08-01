@@ -31,6 +31,18 @@
 
 #include "ED_screen.hh"
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+#  include "BKE_screen.hh"
+#  include "ED_space_api.hh"
+#  include "GPU_immediate.hh"
+#  include "GPU_state.hh"
+#  include "UI_resources.hh"
+#  include "UI_view2d.hh"
+#  include "wm_window.hh"
+#endif
+
+#include "printx.h"
+
 #include "sequencer_intern.hh"
 
 namespace blender::ed::vse {
@@ -991,5 +1003,594 @@ void SEQUENCER_OT_text_edit_mode_toggle(wmOperatorType *ot)
 }
 
 /** \} */
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+
+/* Note: Please check `TEXT_OT_ime_input` and `TEXT_OT_ime_insert` for more information. */
+
+struct ImeInputData {
+  /**
+   * Example: aaaccttccbbb ('ccttcc' is the composite string, 'tt' is the composite target string)
+   *     start_idx: 3
+   *     end_idx: 9 (3 + 6)
+   *     target_start_idx: 5
+   *     target_end_idx: 7 (5 + 2)
+   */
+
+  /* The character index of the start of composite string in text */
+  int start_idx;
+  /* The character index of the end of composite string in text */
+  int end_idx;
+  /* The character index of the start of composite target string in text */
+  int target_start_idx;
+  /* The character index of the end of composite target string in text */
+  int target_end_idx;
+  ARegion *region;
+  void *draw_handle;
+};
+
+void sequencer_text_edit_reposition_ime_window(
+    const bContext *C, wmWindow *win, ScrArea * /*area*/, ARegion *region, void *ime_input_data)
+{
+  const Strip *strip = seq::select_active_get(CTX_data_sequencer_scene(C));
+  const TextVars *strip_data = static_cast<TextVars *>(strip->effectdata);
+  const TextVarsRuntime *text = strip_data->runtime;
+  const Scene *scene = CTX_data_scene(C);
+  const View2D *v2d = &region->v2d;
+
+  int line_height = text->line_height;
+  /* Add a little space to make the candidate window not too close to string. */
+  int margin = 10 * UI_SCALE_FAC;
+
+  int curl = 0;
+  int curc = 0;
+
+  int creat_l;
+  int creat_b;
+  int creat_h = line_height;
+  int exclude_t;
+  int exclude_b;
+
+  if (ime_input_data == nullptr) {
+    /**
+     * If not compositing:
+     * - If selection exists, locate the candidate window to the start of the selection,
+     *   which is closer to the beginning of the text.
+     * - Otherwise, locate to the cursor.
+     */
+
+    if (text_has_selection(strip_data)) {
+      blender::int2 selection_start = strip_text_cursor_offset_to_position(
+          text, strip_data->selection_start_offset);
+      curl = selection_start.y;
+      curc = selection_start.x;
+    }
+    else {
+      blender::int2 selection_start = strip_text_cursor_offset_to_position(
+          text, strip_data->cursor_offset);
+      curl = selection_start.y;
+      curc = selection_start.x;
+    }
+  }
+  else {
+    /**
+     * If compositing:
+     * - If target exists, locate the candidate window to the start of the target.
+     * - Otherwise, locate to the start of the composite string.
+     */
+
+    ImeInputData *data = static_cast<ImeInputData *>(ime_input_data);
+
+    if (data->target_start_idx != -1) {
+      blender::int2 selection_start = strip_text_cursor_offset_to_position(text,
+                                                                           data->target_start_idx);
+      curl = selection_start.y;
+      curc = selection_start.x;
+    }
+    else {
+      blender::int2 selection_start = strip_text_cursor_offset_to_position(text, data->start_idx);
+      curl = selection_start.y;
+      curc = selection_start.x;
+    }
+  }
+
+  blender::float3 creat_pos{text->lines[curl].characters[curc].position.x,
+                            text->lines[curl].characters[curc].position.y,
+                            0.0f};
+
+  const blender::float3 view_offs{-scene->r.xsch / 2.0f, -scene->r.ysch / 2.0f, 0.0f};
+  const float view_aspect = scene->r.xasp / scene->r.yasp;
+  blender::float3x3 transform_mat = seq::image_transform_matrix_get(scene, strip);
+
+  creat_pos += view_offs;
+  creat_pos = blender::math::transform_point(transform_mat, creat_pos);
+  creat_pos.x *= view_aspect;
+
+  creat_l = creat_pos.x - v2d->cur.xmin;
+  creat_b = creat_pos.y - v2d->cur.ymin;
+
+  creat_b -= margin;
+  creat_h += 2 * margin;
+
+  exclude_t = creat_pos.y - v2d->cur.ymin + line_height;
+  exclude_b = creat_pos.y - v2d->cur.ymin;
+  exclude_t += margin;
+  exclude_b -= margin;
+
+  float ratio = (region->winx) / (v2d->cur.xmax - v2d->cur.xmin);
+  creat_l *= ratio;
+  creat_b *= ratio;
+  creat_h *= ratio;
+  exclude_t *= ratio;
+  exclude_b *= ratio;
+
+  creat_l += region->winrct.xmin;
+  creat_b += region->winrct.ymin;
+  exclude_t += region->winrct.ymin;
+  exclude_b += region->winrct.ymin;
+
+  debug_ime(CCFA "creat: %d, %d, %d, %d", creat_l, creat_b, 0, creat_h);
+  debug_ime(CCFA "exclude: %d, %d, %d, %d",
+            region->winrct.xmin,
+            exclude_b,
+            region->winrct.xmax - region->winrct.xmin,
+            exclude_t - exclude_b);
+
+  wm_window_IME_move_with_exclude(win,
+                                  creat_l,
+                                  creat_b,
+                                  0,
+                                  creat_h,
+                                  region->winrct.xmin,
+                                  exclude_b,
+                                  region->winrct.xmax - region->winrct.xmin,
+                                  exclude_t - exclude_b);
+}
+
+static bool text_insert_utf8(TextVars *data, const char *buf, int buf_len)
+{
+  /**
+   * Copy from `sequencer_text_edit_paste_exec`.
+   * Return `false` if not all characters can be inserted.
+   */
+
+  const TextVarsRuntime *text = data->runtime;
+
+  if (buf_len == 0) {
+    return true;
+  }
+
+  delete_selected_text(data);
+  size_t needed_size = data->text_len_bytes + buf_len + 1;
+  char *new_text = MEM_malloc_arrayN<char>(needed_size, "text");
+
+  const seq::CharInfo cur_char = character_at_cursor_offset_get(text, data->cursor_offset);
+  BLI_assert(cur_char.offset >= 0 && cur_char.offset <= data->text_len_bytes);
+  std::memcpy(new_text, data->text_ptr, cur_char.offset);
+  std::memcpy(new_text + cur_char.offset, buf, buf_len);
+  std::memcpy(new_text + cur_char.offset + buf_len,
+              data->text_ptr + cur_char.offset,
+              data->text_len_bytes - cur_char.offset + 1);
+  data->text_len_bytes += buf_len;
+  MEM_freeN(data->text_ptr);
+  data->text_ptr = new_text;
+
+  data->cursor_offset += BLI_strlen_utf8(buf);
+
+  return true;
+}
+
+/* -------------------------------------------------------------------- */
+/** \name Handle IME Composition Events Operator
+ * \{ */
+
+/* Note: Please check `TEXT_OT_ime_input` for more information. */
+
+static void ime_input_draw_underline(
+    const bContext *C, const Strip *strip, int start_idx, int end_idx, float uheight, uint pos)
+{
+  /* Copy from `text_selection_draw`. */
+
+  const TextVars *data = static_cast<TextVars *>(strip->effectdata);
+  const TextVarsRuntime *text = data->runtime;
+  const Scene *scene = CTX_data_scene(C);
+
+  if (start_idx != -1 && end_idx != start_idx) {
+    debug_ime(CCFA "start_idx, end_idx: %d, %d", start_idx, end_idx);
+
+    // Use (start_idx, end_idx - 1) as `sel_range`
+    const blender::IndexRange sel_range = blender::IndexRange(start_idx, end_idx - start_idx);
+    const blender::int2 selection_start = strip_text_cursor_offset_to_position(text,
+                                                                               sel_range.first());
+    const blender::int2 selection_end = strip_text_cursor_offset_to_position(text,
+                                                                             sel_range.last());
+    const int line_start = selection_start.y;
+    const int line_end = selection_end.y;
+
+    debug_ime(CCFA "first, last: %lld, %lld", sel_range.first(), sel_range.last());
+
+    debug_ime(CCFA "selection_start: %d, %d", selection_start.x, selection_start.y);
+    debug_ime(CCFA "selection_end: %d, %d", selection_end.x, selection_end.y);
+
+    for (int line_index = line_start; line_index <= line_end; line_index++) {
+      const blender::seq::LineInfo line = text->lines[line_index];
+      blender::seq::CharInfo character_start = line.characters.first();
+      blender::seq::CharInfo character_end = line.characters.last();
+
+      if (line_index == selection_start.y) {
+        character_start = line.characters[selection_start.x];
+      }
+      if (line_index == selection_end.y) {
+        character_end = line.characters[selection_end.x];
+      }
+
+      debug_ime(
+          CCFA "character_start: %f, %f", character_start.position.x, character_start.position.y);
+      debug_ime(CCFA "character_end: %f, %f", character_end.position.x, character_end.position.y);
+
+      const float line_y = character_start.position.y + text->font_descender;
+
+      const blender::float2 view_offs{-scene->r.xsch / 2.0f, -scene->r.ysch / 2.0f};
+      const float view_aspect = scene->r.xasp / scene->r.yasp;
+      blender::float3x3 transform_mat = seq::image_transform_matrix_get(scene, strip);
+      blender::float4x2 selection_quad{
+          {character_start.position.x, line_y},
+          {character_start.position.x, line_y + text->line_height},
+          {character_end.position.x + character_end.advance_x, line_y + text->line_height},
+          {character_end.position.x + character_end.advance_x, line_y},
+      };
+
+      debug_ime(CCFA "view_offs: %f, %f", view_offs[0], view_offs[1]);
+      debug_ime(CCFA "view_aspect: %f", view_aspect);
+
+      for (int i : blender::IndexRange(0, 4)) {
+        selection_quad[i] += view_offs;
+        selection_quad[i] = blender::math::transform_point(transform_mat, selection_quad[i]);
+        selection_quad[i].x *= view_aspect;
+      }
+
+      debug_ime(CCFA "selection_quad[0]: %f, %f", selection_quad[0][0], selection_quad[0][1]);
+      debug_ime(CCFA "selection_quad[1]: %f, %f", selection_quad[1][0], selection_quad[1][1]);
+      debug_ime(CCFA "selection_quad[2]: %f, %f", selection_quad[2][0], selection_quad[2][1]);
+      debug_ime(CCFA "selection_quad[3]: %f, %f", selection_quad[3][0], selection_quad[3][1]);
+
+      // Convert to region coordinates
+
+      const ARegion *region = CTX_wm_region(C);
+      const View2D *v2d = &region->v2d;
+
+      debug_ime(CCFA "v2d->tot: %f, %f, %f, %f",
+                v2d->tot.xmin,
+                v2d->tot.ymin,
+                v2d->tot.xmax,
+                v2d->tot.ymax);
+      debug_ime(CCFA "v2d->cur: %f, %f, %f, %f",
+                v2d->cur.xmin,
+                v2d->cur.ymin,
+                v2d->cur.xmax,
+                v2d->cur.ymax);
+      debug_ime(CCFA "v2d->mask: %d, %d, %d, %d",
+                v2d->mask.xmin,
+                v2d->mask.ymin,
+                v2d->mask.xmax,
+                v2d->mask.ymax);
+
+      float ratio = (region->winx) / (v2d->cur.xmax - v2d->cur.xmin);
+      float start_x = (selection_quad[0][0] - v2d->cur.xmin) * ratio;
+      float start_y = (selection_quad[0][1] - v2d->cur.ymin) * ratio;
+      float end_x = (selection_quad[3][0] - v2d->cur.xmin) * ratio;
+      float end_y = (selection_quad[3][1] - v2d->cur.ymin) * ratio;
+      float ascent = U.pixelsize * ratio;  // Border width of text box, see `text_edit_draw_box`.
+
+      debug_ime(CCFA "ratio: %f", ratio);
+      debug_ime(CCFA "start_x: %f -> %f", selection_quad[0][0] - v2d->cur.xmin, start_x);
+      debug_ime(CCFA "start_y: %f -> %f", selection_quad[0][1] - v2d->cur.ymin, start_y);
+      debug_ime(CCFA "end_x: %f -> %f", selection_quad[3][0] - v2d->cur.xmin, end_x);
+      debug_ime(CCFA "end_y: %f -> %f", selection_quad[3][1] - v2d->cur.ymin, end_y);
+      debug_ime(CCFA "text->line_height: %d -> %f", text->line_height, text->line_height * ratio);
+      debug_ime(CCFA "uheight: %f -> %f", uheight, uheight * ratio);
+
+      immRectf(pos, start_x, start_y + ascent, end_x, end_y + ascent + uheight * ratio);
+    }
+  }
+}
+
+static void ime_input_draw(const bContext *C, ARegion *region, void *customdata)
+{
+  /** Note: `ime_input_draw` will call for all SpaceSequencer, not only the one we focusing on. */
+
+  ImeInputData *data = static_cast<ImeInputData *>(customdata);
+
+  if (region != data->region) {
+    return;
+  }
+
+  const Strip *strip = seq::select_active_get(CTX_data_sequencer_scene(C));
+  TextVars *strip_data = static_cast<TextVars *>(strip->effectdata);
+
+  debug_ime(CCBP "SpaceText Redraw [comp]: Enable & Reposition IME");
+  sequencer_text_edit_reposition_ime_window(C, CTX_wm_window(C), CTX_wm_area(C), region, data);
+
+  uchar color[4] = {255, 255, 255, 255};
+  blender::ui::theme::get_color_4ubv(TH_TEXT, color);
+
+  GPU_blend(GPU_BLEND_ALPHA);
+
+  GPUVertFormat *format = immVertexFormat();
+  uint pos = GPU_vertformat_attr_add(format, "pos", blender::gpu::VertAttrType::SFLOAT_32_32);
+  immBindBuiltinProgram(GPU_SHADER_3D_UNIFORM_COLOR);
+
+  immUniformColor4ubv(color);
+
+  debug_ime(CCFR "start_idx: %d, %d", data->start_idx, data->end_idx);
+  debug_ime(CCFR "target_start_idx: %d, %d", data->target_start_idx, data->target_end_idx);
+  debug_ime(CCFR "line_height: %d", strip_data->runtime->line_height);
+
+  ime_input_draw_underline(C,
+                           strip,
+                           data->start_idx,
+                           data->end_idx,
+                           max_ff(1, strip_data->runtime->line_height * 0.04),
+                           pos);
+
+  ime_input_draw_underline(C,
+                           strip,
+                           data->target_start_idx,
+                           data->target_end_idx,
+                           max_ff(2, strip_data->runtime->line_height * 0.08),
+                           pos);
+
+  immUnbindProgram();
+
+  GPU_blend(GPU_BLEND_NONE);
+}
+
+static void ime_input_clean(bContext * /*C*/, wmOperator *op)
+{
+  ImeInputData *data = static_cast<ImeInputData *>(op->customdata);
+  if (data->draw_handle) {
+    ED_region_draw_cb_exit(data->region->runtime->type, data->draw_handle);
+  }
+
+  MEM_freeN(data);
+
+  op->customdata = nullptr;
+}
+
+static wmOperatorStatus ime_input_invoke(bContext *C, wmOperator *op, const wmEvent *event)
+{
+  ARegion *region;
+
+  if (event->type == WM_IME_COMPOSITE_START) {
+    debug_ime("SEQUENCER_OT_ime_input: start\n");
+
+    region = CTX_wm_region(C);
+
+    const Strip *strip = seq::select_active_get(CTX_data_sequencer_scene(C));
+    TextVars *strip_data = static_cast<TextVars *>(strip->effectdata);
+
+    /* Delete selection. */
+
+    delete_selected_text(strip_data);
+
+    /* Initialize IME input data. */
+
+    ImeInputData *data = static_cast<ImeInputData *>(MEM_callocN(sizeof(ImeInputData), __func__));
+    op->customdata = data;
+    data->start_idx = strip_data->cursor_offset;
+    data->end_idx = data->start_idx;
+    data->target_start_idx = -1;
+    data->target_end_idx = -1;
+
+    data->region = region;
+    data->draw_handle = ED_region_draw_cb_activate(
+        region->runtime->type, ime_input_draw, data, REGION_DRAW_POST_PIXEL);
+
+    text_editing_update(C);
+
+    WM_event_add_modal_handler(C, op);
+    return OPERATOR_RUNNING_MODAL;
+  }
+  else if (event->type == WM_IME_COMPOSITE_EVENT) {
+    /* Capture the WM_IME_COMPOSITE_EVENT event that not between START and END,
+     * and then insert the result string carried by the event.
+     * This isolated event can occur when using the old (i.e. compatibility mode)
+     * Microsoft Korean IME.
+     */
+    WM_operator_name_call(C, "SEQUENCER_OT_ime_insert", blender::wm::OpCallContext::InvokeRegionWin, nullptr, event);
+  }
+
+  return OPERATOR_CANCELLED;
+}
+
+static wmOperatorStatus ime_input_modal(bContext *C, wmOperator *op, const wmEvent *event)
+{
+  wmWindow *win;
+  const wmIMEData *ime_data;
+  ImeInputData *data;
+
+  const Strip *strip = seq::select_active_get(CTX_data_sequencer_scene(C));
+  TextVars *strip_data = static_cast<TextVars *>(strip->effectdata);
+
+  bool changed = false;
+
+  if (ELEM(event->type, WM_IME_COMPOSITE_EVENT, WM_IME_COMPOSITE_END)) {
+    win = CTX_wm_window(C);
+    if (event->type == WM_IME_COMPOSITE_EVENT) {
+      ime_data = static_cast<const wmIMEData *>(event->customdata);
+    }
+    data = static_cast<ImeInputData *>(op->customdata);
+
+    /* Delete previous composite string. */
+
+    if (data->end_idx != data->start_idx) {
+      debug_ime(CCFG "SEQUENCER_OT_ime_input: delete previous composite string");
+
+      strip_data->selection_start_offset = data->start_idx;
+      strip_data->selection_end_offset = data->end_idx;
+      strip_data->cursor_offset = data->end_idx;
+      delete_selected_text(strip_data);
+
+      data->end_idx = data->start_idx;
+      data->target_start_idx = -1;
+      data->target_end_idx = -1;
+
+      changed = true;
+    }
+  }
+
+  if (event->type == WM_IME_COMPOSITE_EVENT) {
+
+    /* Insert result string. */
+
+    if (ime_data->result.size() != 0) {
+      debug_ime(CCFG "SEQUENCER_OT_ime_input: insert result string");
+      debug_ime(CCFG "  result_len: %zu", ime_data->result.size());
+
+      WM_operator_name_call(C, "SEQUENCER_OT_ime_insert", blender::wm::OpCallContext::InvokeRegionWin, nullptr, event);
+
+      /* Reinitialize IME input data. */
+
+      data->start_idx = strip_data->cursor_offset;
+      data->end_idx = data->start_idx;
+      data->target_start_idx = -1;
+      data->target_end_idx = -1;
+    }
+
+    /* Insert composite string. */
+
+    if (ime_data->composite.size() != 0) {
+      debug_ime(CCFG "SEQUENCER_OT_ime_input: insert composite string");
+      debug_ime(CCFG "  composite_len: %zu", ime_data->composite.size());
+
+      bool all_insterd = text_insert_utf8(
+          strip_data, ime_data->composite.c_str(), ime_data->composite.size());
+
+      if (all_insterd) {
+        data->end_idx = strip_data->cursor_offset;
+        if (ime_data->sel_start != -1 && ime_data->sel_end != -1) {
+          data->target_start_idx = data->start_idx +
+                                   BLI_str_utf8_offset_to_index(ime_data->composite.c_str(),
+                                                                ime_data->composite.size(),
+                                                                ime_data->sel_start);
+          data->target_end_idx = data->start_idx +
+                                 BLI_str_utf8_offset_to_index(ime_data->composite.c_str(),
+                                                              ime_data->composite.size(),
+                                                              ime_data->sel_end);
+        }
+        else {
+          data->target_start_idx = -1;
+          data->target_end_idx = -1;
+        }
+
+        strip_data->cursor_offset = data->start_idx +
+                                    BLI_str_utf8_offset_to_index(ime_data->composite.c_str(),
+                                                                 ime_data->composite.size(),
+                                                                 ime_data->cursor_pos);
+      }
+      else {
+        /* Ignore target if not all characters can be inserted. */
+        data->end_idx = strip_data->cursor_offset;
+        data->target_start_idx = -1;
+        data->target_end_idx = -1;
+      }
+
+      changed = true;
+    }
+
+    if (changed) {
+      text_editing_update(C);
+    }
+  }
+
+  else if (event->type == WM_IME_COMPOSITE_END) {
+    debug_ime(CCFG "SEQUENCER_OT_ime_input: end");
+
+    ime_input_clean(C, op);
+
+    return OPERATOR_FINISHED;
+  }
+
+  else if (ISMOUSE_BUTTON(event->type)) {
+    debug_ime(CCFG "SEQUENCER_OT_ime_input: MOUSE COMPLETE COMPOSITE");
+
+    wm_window_IME_complete(CTX_wm_window(C));
+  }
+
+  return OPERATOR_RUNNING_MODAL;
+}
+
+void SEQUENCER_OT_ime_input(wmOperatorType *ot)
+{
+  /* identifiers */
+  ot->name = "IME Input";
+  ot->idname = "SEQUENCER_OT_ime_input";
+  ot->description = "Handle IME composition events (Windows only)";
+
+  /* api callbacks */
+  ot->invoke = ime_input_invoke;
+  ot->modal = ime_input_modal;
+  ot->cancel = ime_input_clean;
+  ot->poll = sequencer_text_editing_active_poll;
+
+  /* flags */
+  ot->flag = OPTYPE_INTERNAL;
+}
+
+/* -------------------------------------------------------------------- */
+/** \name Insert IME Result String Operator
+ * \{ */
+
+/* Note: Please check `TEXT_OT_ime_insert` for more information. */
+
+static wmOperatorStatus ime_insert_invoke(bContext *C, wmOperator * /*op*/, const wmEvent *event)
+{
+  wmWindow *win;
+  const wmIMEData *ime_data;
+
+  Object *obedit;
+
+  if (event->type == WM_IME_COMPOSITE_EVENT) {
+    debug_ime(CCFG "SEQUENCER_OT_ime_insert");
+
+    win = CTX_wm_window(C);
+    ime_data = static_cast<const wmIMEData *>(event->customdata);
+
+    obedit = CTX_data_edit_object(C);
+
+    if (ime_data->result.size() != 0) {
+
+      const Strip *strip = seq::select_active_get(CTX_data_sequencer_scene(C));
+      TextVars *data = static_cast<TextVars *>(strip->effectdata);
+
+      text_insert_utf8(data, ime_data->result.c_str(), ime_data->result.size());
+
+      text_editing_update(C);
+
+      return OPERATOR_FINISHED;
+    }
+  }
+
+  return OPERATOR_CANCELLED;
+}
+
+void SEQUENCER_OT_ime_insert(wmOperatorType *ot)
+{
+  /* identifiers */
+  ot->name = "Insert (IME)";
+  ot->idname = "SEQUENCER_OT_ime_insert";
+  ot->description = "Insert IME result string. (Windows only)";
+
+  /* api callbacks */
+  ot->invoke = ime_insert_invoke;
+  ot->poll = sequencer_text_editing_active_poll;
+
+  /* flags */
+  ot->flag = OPTYPE_INTERNAL | OPTYPE_UNDO;
+}
+
+/** \} */
+
+#endif /* WITH_INPUT_IME && WIN32 */
 
 }  // namespace blender::ed::vse

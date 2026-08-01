@@ -92,6 +92,11 @@ void sequencer_operatortypes()
   WM_operatortype_append(SEQUENCER_OT_text_edit_paste);
   WM_operatortype_append(SEQUENCER_OT_text_edit_cut);
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  WM_operatortype_append(SEQUENCER_OT_ime_input);
+  WM_operatortype_append(SEQUENCER_OT_ime_insert);
+#endif
+
   /* `sequencer_select.cc` */
   WM_operatortype_append(SEQUENCER_OT_select_all);
   WM_operatortype_append(SEQUENCER_OT_select);

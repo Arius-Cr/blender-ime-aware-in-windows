@@ -357,6 +357,11 @@ struct Button {
   /* pointer back */
   Block *block = nullptr;
 
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+  /** Used for drawing IME composite string and reposition IME candidate window. */
+  wmIMEData *ime_data = nullptr;
+#endif
+
   Button() = default;
   /** Performs a mostly shallow copy for now. Only contained C++ types are deep copied. */
   Button(const Button &other) = default;
@@ -1277,8 +1282,20 @@ bool button_rna_equals_ex(const Button *but,
 Button *button_find_old(Block *block_old, const Button *but_new);
 Button *button_find_new(Block *block_new, const Button *but_old);
 
-#ifdef WITH_INPUT_IME
+#if defined(WITH_INPUT_IME) && !defined(WIN32)
 void button_ime_reposition(Button *but, int x, int y, bool complete);
+const wmIMEData *button_ime_data_get(Button *but);
+#endif
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+void button_ime_reposition(Button *but,
+                           int creat_l,
+                           int creat_b,
+                           int creat_w,
+                           int creat_h,
+                           int exclude_l,
+                           int exclude_b,
+                           int exclude_w,
+                           int exclude_h);
 const wmIMEData *button_ime_data_get(Button *but);
 #endif
 

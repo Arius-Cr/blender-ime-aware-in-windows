@@ -121,6 +121,7 @@ struct WindowRuntime {
   /**
    * Input Method Editor data - complex character input (especially for Asian character input)
    * Only used when `WITH_INPUT_IME` is defined.
+   * `ime_data` and `ime_data_is_composing` is not used for WIN32.
    */
   wmIMEData *ime_data = nullptr;
   bool ime_data_is_composing = false;

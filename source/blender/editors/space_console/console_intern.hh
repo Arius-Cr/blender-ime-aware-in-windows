@@ -28,6 +28,17 @@ int console_char_pick(SpaceConsole *sc, const ARegion *region, const int mval[2]
 void console_scrollback_prompt_begin(SpaceConsole *sc, ConsoleLine *cl_dummy);
 void console_scrollback_prompt_end(SpaceConsole *sc, ConsoleLine *cl_dummy);
 
+/**
+ * Takes a cursor and returns x,y pixel coords.
+ * \param is_offset - True indicates that cursor is the character offset, otherwise it is
+ * the character index.
+ */
+bool ED_console_region_location_from_cursor(const SpaceConsole *sc,
+                                            const ARegion *region,
+                                            const int cursor,
+                                            int r_pixel_co[2],
+                                            bool is_offset);
+
 /* `console_ops.cc` */
 
 void console_history_free(SpaceConsole *sc, ConsoleLine *cl);
@@ -58,6 +69,16 @@ void CONSOLE_OT_paste(wmOperatorType *ot);
 void CONSOLE_OT_select_set(wmOperatorType *ot);
 void CONSOLE_OT_select_all(wmOperatorType *ot);
 void CONSOLE_OT_select_word(wmOperatorType *ot);
+
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+void CONSOLE_OT_ime_input(wmOperatorType *ot);
+void CONSOLE_OT_ime_insert(wmOperatorType *ot);
+
+void console_reposition_ime_window(struct wmWindow *win,
+                                   struct ScrArea *area,
+                                   struct ARegion *region,
+                                   void *ime_input_data);
+#endif
 
 enum { LINE_BEGIN, LINE_END, PREV_CHAR, NEXT_CHAR, PREV_WORD, NEXT_WORD };
 enum {

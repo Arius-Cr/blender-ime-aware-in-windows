@@ -2110,7 +2110,27 @@ static wmOperatorStatus wm_search_menu_invoke(bContext *C, wmOperator *op, const
     data.single_menu_idname = RNA_string_get(op->ptr, "menu_idname");
 
     std::string buffer = RNA_string_get(op->ptr, "initial_query");
+#if defined(WITH_INPUT_IME) && defined(WIN32)
+    /**
+     * Sending an simulated alphabetic key event.
+     *
+     * If IME on, the simulated key will trigger the IME composition,
+     * otherwise, it will produce the same character input as before.
+     *
+     * According to #ui_handle_menu_event, `event->type` just inculde
+     * `EVT_AKEY` to `EVT_ZKEY`, and `EVT_SPACEKEY`.
+     */
+    if (event->type >= EVT_AKEY && event->type <= EVT_ZKEY) {
+      wmWindow *win = CTX_wm_window(C);
+      wm_window_IME_start_composition_by_char(win, (char)event->type);
+      g_search_text[0] = '\0';
+    }
+    else {
+      STRNCPY(g_search_text, buffer.c_str());
+    }
+#else
     STRNCPY(g_search_text, buffer.c_str());
+#endif
   }
   else {
     g_search_text[0] = '\0';
